@@ -1,7 +1,7 @@
 #include <iostream>
-
+#include "lang/lang.h"
 int main()
 {
-    std::cout << "Hello, World!" << std::endl;
+    lang::interpreter::input_loop();
     return 0;
 }

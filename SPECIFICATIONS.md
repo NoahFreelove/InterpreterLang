@@ -1,5 +1,6 @@
 # SPECIFICATIONS
-# ===============
+
+================================
 
 ## Keywords
 Should support standard "C-Style" language keywords like:
@@ -53,10 +54,10 @@ Example:
 * `/i`- floor division operator
 * `>` - greater than operator
 * `>=` - greater than equal to operator
-*  `<` - less than operator
-*  `<=` - less than equal to operator
+* `<` - less than operator
+* `<=` - less than equal to operator
 * `&` - get address (unsigned long long)
 * `=` - set operator
 * `==` - equal operator (byval)
 * `===` - abs-equality operator (checks memory addresses)
-* 
+* `^^` - xor operator

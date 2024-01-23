@@ -1,0 +1,121 @@
+#include "id_to_name.h"
+#include "token.h"
+
+std::string id_to_name(int id) {
+    switch (id) {
+        // go through all the tokens and return the name of the token
+        case LEFT_PAREN:
+            return "LEFT_PAREN";
+        case RIGHT_PAREN:
+            return "RIGHT_PAREN";
+        case LEFT_BRACE:
+            return "LEFT_BRACE";
+        case RIGHT_BRACE:
+            return "RIGHT_BRACE";
+        case LEFT_BRACKET:
+            return "LEFT_BRACKET";
+        case RIGHT_BRACKET:
+            return "RIGHT_BRACKET";
+        case COMMA:
+            return "COMMA";
+        case DOT:
+            return "DOT";
+        case MINUS:
+            return "MINUS";
+        case PLUS:
+            return "PLUS";
+        case STAR:
+            return "STAR";
+        case SLASH:
+            return "SLASH";
+        case SEMICOLON:
+            return "SEMICOLON";
+        case BANG:
+            return "BANG";
+        case EQUAL:
+            return "EQUAL";
+        case DEQUAL:
+            return "DEQUAL";
+        case TEQUAL:
+            return "TEQUAL";
+        case GT:
+            return "GT";
+        case LT:
+            return "LT";
+        case GTE:
+            return "GTE";
+        case LTE:
+            return "LTE";
+        case ID_GRAB:
+            return "ID_GRAB";
+        case BANG_EQUAL:
+            return "BANG_EQUAL";
+        case SLASHI:
+            return "SLASHI";
+        case IDENTIFIER:
+            return "IDENTIFIER";
+        case STRING:
+            return "STRING";
+        case FLOAT:
+            return "FLOAT";
+        case DOUBLE:
+            return "DOUBLE";
+        case LONG:
+            return "LONG";
+        case ULONG64:
+            return "ULONG64";
+        case INT:
+            return "INT";
+        case IF:
+            return "IF";
+        case ELSE:
+            return "ELSE";
+        case ELSE_IF:
+            return "ELSE_IF";
+        case FOR:
+            return "FOR";
+        case WHILE:
+            return "WHILE";
+        case STRUCT:
+            return "STRUCT";
+        case CLASS:
+            return "CLASS";
+        case PRIVATE:
+            return "PRIVATE";
+        case PUBLIC:
+            return "PUBLIC";
+        case TRUE:
+            return "TRUE";
+        case FALSE:
+            return "FALSE";
+        case RETURN:
+            return "RETURN";
+        case FUNCTION:
+            return "FUNCTION";
+        case NULL_LANG:
+            return "NULL_LANG";
+        case VAR:
+            return "VAR";
+        case AS:
+            return "AS";
+        case BYVAL:
+            return "BYVAL";
+        case DISCARD:
+            return "DISCARD";
+        case PERSISTENT:
+            return "PERSISTENT";
+        case AND:
+            return "AND";
+        case OR:
+            return "OR";
+        case XOR:
+            return "XOR";
+        case PRINT:
+            return "PRINT";
+        case EXPONENT:
+            return "EXPONENT";
+
+        default:
+            return "UNKNOWN TOKEN";
+    }
+}
