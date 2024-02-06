@@ -3,7 +3,7 @@
 #include <cstring>
 
 token * lang::scanner::get_digit(char first_num) {
-std::vector<char> chars = std::vector<char>();
+    std::vector<char> chars = std::vector<char>();
     chars.push_back(first_num);
     while (isdigit(peek()) && !past_end()) {
         chars.push_back(next());
@@ -13,29 +13,57 @@ std::vector<char> chars = std::vector<char>();
     std::string str(chars.begin(), chars.end());
     const char* cstr = strcpy(new char[str.length() + 1], str.c_str());
     if(c != '.') {
-        if(c != 'l' && c != 'f' && c != 'd' &&  peek_str(7) != "ulong64") {
+        if(c != 'l' && c != 'f' && c != 'd' &&  peek_str(3) != "ull") {
+            // if its too big, return error
+            if(str.length() > 10) {
+                err = true;
+                interpreter::error("Number too big: " + std::string(chars.begin(), chars.end()) + peek() + " for int");
+                return nullptr;
+            }
             return new token(INT, cstr, line, std::stoi(str));
         }
         // check if long
-        if(c == 'l' && peek_str(7) != "ulong64") {
+        if(c == 'l' && peek_str(3) != "ull") {
             next();
+            if(str.length() > 19) {
+                err = true;
+                interpreter::error("Number too big: " + std::string(chars.begin(), chars.end()) + peek() + " for long");
+                return nullptr;
+            }
             return new token(LONG, cstr, line, std::stol(str));
         }
         // Check if ulong64
-        if(peek_str(7) == "ulong64" && c != 'l' && c != 'f' && c != 'd') {
-            for (int i = 0; i < 7; ++i) {
+        if(peek_str(3) == "ull" && c != 'l' && c != 'f' && c != 'd') {
+            for (int i = 0; i < 3; ++i) {
                 next();
+            }
+            if(str.length() > 20) {
+                err = true;
+                interpreter::error("Number too big: " + std::string(chars.begin(), chars.end()) + peek() + " for ulong64");
+                return nullptr;
             }
             return new token(ULONG64, cstr, line, std::stoull(str));
         }
         // check if float but no decimal
-        if (peek() == 'f' && c != 'l' && peek_str(7) != "ulong64") {
+        if (peek() == 'f' && c != 'l' && peek_str(3) != "ull") {
             next();
+            // if its too big, return error
+            if(str.length() > 10) {
+                err = true;
+                interpreter::error("Number too big: " + std::string(chars.begin(), chars.end()) + peek() + " for float");
+                return nullptr;
+            }
             return new token(FLOAT, cstr, line, std::stof(str));
         }
         // check if double but no decimal
-        if (peek() == 'd' && c != 'l' && peek_str(7) != "ulong64") {
+        if (peek() == 'd' && c != 'l' && peek_str(3) != "ull") {
             next();
+            // if its too big, return error
+            if(str.length() > 19) {
+                err = true;
+                interpreter::error("Number too big: " + std::string(chars.begin(), chars.end()) + peek() + " for double");
+                return nullptr;
+            }
             return new token(DOUBLE, cstr, line, std::stod(str));
         }
     }
@@ -51,12 +79,23 @@ std::vector<char> chars = std::vector<char>();
 
         // check if float
         if(peek() != 'd') {
-
+            // if its too big, return error
+            if(str.length() + str2.length() > 10) {
+                err = true;
+                interpreter::error("Number too big: " + std::string(chars.begin(), chars.end()) + peek() + " for float");
+                return nullptr;
+            }
             return new token(FLOAT, cstr, line, std::stof(str + "." + str2));
         }
         // check if double
         if(peek() == 'd') {
             next();
+            // if its too big, return error
+            if(str.length() + str2.length() > 19) {
+                err = true;
+                interpreter::error("Number too big: " + std::string(chars.begin(), chars.end()) + peek() + " for double");
+                return nullptr;
+            }
             return new token(DOUBLE, cstr, line, std::stod(str + "." + str2));
 
         }
@@ -155,6 +194,30 @@ token * lang::scanner::get_identifier(char c) {
     if(str == "print") {
         return new token(PRINT, cstr, line);
     }
+    if(str == "int") {
+        return new token(INT_KEYW, cstr, line);
+    }
+    if(str == "float") {
+        return new token(FLOAT_KEYW, cstr, line);
+    }
+    if(str == "double") {
+        return new token(DOUBLE_KEYW, cstr, line);
+    }
+    if(str == "long") {
+        return new token(LONG_KEYW, cstr, line);
+    }
+    if(str == "string") {
+        return new token(STRING_KEYW, cstr, line);
+    }
+    if(str == "char") {
+        return new token(CHAR_KEYW, cstr, line);
+    }
+    if(str == "bool") {
+        return new token(BOOL_KEYW, cstr, line);
+    }
+    if(str == "ulong64") {
+        return new token(ULONG64_KEYW, cstr, line);
+    }
     return new token(IDENTIFIER, cstr, line);
 }
 
@@ -172,12 +235,37 @@ token* lang::scanner::trigger_error(char c) {
 }
 
 token * lang::scanner::get_string() {
+    char c = next();
+    std::vector<char> chars = std::vector<char>();
 
+    while (c != '"' && !at_end()) {
+        chars.push_back(c);
+        c = next();
+    }
+
+    if(c != '"') {
+        err = true;
+        interpreter::error("Unterminated string");
+        return nullptr;
+    }
+    next();
+    std::string str(chars.begin(), chars.end());
+    const char* cstr = strcpy(new char[str.length() + 1], str.c_str());
+    return new token(STRING, cstr, line, cstr);
 }
 
 
 token * lang::scanner::parse_token() {
     char c = next();
+
+    if(in_multi_comment()) {
+        if(c == '*' && peek() == '/') {
+            skip();
+            in_multi_com = false;
+        }
+        return nullptr;
+    }
+
     if(at_end() && c == '\\') {
         return nullptr;
     }
@@ -252,6 +340,11 @@ token * lang::scanner::parse_token() {
                     if(peek() == '/') {
                         while (!past_end())
                             next();
+                        return nullptr;
+                    }
+                    if(peek() == '*') {
+                        in_multi_com = true;
+                        next();
                         return nullptr;
                     }
                     if(peek() == 'i') {
@@ -336,10 +429,17 @@ std::vector<token *> lang::scanner::scan_line(std::string *data) {
         return {};
     }
 
-
     return tokens;
 }
 
-bool lang::scanner::in_multi_line() {
+auto lang::scanner::in_multi_line() const -> bool {
     return in_multi_line_expression;
+}
+
+auto lang::scanner::in_multi_string() const -> bool {
+    return in_multi_str;
+}
+
+auto lang::scanner::in_multi_comment() const -> bool {
+    return in_multi_com;
 }

@@ -1,0 +1,6 @@
+/*
+    This is a file read test of Interpreter Lang
+*/
+if(a and b){
+    return 0f;
+}

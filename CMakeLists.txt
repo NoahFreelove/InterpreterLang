@@ -3,6 +3,6 @@ project(InterpreterLang)
 
 set(CMAKE_CXX_STANDARD 17)
 
-file(GLOB_RECURSE SOURCE_FILES "lang/*.cpp" "lang/tokenizer/*.cpp")
+file(GLOB_RECURSE SOURCE_FILES "lang/*.cpp" "lang/tokenizer/*.cpp" "lang/evaluator/*.cpp" "lang/memory/*.cpp")
 
-add_executable(InterpreterLang main.cpp "lang/lang.h" ${SOURCE_FILES})
+add_executable(InterpreterLang main.cpp "lang/lang.h" "lang/memory/memory.h" ${SOURCE_FILES})

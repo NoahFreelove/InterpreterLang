@@ -4,6 +4,7 @@
 
 #include "token.h"
 #include "../interpreter.h"
+
 namespace lang {
 
     class scanner {
@@ -11,6 +12,8 @@ namespace lang {
         int current = 0;
         int end = 0;
         bool in_multi_line_expression = false;
+        bool in_multi_str = false;
+        bool in_multi_com = false;
         std::vector<token*> multi_line_expression = {};
         std::string* data;
         bool err = false;
@@ -69,9 +72,9 @@ namespace lang {
     public:
         scanner();
         std::vector<token*> scan_line(std::string* data);
-        bool in_multi_line();
-        bool in_multi_string();
-        bool in_multi_comment();
+        bool in_multi_line() const;
+        bool in_multi_string() const;
+        bool in_multi_comment() const;
     };
 }
 #endif //SCANNER_H

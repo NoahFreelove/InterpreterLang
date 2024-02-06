@@ -114,6 +114,22 @@ std::string id_to_name(int id) {
             return "PRINT";
         case EXPONENT:
             return "EXPONENT";
+        case INT_KEYW:
+            return "INT_KEYW";
+        case FLOAT_KEYW:
+            return "FLOAT_KEYW";
+        case DOUBLE_KEYW:
+            return "DOUBLE_KEYW";
+        case LONG_KEYW:
+            return "LONG_KEYW";
+        case STRING_KEYW:
+            return "STRING_KEYW";
+        case CHAR_KEYW:
+            return "CHAR_KEYW";
+        case BOOL_KEYW:
+            return "BOOL_KEYW";
+        case ULONG64_KEYW:
+            return "ULONG64_KEYW";
 
         default:
             return "UNKNOWN TOKEN";

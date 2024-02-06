@@ -75,6 +75,16 @@
 #define DISCARD 1018
 #define PERSISTENT 1019
 
+// TYPEWORDS
+#define INT_KEYW 1120
+#define FLOAT_KEYW 1121
+#define DOUBLE_KEYW 1122
+#define LONG_KEYW 1123
+#define STRING_KEYW 1124
+#define CHAR_KEYW 1125
+#define BOOL_KEYW 1126
+#define ULONG64_KEYW 1127
+
 // builtin funcs
 #define PRINT 10001
 
@@ -107,7 +117,34 @@ public:
         return line;
     }
 
-    // generate iostream operator
+    bool is_op() const {
+        return name >= LEFT_PAREN && name <= EXPONENT;
+    }
+
+    bool is_literal() const {
+        return name >= IDENTIFIER && name <= INT;
+    }
+
+    bool is_literal_non_id() const {
+        return name > IDENTIFIER && name <= INT;
+    }
+
+    bool is_keyword() const {
+        return name >= IF && name <= PERSISTENT;
+    }
+
+    bool is_builtin() const {
+        return name >= PRINT;
+    }
+
+    bool is_arithmetic() const {
+        return name >= PLUS && name <= EXPONENT;
+    }
+
+    bool is_typeword() const {
+        return name >= INT_KEYW && name <= ULONG64_KEYW;
+    }
+
     friend std::ostream &operator<<(std::ostream &os, const token &token) {
         os << "name: " << id_to_name(token.name) << " lexeme: " << token.lexeme << " value?: " << (token.value.type() != typeid(nullptr)) << " line: " << token.line;
         return os;
