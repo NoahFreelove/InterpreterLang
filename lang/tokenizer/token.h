@@ -53,6 +53,8 @@
 #define LONG 106
 #define ULONG64 107
 #define INT 108
+#define TRUE 109
+#define FALSE 110
 
 // KEYWORDS
 #define IF 1001
@@ -64,8 +66,6 @@
 #define CLASS 1007
 #define PRIVATE 1008
 #define PUBLIC 1009
-#define TRUE 1010
-#define FALSE 1011
 #define RETURN 1012
 #define FUNCTION 1013
 #define NULL_LANG 1014
@@ -87,6 +87,13 @@
 
 // builtin funcs
 #define PRINT 10001
+#define DUMP 10002
+#define INPUT 10003
+#define TYPEOF 10004
+#define SIZEOF 10005
+#define DELETE 10006
+
+
 
 class token {
     int name;
@@ -122,11 +129,11 @@ public:
     }
 
     bool is_literal() const {
-        return name >= IDENTIFIER && name <= INT;
+        return name >= IDENTIFIER && name <= FALSE;
     }
 
     bool is_literal_non_id() const {
-        return name > IDENTIFIER && name <= INT;
+        return name > IDENTIFIER && name <= FALSE;
     }
 
     bool is_keyword() const {
@@ -143,6 +150,14 @@ public:
 
     bool is_typeword() const {
         return name >= INT_KEYW && name <= ULONG64_KEYW;
+    }
+
+    bool is_numeric() const {
+        return name >= INT && name <= ULONG64;
+    }
+
+    bool is_truthy() const {
+        return name == TRUE || name == FALSE;
     }
 
     friend std::ostream &operator<<(std::ostream &os, const token &token) {

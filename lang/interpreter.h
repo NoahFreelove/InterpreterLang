@@ -2,18 +2,17 @@
 #define INTERPRETER_H
 #include <iostream>
 #include <stack>
-#include <string.h>
-#include <string>
+#include <cstring>
 
 #include "tokenizer/scanner.h"
-
-class stack_frame;
+#include "memory/memory.h"
 
 namespace lang {
     class scanner;
 
     class interpreter {
     public:
+        inline static stack_frame* global_frame = new stack_frame();
         inline static std::stack<stack_frame*>* stack = nullptr;
 
         static char* const_char_convert(const char* input) {
@@ -22,6 +21,9 @@ namespace lang {
         }
         static void input_loop();
         static void process_variable_declaration(const std::vector<token*> &tokens);
+
+        static bool set_literal(const std::vector<token *> &tokens, data *d);
+
         static void process_variable_update(const std::vector<token*> &tokens);
         static void print(const std::vector<token*>& tokens);
         static void process(const std::vector<token*>& tokens);

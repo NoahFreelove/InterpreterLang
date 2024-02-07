@@ -13,7 +13,14 @@ public:
 
     bool set(char* identifier, data* val);
 
+    // Assign assigns a pointer to a variable
+    // use when assigning an identifier to another identifier
+    // marks the data as a pointer so its not deleted which would lead to double free
+    bool assign(char* identifier, data* val);
+
     data* get(char* identifier);
+
+    void print_stack_memory();
 
     ~stack_memory() {
         for (auto& [key, value] : *memory) {

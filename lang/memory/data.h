@@ -7,10 +7,12 @@
 class data {
     void* value;
     const char* type;
+    bool is_ptr = false;
 public:
-    data(void* value, const char* type) {
+    data(void* value, const char* type, bool is_ptr = false) {
         this->value = value;
         this->type = type;
+        this->is_ptr = is_ptr;
     }
 
     void* get() {
@@ -129,6 +131,10 @@ public:
 
 
     ~data() {
+        if(is_ptr) {
+            std::cout << "Not deleting data of type: " << type << " because it is a pointer" << std::endl;
+            return;
+        }
         std::cout << "Deleting data of type: " << type << std::endl;
         if (type == "int") {
             delete (int*)value;

@@ -113,7 +113,7 @@ token * lang::scanner::get_identifier(char c) {
     // Keep adding to the identifier until we hit a non-alphanumeric character
             std::vector<char> chars = std::vector<char>();
             chars.push_back(c);
-            while (isalnum(peek()) && !past_end() && !isspace(peek())) {
+            while ((isalnum(peek()) || peek() == '_') && !past_end() && !isspace(peek())) {
                 chars.push_back(next());
             }
             std::string str(chars.begin(), chars.end());
@@ -194,6 +194,9 @@ token * lang::scanner::get_identifier(char c) {
     if(str == "print") {
         return new token(PRINT, cstr, line);
     }
+    if(str == "dump") {
+        return new token(DUMP, cstr, line);
+    }
     if(str == "int") {
         return new token(INT_KEYW, cstr, line);
     }
@@ -251,7 +254,7 @@ token * lang::scanner::get_string() {
     next();
     std::string str(chars.begin(), chars.end());
     const char* cstr = strcpy(new char[str.length() + 1], str.c_str());
-    return new token(STRING, cstr, line, cstr);
+    return new token(STRING, cstr, line, new std::string(cstr));
 }
 
 
@@ -383,7 +386,7 @@ token * lang::scanner::parse_token() {
                     if(c == '"') {
                         return get_string();
                     }
-                    if(isalpha(c)) {
+                    if(isalpha(c) || c == '_') {
                         return get_identifier(c);
                     }
                     return trigger_error(c);

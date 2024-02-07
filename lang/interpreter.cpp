@@ -35,6 +35,11 @@ void lang::interpreter::process_variable_declaration(const std::vector<token*> &
             error("Invalid variable declaration");
             return;
         }
+        // if the name ends with _old, it is invalid
+        if(strstr(tokens[1]->get_lexeme(), "_old")) {
+            error("Invalid variable name, _old is reserved");
+            return;
+        }
 
         auto* frame = stack->top();
         char* name = const_char_convert(tokens[1]->get_lexeme());
@@ -101,18 +106,7 @@ void lang::interpreter::process_variable_declaration(const std::vector<token*> &
     }
 }
 
-void lang::interpreter::process_variable_update(const std::vector<token *> &tokens) {
-    if(tokens.size() < 3) {
-        error("Not enough tokens for variable update");
-        return;
-    }
-    if(tokens[0]->get_name() != IDENTIFIER || tokens[1]->get_name() != EQUAL || !tokens[2]->is_literal_non_id()) {
-        error("Invalid variable update");
-        return;
-    }
-    auto* frame = stack->top();
-    char* name = const_char_convert(tokens[0]->get_lexeme());
-    data* d = frame->get_data(name);
+bool lang::interpreter::set_literal(const std::vector<token *> &tokens, data *d) {
     if(d) {
         // token value is std::any, so we need to cast it to the correct type
         if(d->get_type() == "int") {
@@ -128,29 +122,58 @@ void lang::interpreter::process_variable_update(const std::vector<token *> &toke
             d->set_value_long(std::any_cast<long>(tokens[2]->get_value()));
         }
         else if (d->get_type() == "string") {
-            d->set_value_string(const_char_convert(std::any_cast<const char*>(tokens[2]->get_value())));
+            d->set_value_string(const_char_convert(std::any_cast<const char*>(tokens[2]->get_lexeme())));
         }
         else if (d->get_type() == "char") {
             // value is going to be a string so we take the first character
-            auto val = std::any_cast<std::string>(tokens[2]->get_value());
+            auto val = std::any_cast<std::string>(tokens[2]->get_lexeme());
             if(!val.empty()) {
                 d->set_value_char(val[0]);
             }
             else {
                 error("Invalid char value");
-                return;
+                return true;
             }
         }
         else if (d->get_type() == "bool") {
-            d->set_value_bool(std::any_cast<bool>(tokens[2]->get_value()));
+            std::cout << "Setting bool" << std::endl;
+            std::cout<< tokens[2]->get_name() << std::endl;
+            if(tokens[2]->get_name() == FALSE)
+                d->set_value_bool(false);
+            else if(tokens[2]->get_name() == TRUE)
+                d->set_value_bool(true);
+            else {
+                error("invalid bool value");
+            }
         }
         else if (d->get_type() == "unsigned long long") {
             d->set_value_ulonglong(std::any_cast<unsigned long long>(tokens[2]->get_value()));
         }
         else {
             error("Invalid type");
-            return;
+            return true;
         }
+    }
+    return false;
+}
+
+void lang::interpreter::process_variable_update(const std::vector<token *> &tokens) {
+    if(tokens.size() < 3) {
+        error("Not enough tokens for variable update");
+        return;
+    }
+    if(tokens[0]->get_name() != IDENTIFIER || tokens[1]->get_name() != EQUAL) {
+        error("Invalid variable update");
+        return;
+    }
+    auto* frame = stack->top();
+    char* name = const_char_convert(tokens[0]->get_lexeme());
+    data* d = frame->get_data(name);
+    if(tokens[2]->is_literal_non_id()) {
+        if (set_literal(tokens, d)) return;
+    }
+    else if (tokens[2]->get_name() == IDENTIFIER) {
+        frame->assign(name, const_char_convert(tokens[2]->get_lexeme()));
     }
 }
 
@@ -214,6 +237,10 @@ void lang::interpreter::process_input(scanner& scan, std::string *input) {
         if(token_vector[0]->is_builtin()) {
             if (token_vector[0]->get_name() == PRINT) {
                 print(token_vector);
+            }
+            else if (token_vector[0]->get_name() == DUMP) {
+                stack->top()->dump_memory();
+                return;
             }
         }
         if(token_vector.size() >=2) {

@@ -12,7 +12,13 @@ public:
         memory = new stack_memory();
     }
 
+    void dump_memory() {
+        std::cout << "Dump for stackframe " << id << std::endl;
+        memory->print_stack_memory();
+    }
+
     bool set(char* identifier, data* val);
+    bool assign(char* identifier, char* identifier2);
 
     void delete_var(char* identifier);
 
