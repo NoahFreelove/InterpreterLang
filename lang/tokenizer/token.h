@@ -93,6 +93,8 @@
 #define SIZEOF 10005
 #define DELETE 10006
 #define DEFINE 10007
+#define UNDEFINE 10008
+#define ISDEFINED 10009
 
 
 class token {

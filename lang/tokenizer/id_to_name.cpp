@@ -114,6 +114,20 @@ std::string id_to_name(int id) {
             return "PRINT";
         case DUMP:
             return "DUMP";
+        case INPUT:
+            return "INPUT";
+        case TYPEOF:
+            return "TYPEOF";
+        case SIZEOF:
+            return "SIZEOF";
+        case DELETE:
+            return "DELETE";
+        case DEFINE:
+            return "DEFINE";
+        case UNDEFINE:
+            return "UNDEFINE";
+        case ISDEFINED:
+            return "ISDEFINED";
         case EXPONENT:
             return "EXPONENT";
         case INT_KEYW:

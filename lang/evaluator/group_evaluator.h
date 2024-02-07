@@ -59,7 +59,7 @@ public:
         for (const token_element& element : g->tokens) {
             std::visit(overloaded{
                 [g, &is_arithmetic](token* tk) {
-                    if(tk->is_arithmetic() ) {
+                    if(tk->is_arithmetic()) {
                         is_arithmetic = true;
                     }
                 },
@@ -68,9 +68,24 @@ public:
                 }
             }, element);
         }
-        if(is_arithmetic) {
+
+        bool has_literal = false;
+        for (const token_element& element : g->tokens) {
+            std::visit(overloaded{
+                [g, &has_literal](token* tk) {
+                    if(tk->is_literal()) {
+                        has_literal = true;
+                    }
+                },
+                [g](token_group* grp) {
+                    eval_group(grp);
+                }
+            }, element);
+        }
+        if(is_arithmetic || has_literal) {
             arithmetic_evaluator::recursive_evaluation(g);
         }
+
     }
 };
 

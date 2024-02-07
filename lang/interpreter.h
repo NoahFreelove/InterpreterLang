@@ -16,7 +16,7 @@ namespace lang {
 
         inline static stack_frame* global_frame = new stack_frame();
         inline static std::stack<stack_frame*>* stack = nullptr;
-
+        inline static scanner* scan = nullptr;
         static char* const_char_convert(const char* input) {
             char* name = (char*)malloc(sizeof(char)*strlen(input));
             return strcpy(name, input);
@@ -28,8 +28,12 @@ namespace lang {
 
         static void process_variable_update(const std::vector<token*> &tokens);
         static void print(const std::vector<token*>& tokens);
+        static void define(const std::vector<token*>& tokens);
+        static void undefine(const std::vector<token*>& tokens);
+        static void is_defined(const std::vector<token*>& tokens);
+        static void delete_var(const std::vector<token*>& tokens);
         static void process(const std::vector<token*>& tokens);
-        static void process_input(scanner& scan, std::string* input);
+        static void process_input(std::string* input);
         static void read_from_file(const char* path);
         static void error(std::string err);
 

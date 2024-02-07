@@ -107,6 +107,30 @@ public:
                 return;
             }
         }
+        else {
+            // Check if there is only one literal token, if so, return the value of that token
+            int literal_count = 0;
+            for (int i = 0; i < tokens.size(); ++i) {
+                if(!is_group(tokens[i])) {
+                    token* t = std::get<token*>(tokens[i]);
+                    if(t->is_literal()) {
+                        literal_count += 1;
+                    }
+                }
+            }
+            if(literal_count == 1) {
+                for (int i = 0; i < tokens.size(); ++i) {
+                    if(!is_group(tokens[i])) {
+                        token* t = std::get<token*>(tokens[i]);
+                        if(t->is_literal()) {
+                            g->type = t->get_name();
+                            g->value = t->get_value();
+                            return;
+                        }
+                    }
+                }
+            }
+        }
 
         // all parenthesis are gone, all groups evaluated, just eval.
         bool has_ops = true;

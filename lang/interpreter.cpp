@@ -10,9 +10,11 @@
 
 void lang::interpreter::input_loop() {
     auto* input = new std::string();
-    auto scan = scanner();
+    if(scan == nullptr) {
+        scan = new scanner();
+    }
     while (true) {
-        if(scan.in_multi_line() || scan.in_multi_comment() || scan.in_multi_string()) {
+        if(scan->in_multi_line() || scan->in_multi_comment() || scan->in_multi_string()) {
             std::cout << "... ";
         }
         else {
@@ -22,7 +24,7 @@ void lang::interpreter::input_loop() {
         if (*input == "exit") {
             break;
         }
-        process_input(scan, input);
+        process_input(input);
     }
 }
 
@@ -172,6 +174,24 @@ void lang::interpreter::process_variable_update(const std::vector<token *> &toke
     if(tokens[2]->is_literal() || tokens[2]->get_name() == MINUS || tokens[2]->get_name() == LEFT_PAREN || tokens[2]->get_name() == RIGHT_PAREN) {
         if (set_literal(tokens, d)) return;
     }
+    else if(tokens[2]->get_name() == BYVAL && tokens.size() == 4) { // Doing byval has no effect but its technically valid
+        if (set_literal(tokens, d)) return;
+    }
+    else if(tokens[2]->get_name() == INPUT) {
+        auto str = new std::string();
+        std::cout << "> ";
+        std::getline(std::cin, *str);
+        auto t = scan->scan_line(str);
+        // set_literal expects first two tokens to be identifier =, so we prepend those
+        t.insert(t.begin(), tokens[0]);
+        t.insert(t.begin() + 1, tokens[1]);
+        if (set_literal(t, d)) {
+            delete str;
+            return;
+        }
+
+        delete str;
+    }
     else if (tokens[2]->get_name() == ID_GRAB && tokens[3]->get_name() == IDENTIFIER) {
         frame->assign(name, const_char_convert(tokens[3]->get_lexeme()));
     }
@@ -193,6 +213,48 @@ void lang::interpreter::print(const std::vector<token *>& tokens) {
     }
     else {
         std::cout << id_to_name(tokens[1]->get_name()) << std::endl;
+    }
+}
+
+void lang::interpreter::define(const std::vector<token *> &tokens) {
+    if (tokens.size() == 2) {
+        defined->push_back(const_char_convert(tokens[1]->get_lexeme()));
+        std::cout << tokens[1]->get_lexeme() << " defined" << std::endl;
+    }
+}
+
+void lang::interpreter::undefine(const std::vector<token *> &tokens) {
+    if (tokens.size() == 2) {
+        char* name = const_char_convert(tokens[1]->get_lexeme());
+        for (int i = 0; i < defined->size(); i++) {
+            if (strcmp(defined->at(i), name) == 0) {
+                defined->erase(defined->begin() + i);
+                std::cout << tokens[1]->get_lexeme() << " undefined" << std::endl;
+                return;
+            }
+        }
+        std::cout << tokens[1]->get_lexeme() << " not defined" << std::endl;
+    }
+}
+
+void lang::interpreter::is_defined(const std::vector<token *> &tokens) {
+    if (tokens.size() == 2) {
+        char* name = const_char_convert(tokens[1]->get_lexeme());
+        for (int i = 0; i < defined->size(); i++) {
+            if (strcmp(defined->at(i), name) == 0) {
+                std::cout << tokens[1]->get_lexeme() << " is defined" << std::endl;
+                return;
+            }
+        }
+        std::cout << tokens[1]->get_lexeme() << " is not defined" << std::endl;
+    }
+}
+
+void lang::interpreter::delete_var(const std::vector<token *> &tokens) {
+    if(tokens.size() == 2) {
+        if(tokens[0]->get_name() == DELETE && tokens[1]->get_name() == IDENTIFIER) {
+            stack->top()->delete_var(const_char_convert(tokens[1]->get_lexeme()));
+        }
     }
 }
 
@@ -224,13 +286,16 @@ void lang::interpreter::process(const std::vector<token *>& tokens) {
     }
 }
 
-void lang::interpreter::process_input(scanner& scan, std::string *input) {
+void lang::interpreter::process_input( std::string *input) {
+        if(scan == nullptr) {
+            scan = new scanner();
+        }
         if(stack == nullptr) {
             stack = new std::stack<stack_frame*>();
             stack->push(new stack_frame());
         }
 
-    auto tokens = scan.scan_line(input);
+    auto tokens = scan->scan_line(input);
     if(tokens.empty())
         return;
 
@@ -262,8 +327,24 @@ void lang::interpreter::process_input(scanner& scan, std::string *input) {
                 print(token_vector);
                 return;
             }
-            else if (token_vector[0]->get_name() == DUMP) {
+            if (token_vector[0]->get_name() == DUMP) {
                 stack->top()->dump_memory();
+                return;
+            }
+            if (token_vector[0]->get_name() == DEFINE) {
+                define(token_vector);
+                return;
+            }
+            if (token_vector[0]->get_name() == UNDEFINE) {
+                undefine(token_vector);
+                return;
+            }
+            if (token_vector[0]->get_name() == ISDEFINED) {
+                is_defined(token_vector);
+                return;
+            }
+            if (token_vector[0]->get_name() == DELETE) {
+                delete_var(token_vector);
                 return;
             }
         }
@@ -273,13 +354,12 @@ void lang::interpreter::process_input(scanner& scan, std::string *input) {
                 return;
             }
         }
-        process(token_vector);
+        //process(token_vector);
     }
 }
 
 void lang::interpreter::read_from_file(const char *path) {
     // read from file path. Read line by line and call process_input on each line.
-    auto scan = scanner();
     std::ifstream file(path);
     std::string str;
     if(!file.is_open()) {
@@ -291,7 +371,7 @@ void lang::interpreter::read_from_file(const char *path) {
         return;
     }
     while(std::getline(file, str)) {
-        process_input(scan, &str);
+        process_input(&str);
     }
     file.close();
 

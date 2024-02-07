@@ -2,7 +2,7 @@
 #include "lang/lang.h"
 int main()
 {
-    //lang::interpreter::read_from_file("file.lang");
+    lang::interpreter::read_from_file("file.lang");
 
     token* openp2 = new token(LEFT_PAREN, "(", 0);
     token* openp = new token(LEFT_PAREN, "(", 0);
@@ -26,7 +26,7 @@ int main()
 
 
     //std::cout << std::any_cast<int>(final->get_value()) << std::endl;
-    lang::interpreter::input_loop();
+    //lang::interpreter::input_loop();
 
     return 0;
 }

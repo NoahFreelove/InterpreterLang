@@ -212,6 +212,12 @@ token * lang::scanner::get_identifier(char c) {
     if(str == "define") {
         return new token(DEFINE, cstr, line);
     }
+    if(str == "undefine") {
+        return new token(UNDEFINE, cstr, line);
+    }
+    if(str == "isdefined") {
+        return new token(ISDEFINED, cstr, line);
+    }
     if(str == "int") {
         return new token(INT_KEYW, cstr, line);
     }
