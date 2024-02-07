@@ -40,7 +40,8 @@ public:
                     delete root_group;
                     return new token_group(); // Return an empty group or handle error
                 }
-            } else {
+            }
+            else {
                 // Add the token to the current group
                 groups.top()->add(tk);
             }

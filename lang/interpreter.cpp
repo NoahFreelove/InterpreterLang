@@ -4,6 +4,7 @@
 #include <stack>
 #include <string.h>
 
+#include "evaluator/group_evaluator.h"
 #include "memory/stack_frame.h"
 #include "tokenizer/tokens.h"
 
@@ -27,10 +28,6 @@ void lang::interpreter::input_loop() {
 
 void lang::interpreter::process_variable_declaration(const std::vector<token*> &tokens) {
     if (tokens.size() >= 3) {
-        for (auto token : tokens) {
-            //std::cout << *token << std::endl;
-        }
-
         if(tokens[1]->get_name() != IDENTIFIER || tokens[2]->get_name() != AS || !tokens[3]->is_typeword()) {
             error("Invalid variable declaration");
             return;
@@ -110,7 +107,13 @@ bool lang::interpreter::set_literal(const std::vector<token *> &tokens, data *d)
     if(d) {
         // token value is std::any, so we need to cast it to the correct type
         if(d->get_type() == "int") {
-            d->set_value_int(std::any_cast<int>(tokens[2]->get_value()));
+            std::vector<token*> rest(tokens.begin() + 2, tokens.end());
+            for (auto& token : rest ){
+                //std::cout << id_to_name(token->get_name()) << std::endl;
+            }
+            token_group* group = token_grouper::recursive_group(rest);
+            group_evaluator::eval_group(group);
+            d->set_value_int(std::any_cast<int>(group->value));
         }
         else if (d->get_type() == "float") {
             d->set_value_float(std::any_cast<float>(tokens[2]->get_value()));
@@ -169,7 +172,7 @@ void lang::interpreter::process_variable_update(const std::vector<token *> &toke
     auto* frame = stack->top();
     char* name = const_char_convert(tokens[0]->get_lexeme());
     data* d = frame->get_data(name);
-    if(tokens[2]->is_literal_non_id()) {
+    if(tokens[2]->is_literal_non_id() || tokens[2]->get_name() == LEFT_PAREN || tokens[2]->get_name() == RIGHT_PAREN) {
         if (set_literal(tokens, d)) return;
     }
     else if (tokens[2]->get_name() == IDENTIFIER) {

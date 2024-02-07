@@ -29,6 +29,11 @@ public:
                 lang::interpreter::error("operator with no antecedent");
                 return false;
             }
+            if(i == tokens.size() - 1 && curr->is_arithmetic()) {
+                lang::interpreter::error("operator with no consequent");
+                return false;
+            }
+
             if(last_token != nullptr) {
                 if(last_token->is_arithmetic() && curr->is_arithmetic()) {
                     lang::interpreter::error("two operators side by side");
@@ -57,41 +62,127 @@ public:
         // Each group has a type, which is the type of the result of the evaluation
         // Each group also has a value, which is the result of the evaluation
         // if the type is undetermined, it is either a group or has not been evaluated yet
+        //std::cout << "recursive eval" << std::endl;
+        //std::cout << g->tokens.size() << std::endl;
 
-        std::vector<token_element> tokens = g->tokens;
+        std::vector<token_element>& tokens = g->tokens;
+        bool groups_found = true;
+        while (groups_found) {
+            groups_found = false;
+            for (int i = 0; i < tokens.size(); ++i) {
+                if(is_group(tokens[i])) {
+                    groups_found = true;
+                    token_group* tg = std::get<token_group*>(tokens[i]);
+                    if(tg->type == UNDETERMINED) {
+                        recursive_evaluation(tg);
+                    }
+                    if(tg->type == INT) {
+                        g->tokens[i] = new token(INT, "INT", 0, tg->value);
+                    }
+                    if(tg->type == FLOAT) {
+                        g->tokens[i] = new token(FLOAT, "FLOAT", 0, tg->value);
+                    }
+                    if(tg->type == DOUBLE) {
+                        g->tokens[i] = new token(DOUBLE, "DOUBLE", 0, tg->value);
+                    }
+                    if(tg->type == LONG) {
+                        g->tokens[i] = new token(LONG, "LONG", 0, tg->value);
+                    }
+                    if(tg->type == ULONG64) {
+                        g->tokens[i] = new token(ULONG64, "ULONG64", 0, tg->value);
+                    }
+                }
+            }
+        }
 
-        for (int i = 0; i < tokens.size(); ++i) {
-            if(is_group(tokens[i])) {
-                token_group* tg = std::get<token_group*>(tokens[i]);
-                if(tg->type == UNDETERMINED) {
-                    recursive_evaluation(tg);
-                }
-                if(tg->type == INT) {
-                    g->tokens[i] = new token(INT, "INT", 0, static_cast<int *>(tg->value));
-                }
-                if(tg->type == FLOAT) {
-                    g->tokens[i] = new token(FLOAT, "FLOAT", 0, static_cast<float *>(tg->value));
-                }
-                if(tg->type == DOUBLE) {
-                    g->tokens[i] = new token(DOUBLE, "DOUBLE", 0, static_cast<double *>(tg->value));
-                }
-                if(tg->type == LONG) {
-                    g->tokens[i] = new token(LONG, "LONG", 0, static_cast<long *>(tg->value));
-                }
-                if(tg->type == ULONG64) {
-                    g->tokens[i] = new token(ULONG64, "ULONG64", 0, static_cast<unsigned long long *>(tg->value));
-                }
+        if(g->tokens.size() == 1) {
+            if (!is_group(g->tokens[0])) {
+                g->type = INT;
+                g->value = std::get<token*>(g->tokens[0])->get_value();
+                return;
             }
         }
 
         // all parenthesis are gone, all groups evaluated, just eval.
         bool has_ops = true;
+
         if(!check_errs(tokens))
             return;
 
         while (has_ops) {
             has_ops = false;
+            // find antecedent and consequent of any operators
+            // Do one pass to find * or /. If they are found find the antecedent and concequent
+            // If these aren't found, find the first of + or -
+            // Replace the op, ant, and cons with a new token of the arithmetic value
+            int ant_index = -1;
+            token* ant = nullptr;
+            token* cons = nullptr;
+            token* op = nullptr;
+            for (int i = 0; i < tokens.size(); ++i) {
+                token* t = nullptr;
+                // if its an instance of group, cout it
+                if(is_group(tokens[i])) {
+                    std::cout << "GROUP" << std::endl;
+                }
+                else {
+                    t = std::get<token*>(tokens[i]);
+                }
 
+                if(t->is_arithmetic()) {
+                    if(t->get_name() == STAR || t->get_name() == SLASH) {
+                        //std::cout << "star or slash" << std::endl;
+                        if(has_next(g, i, 1)) {
+                            ant_index = i-1;
+                            ant = std::get<token*>(tokens[i-1]);
+                            cons = std::get<token*>(tokens[i+1]);
+                            op = std::get<token*>(tokens[i]);
+                            has_ops = true;
+                            break;
+                        }
+                    }
+                    if(t->get_name() == PLUS || t->get_name() == MINUS) {
+                        //std::cout << "add or sub" << std::endl;
+
+                        if(has_next(g, i, 1)) {
+                            ant_index = i-1;
+                            ant = std::get<token*>(tokens[i-1]);
+                            cons = std::get<token*>(tokens[i+1]);
+                            op = std::get<token*>(tokens[i]);
+                            has_ops = true;
+                            break;
+                        }
+                    }
+                }
+            }
+            if(ant != nullptr && cons != nullptr && op != nullptr && ant_index != -1) {
+                //std::cout << "all valid" << std::endl;
+
+                if(ant->get_name() == INT && cons->get_name() == INT) {
+                    //std::cout << "integer" << std::endl;
+                    int val = 0;
+                    int ant_val = std::any_cast<int>(ant->get_value());
+                    int cons_val = std::any_cast<int>(cons->get_value());
+                    if(op->get_name() == STAR) {
+                        val = ant_val * cons_val;
+                    }
+                    else if(op->get_name() == SLASH) {
+                        val = ant_val / cons_val;
+                    }
+                    else if(op->get_name() == PLUS) {
+                        //std::cout << "adding: " << ant_val << " " << cons_val << std::endl;
+                        val = ant_val + cons_val;
+                    }
+                    else if(op->get_name() == MINUS) {
+                        val = ant_val - cons_val;
+                    }
+                    //std::cout << "val: " << val << std::endl;
+                    tokens.erase(tokens.begin() + (ant_index), tokens.begin() + (ant_index+3));
+                    tokens.insert(tokens.begin() + ant_index, new token(INT, "INT", 0, val));
+                    g->type = INT;
+                    g->value = val;
+                }
+            }
         }
     }
 };

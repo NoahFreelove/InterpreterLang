@@ -14,7 +14,7 @@ public:
     template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
 
     int type = UNDETERMINED;
-    void* value = nullptr;
+    std::any value = nullptr;
 
     ~token_group() {
         for (const token_element& element : tokens) {
@@ -43,6 +43,14 @@ public:
             std::visit(overloaded{
                 [](token* tk) {
                     std::cout << id_to_name(tk->get_name());
+               if(tk->get_value().type() == typeid(int)) {
+                   std::cout << std::any_cast<int>(tk->get_value()) << std::endl;
+               } else if(tk->get_value().type() == typeid(float)) {
+                   std::cout << std::any_cast<float>(tk->get_value()) << std::endl;
+               } else if(tk->get_value().type() == typeid(double)) {
+                   std::cout << std::any_cast<double>(tk->get_value()) << std::endl;
+               } // Add more else if statements for other types you're interested in
+
                 },
                 [depth](token_group* grp) {
                     std::cout << "[";

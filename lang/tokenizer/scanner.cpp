@@ -285,7 +285,7 @@ token * lang::scanner::parse_token() {
                 case '(':
                     return new token(LEFT_PAREN, "(", line, nullptr);
                 case ')':
-                    return new token(RIGHT_PAREN, "(", line, nullptr);
+                    return new token(RIGHT_PAREN, ")", line, nullptr);
                 case '{':
                     return new token(LEFT_BRACE, "{", line, nullptr);
                 case '}':
