@@ -12,6 +12,8 @@ namespace lang {
 
     class interpreter {
     public:
+        inline static std::vector<char*>* defined = new std::vector<char*>;
+
         inline static stack_frame* global_frame = new stack_frame();
         inline static std::stack<stack_frame*>* stack = nullptr;
 

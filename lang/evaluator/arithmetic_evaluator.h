@@ -9,6 +9,7 @@ public:
     using token_element = std::variant<token*, token_group*>;
     template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
     template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
+    inline static token* invalid_ant = new token(INT, "INT", 0, 0);
     static bool is_group(const token_element& t) {
         return std::visit(overloaded{
                 [](token* tk) {
@@ -27,7 +28,7 @@ public:
         token* last_token = nullptr;
         for (int i = 0; i < tokens.size(); ++i) {
             token* curr = std::get<token*>(tokens[i]);
-            if(i == 0 && curr->is_arithmetic()) {
+            if(i == 0 && curr->is_arithmetic() && curr->is_add_sub()) {
                 lang::interpreter::error("operator with no antecedent");
                 return false;
             }
@@ -38,8 +39,10 @@ public:
 
             if(last_token != nullptr) {
                 if(last_token->is_arithmetic() && curr->is_arithmetic()) {
-                    lang::interpreter::error("two operators side by side");
-                    return false;
+                    if(!last_token->is_add_sub() || curr->get_name() != MINUS) {
+                        lang::interpreter::error("two operators side by side");
+                        return false;
+                    }
                 }
                 if(last_token->is_numeric() && curr->is_numeric()) {
                     lang::interpreter::error("two is_numeric side by side without an operator");
@@ -126,6 +129,7 @@ public:
                 // if its an instance of group, cout it
                 if(is_group(tokens[i])) {
                     std::cout << "GROUP" << std::endl;
+                    return;
                 }
                 else {
                     t = std::get<token*>(tokens[i]);
@@ -158,16 +162,55 @@ public:
 
                         if(has_next(g, i, 1)) {
                             ant_index = i-1;
-                            ant = std::get<token*>(tokens[i-1]);
-                            cons = std::get<token*>(tokens[i+1]);
+                            if(ant_index < 0) {
+                                ant = nullptr;
+                            }
+                            else
+                                ant = std::get<token*>(tokens[i-1]);
+
                             op = std::get<token*>(tokens[i]);
+                            cons = std::get<token*>(tokens[i+1]);
+                            // if cons is a minus, take the value after it, and negate it, then replace the cons with the new value
+                            // after the minus and delete the minus so its just an addition
+                            if(cons->get_name() == MINUS && op->is_arithmetic()) {
+                                //g->print_group();
+                                //std::cout << "replacing" << std::endl;
+                                if(!has_next(g,i,2))
+                                    continue;
+                                token* cons2 = std::get<token*>(tokens[i+2]);
+                                if(cons2->get_name() == INT) {
+                                    cons2->set_value(-std::any_cast<int>(cons2->get_value()));
+                                }
+                                else if(cons2->get_name() == FLOAT) {
+                                    cons2->set_value(-std::any_cast<float>(cons2->get_value()));
+                                }
+                                else if(cons2->get_name() == DOUBLE) {
+                                    cons2->set_value(-std::any_cast<double>(cons2->get_value()));
+                                }
+                                else if(cons2->get_name() == LONG) {
+                                    cons2->set_value(-std::any_cast<long>(cons2->get_value()));
+                                }
+                                else if(cons2->get_name() == ULONG64) {
+                                    cons2->set_value(-std::any_cast<unsigned long long>(cons2->get_value()));
+                                }
+                                tokens.erase(tokens.begin() + (i+1), tokens.begin() + (i+2));
+                                cons = cons2;
+                            }
+                            else if(cons->get_name() == PLUS && op->is_arithmetic()) {
+                                tokens.erase(tokens.begin() + (i+1), tokens.begin() + (i+2));
+                                cons = std::get<token*>(tokens[i+1]);
+                            }
+                            //g->print_group();
                             has_ops = true;
                             break;
                         }
                     }
                 }
             }
-            if(ant != nullptr && cons != nullptr && op != nullptr && ant_index != -1) {
+            if(cons != nullptr && op != nullptr) {
+                if(ant == nullptr) {
+                    ant = invalid_ant;
+                }
                 //std::cout << "all valid" << std::endl;
 
                 if(ant->get_name() == INT && cons->get_name() == INT) {
@@ -192,8 +235,15 @@ public:
                         val = ant_val - cons_val;
                     }
                     //std::cout << "val: " << val << std::endl;
-                    tokens.erase(tokens.begin() + (ant_index), tokens.begin() + (ant_index+3));
-                    tokens.insert(tokens.begin() + ant_index, new token(INT, "INT", 0, val));
+                    if(ant_index == -1) {
+                        tokens.erase(tokens.begin(), tokens.begin() + 2);
+                        tokens.insert(tokens.begin(), new token(INT, "INT", 0, val));
+                    }
+                    else {
+                        tokens.erase(tokens.begin() + (ant_index), tokens.begin() + (ant_index+3));
+                        tokens.insert(tokens.begin() + ant_index, new token(INT, "INT", 0, val));
+
+                    }
                     g->type = INT;
                     g->value = val;
                 }

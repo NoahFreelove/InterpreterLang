@@ -92,7 +92,7 @@
 #define TYPEOF 10004
 #define SIZEOF 10005
 #define DELETE 10006
-
+#define DEFINE 10007
 
 
 class token {
@@ -120,6 +120,11 @@ public:
     [[nodiscard]] std::any get_value() const {
         return value;
     }
+
+    void set_value(std::any val) {
+        value = std::move(val);
+    }
+
     [[nodiscard]] int get_line() const {
         return line;
     }
@@ -146,6 +151,14 @@ public:
 
     bool is_arithmetic() const {
         return name >= PLUS && name <= EXPONENT;
+    }
+
+    bool is_add_sub() const {
+        return name == PLUS || name == MINUS;
+    }
+
+    bool is_mul_div() const {
+        return name == STAR || name == SLASH;
     }
 
     bool is_typeword() const {

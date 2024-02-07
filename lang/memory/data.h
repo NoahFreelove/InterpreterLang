@@ -130,6 +130,7 @@ public:
             *(char**)value = val;
         else {
             value = new char*(val);
+            std::cout << val << std::endl;
         }
     }
     void set_value_bool(bool val) {

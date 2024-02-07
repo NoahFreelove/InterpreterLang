@@ -42,14 +42,16 @@ public:
         for (const token_element& element : tokens) {
             std::visit(overloaded{
                 [](token* tk) {
-                    std::cout << id_to_name(tk->get_name());
+
                if(tk->get_value().type() == typeid(int)) {
-                   std::cout << std::any_cast<int>(tk->get_value()) << std::endl;
+                   std::cout << std::any_cast<int>(tk->get_value());
                } else if(tk->get_value().type() == typeid(float)) {
-                   std::cout << std::any_cast<float>(tk->get_value()) << std::endl;
+                   std::cout << std::any_cast<float>(tk->get_value());
                } else if(tk->get_value().type() == typeid(double)) {
-                   std::cout << std::any_cast<double>(tk->get_value()) << std::endl;
-               } // Add more else if statements for other types you're interested in
+                   std::cout << std::any_cast<double>(tk->get_value());
+               } else {
+                   std::cout << id_to_name(tk->get_name());
+               }
 
                 },
                 [depth](token_group* grp) {
@@ -59,6 +61,9 @@ public:
 
                 }
             }, element);
+        }
+        if(depth == 0) {
+            std::cout << std::endl;
         }
     }
 };

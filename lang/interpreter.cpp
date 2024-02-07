@@ -108,9 +108,6 @@ bool lang::interpreter::set_literal(const std::vector<token *> &tokens, data *d)
         // token value is std::any, so we need to cast it to the correct type
         if(d->get_type() == "int") {
             std::vector<token*> rest(tokens.begin() + 2, tokens.end());
-            for (auto& token : rest ){
-                //std::cout << id_to_name(token->get_name()) << std::endl;
-            }
             token_group* group = token_grouper::recursive_group(rest);
             group_evaluator::eval_group(group);
             d->set_value_int(std::any_cast<int>(group->value));
@@ -172,7 +169,7 @@ void lang::interpreter::process_variable_update(const std::vector<token *> &toke
     auto* frame = stack->top();
     char* name = const_char_convert(tokens[0]->get_lexeme());
     data* d = frame->get_data(name);
-    if(tokens[2]->is_literal() || tokens[2]->get_name() == LEFT_PAREN || tokens[2]->get_name() == RIGHT_PAREN) {
+    if(tokens[2]->is_literal() || tokens[2]->get_name() == MINUS || tokens[2]->get_name() == LEFT_PAREN || tokens[2]->get_name() == RIGHT_PAREN) {
         if (set_literal(tokens, d)) return;
     }
     else if (tokens[2]->get_name() == ID_GRAB && tokens[3]->get_name() == IDENTIFIER) {
@@ -200,16 +197,38 @@ void lang::interpreter::print(const std::vector<token *>& tokens) {
 }
 
 void lang::interpreter::process(const std::vector<token *>& tokens) {
-    for (auto token : tokens) {
-        std::cout << *token << std::endl;
+    token_group* group = token_grouper::recursive_group(tokens);
+    group_evaluator::eval_group(group);
+    if(group->value.has_value()) {
+        if(group->type == INT) {
+            std::cout << std::any_cast<int>(group->value) << std::endl;
+        }
+        else if(group->type == FLOAT) {
+            std::cout << std::any_cast<float>(group->value) << std::endl;
+        }
+        else if(group->type == DOUBLE) {
+            std::cout << std::any_cast<double>(group->value) << std::endl;
+        }
+        else if(group->type == LONG) {
+            std::cout << std::any_cast<long>(group->value) << std::endl;
+        }
+        else if(group->type == STRING) {
+            std::cout << std::any_cast<const char*>(group->value) << std::endl;
+        }
+        else if(group->type == ULONG64) {
+            std::cout << std::any_cast<unsigned long long>(group->value) << std::endl;
+        }
+        else {
+            std::cout << "No value" << std::endl;
+        }
     }
 }
 
 void lang::interpreter::process_input(scanner& scan, std::string *input) {
-    if(stack == nullptr) {
-        stack = new std::stack<stack_frame*>();
-        stack->push(new stack_frame());
-    }
+        if(stack == nullptr) {
+            stack = new std::stack<stack_frame*>();
+            stack->push(new stack_frame());
+        }
 
     auto tokens = scan.scan_line(input);
     if(tokens.empty())
@@ -235,11 +254,13 @@ void lang::interpreter::process_input(scanner& scan, std::string *input) {
         if (token_vector[0]->is_keyword()) {
             if (token_vector[0]->get_name() == VAR) {
                 process_variable_declaration(token_vector);
+                return;
             }
         }
         if(token_vector[0]->is_builtin()) {
             if (token_vector[0]->get_name() == PRINT) {
                 print(token_vector);
+                return;
             }
             else if (token_vector[0]->get_name() == DUMP) {
                 stack->top()->dump_memory();
@@ -249,11 +270,10 @@ void lang::interpreter::process_input(scanner& scan, std::string *input) {
         if(token_vector.size() >=2) {
             if(token_vector[0]->get_name() == IDENTIFIER && token_vector[1]->get_name() == EQUAL) {
                 process_variable_update(token_vector);
+                return;
             }
         }
-        else {
-            process(token_vector);
-        }
+        process(token_vector);
     }
 }
 

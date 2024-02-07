@@ -209,6 +209,9 @@ token * lang::scanner::get_identifier(char c) {
     if(str == "delete") {
         return new token(DELETE, cstr, line);
     }
+    if(str == "define") {
+        return new token(DEFINE, cstr, line);
+    }
     if(str == "int") {
         return new token(INT_KEYW, cstr, line);
     }

@@ -55,7 +55,22 @@ public:
     static void eval_group(token_group* g) {
         recursive_replace(g);
         //g->print_group();
-        arithmetic_evaluator::recursive_evaluation(g);
+        bool is_arithmetic = false;
+        for (const token_element& element : g->tokens) {
+            std::visit(overloaded{
+                [g, &is_arithmetic](token* tk) {
+                    if(tk->is_arithmetic() ) {
+                        is_arithmetic = true;
+                    }
+                },
+                [g](token_group* grp) {
+                    eval_group(grp);
+                }
+            }, element);
+        }
+        if(is_arithmetic) {
+            arithmetic_evaluator::recursive_evaluation(g);
+        }
     }
 };
 
