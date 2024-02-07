@@ -23,13 +23,18 @@ public:
     void print_stack_memory();
 
     ~stack_memory() {
-        for (auto& [key, value] : *memory) {
-            delete value;
-        }
+        delete_memory();
         delete memory;
     }
 
     void delete_var(char * identifier);
+
+    void delete_memory() {
+        for (auto& [key, value] : *memory) {
+            delete value;
+        }
+        memory->clear();
+    }
 };
 
 

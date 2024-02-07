@@ -1,5 +1,7 @@
 #ifndef ARITHMETIC_EVALUATOR_H
 #define ARITHMETIC_EVALUATOR_H
+#include <complex>
+
 #include "../tokenizer/token_group.h"
 #include "../tokenizer/token.h"
 class arithmetic_evaluator {
@@ -130,6 +132,16 @@ public:
                 }
 
                 if(t->is_arithmetic()) {
+                    if(t->get_name() == EXPONENT) {
+                        if(has_next(g, i, 1)) {
+                            ant_index = i-1;
+                            ant = std::get<token*>(tokens[i-1]);
+                            cons = std::get<token*>(tokens[i+1]);
+                            op = std::get<token*>(tokens[i]);
+                            has_ops = true;
+                            break;
+                        }
+                    }
                     if(t->get_name() == STAR || t->get_name() == SLASH) {
                         //std::cout << "star or slash" << std::endl;
                         if(has_next(g, i, 1)) {
@@ -163,7 +175,10 @@ public:
                     int val = 0;
                     int ant_val = std::any_cast<int>(ant->get_value());
                     int cons_val = std::any_cast<int>(cons->get_value());
-                    if(op->get_name() == STAR) {
+                    if(op->get_name() == EXPONENT) {
+                        val = std::pow<int>(ant_val, cons_val);
+                    }
+                    else if(op->get_name() == STAR) {
                         val = ant_val * cons_val;
                     }
                     else if(op->get_name() == SLASH) {

@@ -18,6 +18,7 @@ public:
                         data* d = lang::interpreter::stack->top()->get_data(lang::interpreter::const_char_convert(tk->get_lexeme()));
                         if (d) {
                             if(d->get_type() == "int") {
+                                std::cout << "int" << std::endl;
                                 g->tokens[i] = new token(108, "INT", 0, d->get_int());
                             }
                             else if(d->get_type() == "float") {
@@ -53,6 +54,7 @@ public:
     }
     static void eval_group(token_group* g) {
         recursive_replace(g);
+        //g->print_group();
         arithmetic_evaluator::recursive_evaluation(g);
     }
 };

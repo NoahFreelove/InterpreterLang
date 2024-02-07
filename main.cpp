@@ -15,14 +15,14 @@ int main()
     token* t3 = new token(INT, "5", 0, 5);
     // Equivalent to (5+x)*5
 
-    lang::interpreter::stack = new std::stack<stack_frame*>();
-    lang::interpreter::stack->push(lang::interpreter::global_frame);
+    //lang::interpreter::stack = new std::stack<stack_frame*>();
+    //lang::interpreter::stack->push(lang::interpreter::global_frame);
     //lang::interpreter::global_frame->set(lang::interpreter::const_char_convert("x"), new data(new int(5), "int"));
 
-    token_group* group = token_grouper::recursive_group({openp, t,mul,t3,closep});
-    group_evaluator::eval_group(group);
+    //token_group* group = token_grouper::recursive_group({openp, t,mul,t3,closep});
+    //group_evaluator::eval_group(group);
 
-    std::cout << std::any_cast<int>(group->value) << std::endl;
+    //std::cout << std::any_cast<int>(group->value) << std::endl;
 
 
     //std::cout << std::any_cast<int>(final->get_value()) << std::endl;

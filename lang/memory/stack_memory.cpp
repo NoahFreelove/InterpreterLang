@@ -4,7 +4,10 @@ bool stack_memory::set(char *identifier, data *val) {
     std::string key(identifier);
     if (memory->find(key) != memory->end()) {
         // If the identifier is already in the memory, remap old one to name + "_old"
-        memory->insert({key + "_old", memory->at(key)});
+        // Unless the old one is a pointer, which another variable is pointing to
+        if (!memory->at(key)->is_pointer()) {
+            memory->insert({key + "_old", memory->at(key)});
+        }
         memory->at(key) = val;
         return true;
     }
@@ -18,8 +21,10 @@ bool stack_memory::assign(char *identifier, data *val) {
     std::string key(identifier);
     auto* new_dat = new data(val->get(), val->get_type(), true);
     if (memory->find(key) != memory->end()) {
-        // If the identifier is already in the memory, remap old one to name + "_old"
-        memory->insert({key + "_old", memory->at(key)});
+        // Unless the old one is a pointer, which another variable is pointing to
+        if (!memory->at(key)->is_pointer()) {
+            memory->insert({key + "_old", memory->at(key)});
+        }
         memory->at(key) = new_dat;
         return true;
     }
@@ -39,7 +44,7 @@ data * stack_memory::get(char *identifier) {
 
 void stack_memory::print_stack_memory() {
     for (auto& [key, value] : *memory) {
-        std::cout << key << " : " << value->to_string() << std::endl;
+        std::cout << key << " : Value: " << value->to_string() << " : Address: " << value->get() << std::endl;
     }
 }
 

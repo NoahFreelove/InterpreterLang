@@ -177,6 +177,10 @@ public:
         return "Invalid type";
     }
 
+    bool is_pointer() const {
+        return is_ptr;
+    }
+
 
     ~data() {
         if(is_ptr) {

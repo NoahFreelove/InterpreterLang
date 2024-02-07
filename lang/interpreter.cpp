@@ -172,11 +172,11 @@ void lang::interpreter::process_variable_update(const std::vector<token *> &toke
     auto* frame = stack->top();
     char* name = const_char_convert(tokens[0]->get_lexeme());
     data* d = frame->get_data(name);
-    if(tokens[2]->is_literal_non_id() || tokens[2]->get_name() == LEFT_PAREN || tokens[2]->get_name() == RIGHT_PAREN) {
+    if(tokens[2]->is_literal() || tokens[2]->get_name() == LEFT_PAREN || tokens[2]->get_name() == RIGHT_PAREN) {
         if (set_literal(tokens, d)) return;
     }
-    else if (tokens[2]->get_name() == IDENTIFIER) {
-        frame->assign(name, const_char_convert(tokens[2]->get_lexeme()));
+    else if (tokens[2]->get_name() == ID_GRAB && tokens[3]->get_name() == IDENTIFIER) {
+        frame->assign(name, const_char_convert(tokens[3]->get_lexeme()));
     }
 }
 
