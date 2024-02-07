@@ -197,6 +197,18 @@ token * lang::scanner::get_identifier(char c) {
     if(str == "dump") {
         return new token(DUMP, cstr, line);
     }
+    if(str == "input") {
+        return new token(INPUT, cstr, line);
+    }
+    if(str == "typeof") {
+        return new token(TYPEOF, cstr, line);
+    }
+    if(str == "sizeof") {
+        return new token(SIZEOF, cstr, line);
+    }
+    if(str == "delete") {
+        return new token(DELETE, cstr, line);
+    }
     if(str == "int") {
         return new token(INT_KEYW, cstr, line);
     }

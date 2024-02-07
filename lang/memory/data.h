@@ -90,14 +90,62 @@ public:
         return (unsigned long long*)value;
     }
 
-    void set_value_int(int val) {*(int*)value = val;}
-    void set_value_float(float val) {*(float*)value = val;}
-    void set_value_double(double val) {*(double*)value = val;}
-    void set_value_long(long val) {*(long*)value = val;}
-    void set_value_char(char val) {*(char*)value = val;}
-    void set_value_string(char* val) {*(char**)value = val;}
-    void set_value_bool(bool val) {*(bool*)value = val;}
-    void set_value_ulonglong(unsigned long long val) {*(unsigned long long*)value = val;}
+    void set_value_int(int val) {
+        if(!is_ptr)
+            *(int*)value = val;
+        else {
+            value = new int(val);
+        }
+    }
+    void set_value_float(float val) {
+        if(!is_ptr)
+            *(float*)value = val;
+        else {
+            value = new float(val);
+        }
+    }
+    void set_value_double(double val) {
+        if(!is_ptr)
+            *(double*)value = val;
+        else {
+            value = new double(val);
+        }
+    }
+    void set_value_long(long val) {
+        if(!is_ptr)
+            *(long*)value = val;
+        else {
+            value = new long(val);
+        }
+    }
+    void set_value_char(char val) {
+        if(!is_ptr)
+            *(char*)value = val;
+        else {
+            value = new char(val);
+        }
+    }
+    void set_value_string(char* val) {
+        if(!is_ptr)
+            *(char**)value = val;
+        else {
+            value = new char*(val);
+        }
+    }
+    void set_value_bool(bool val) {
+        if(!is_ptr)
+            *(bool*)value = val;
+        else {
+            value = new bool(val);
+        }
+    }
+    void set_value_ulonglong(unsigned long long val) {
+        if(!is_ptr)
+            *(unsigned long long*)value = val;
+        else {
+            value = new unsigned long long(val);
+        }
+    }
 
 
 
