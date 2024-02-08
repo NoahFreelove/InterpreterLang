@@ -4,6 +4,8 @@
 
 #include "token.h"
 #include "token_group.h"
+#include "../interpreter.h"
+
 class token_grouper {
 public:
     static token_group* recursive_group(std::vector<token*> tokens) {
@@ -55,6 +57,52 @@ public:
 
         // At this point, `root_group` contains all tokens properly grouped
         return root_group; // Return the root group
+    }
+    static void generate_parens(std::vector<token*>& tokens) {
+        // if there is a truthy check: == aka. DEQUAL,
+        // we want to put parenthesis around the antecedent and concequents
+        // so: 5-5 == false -> (5-5) == (false)
+        // if there is a truthy check: && aka. AND,
+        // we want to put parenthesis around the antecedent and concequents
+        // so: 5-5 && false -> (5-5) && (false)
+        for (size_t i = 0; i < tokens.size(); ++i) {
+            if (tokens[i]->get_name() == DEQUAL || tokens[i]->get_name() == AND) {
+                if(i == 0) {
+                    lang::interpreter::error("Cannot start an expression with a binary operator");
+                    return;
+                }
+                if(i == tokens.size() - 1) {
+                    lang::interpreter::error("Cannot end an expression with a binary operator");
+                    return;
+                }
+                tokens.insert(tokens.begin() + i, new token(RIGHT_PAREN, ")",0,0));
+                i++;
+                tokens.insert(tokens.begin() + i+1, new token(LEFT_PAREN, "(",0,0));
+                i++;
+            }
+            else {
+                if(i == 0) {
+                    tokens.insert(tokens.begin(), new token(LEFT_PAREN, "(",0,0));
+                    i++;
+                }
+                else if (i == tokens.size()-1) {
+                    tokens.insert(tokens.end(), new token(RIGHT_PAREN, ")",0,0));
+                    i++;
+                }
+            }
+        }
+    }
+    static token_group* gen_group(std::vector<token*> tokens) {
+        generate_parens(tokens);
+
+        // print them out
+        for (auto* tk : tokens) {
+            std::cout << tk->get_lexeme() << " ";
+        }
+        std::cout << std::endl;
+
+        return recursive_group(tokens);
+
     }
 };
 #endif //TOKEN_GROUPER_H

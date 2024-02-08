@@ -1,6 +1,7 @@
 #ifndef GROUP_EVALUATOR_H
 #define GROUP_EVALUATOR_H
 #include "arithmetic_evaluator.h"
+#include "truthy_evaluator.h"
 #include "../tokenizer/token_group.h"
 #include "../tokenizer/token.h"
 class group_evaluator {
@@ -54,13 +55,19 @@ public:
     }
     static void eval_group(token_group* g) {
         recursive_replace(g);
-        //g->print_group();
-        bool is_arithmetic = false;
+        g->print_group();
+        bool has_arithmetic = false;
+        bool is_pure_arithmetic = true;
+        std::cout << "Len: " << g->tokens.size() << std::endl;
         for (const token_element& element : g->tokens) {
             std::visit(overloaded{
-                [g, &is_arithmetic](token* tk) {
+                [g, &has_arithmetic, &is_pure_arithmetic](token* tk) {
                     if(tk->is_arithmetic()) {
-                        is_arithmetic = true;
+                        has_arithmetic = true;
+                    }
+                    else if (tk->get_name() != IDENTIFIER && !tk->is_numeric()) {
+                        is_pure_arithmetic = false;
+                        std::cout << "Token type: " << tk->get_name() << std::endl;
                     }
                 },
                 [g](token_group* grp) {
@@ -82,9 +89,20 @@ public:
                 }
             }, element);
         }
-        if(is_arithmetic || has_literal) {
+        if(has_arithmetic || has_literal) {
             arithmetic_evaluator::recursive_evaluation(g);
         }
+        if(!is_pure_arithmetic) {
+            std::cout << "not purely arithmetic" << std::endl;
+            g->value = nullptr;
+            g->type = UNDETERMINED;
+        }
+        else {
+            return;
+        }
+
+        // now that its evaluated, we check truthy values
+        truthy_evaluator::truth_eval(g);
 
     }
 };

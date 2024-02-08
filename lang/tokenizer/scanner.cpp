@@ -218,6 +218,9 @@ token * lang::scanner::get_identifier(char c) {
     if(str == "isdefined") {
         return new token(ISDEFINED, cstr, line);
     }
+    if(str == "import") {
+        return new token(IMPORT, cstr, line);
+    }
     if(str == "int") {
         return new token(INT_KEYW, cstr, line);
     }
@@ -331,11 +334,11 @@ token * lang::scanner::parse_token() {
                 case '=': {
                     if(peek(1) == '=') {
                         skip(2);
-                        return new token(TEQUAL, "==", line, nullptr);
+                        return new token(TEQUAL, "===", line, nullptr);
                     }
                     if(peek() == '=') {
                         skip();
-                        return new token(DEQUAL, "=", line, nullptr);
+                        return new token(DEQUAL, "==", line, nullptr);
                     }
                     return new token(EQUAL, "=", line, nullptr);
                 }

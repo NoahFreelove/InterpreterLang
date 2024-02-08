@@ -50,9 +50,13 @@ void stack_memory::print_stack_memory() {
 
 void stack_memory::delete_var(char *identifier) {
     std::string key(identifier);
-    std::cout << "deleting: " << key << std::endl;
     if (memory->find(key) != memory->end()) {
+        std::cout << "Deleted: " << key << "(type: " << memory->find(key)->second->get_type() << ")" <<std::endl;
         delete memory->at(key);
         memory->erase(key);
     }
+}
+
+bool stack_memory::exists(char *identifier) {
+    return memory->find(std::string(identifier)) != memory->end();
 }

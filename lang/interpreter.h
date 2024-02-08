@@ -27,11 +27,7 @@ namespace lang {
         static bool set_literal(const std::vector<token *> &tokens, data *d);
 
         static void process_variable_update(const std::vector<token*> &tokens);
-        static void print(const std::vector<token*>& tokens);
-        static void define(const std::vector<token*>& tokens);
-        static void undefine(const std::vector<token*>& tokens);
-        static void is_defined(const std::vector<token*>& tokens);
-        static void delete_var(const std::vector<token*>& tokens);
+
         static void process(const std::vector<token*>& tokens);
         static void process_input(std::string* input);
         static void read_from_file(const char* path);

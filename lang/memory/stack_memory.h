@@ -35,6 +35,8 @@ public:
         }
         memory->clear();
     }
+
+    bool exists(char * identifier);
 };
 
 

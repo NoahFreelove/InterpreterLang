@@ -128,6 +128,8 @@ std::string id_to_name(int id) {
             return "UNDEFINE";
         case ISDEFINED:
             return "ISDEFINED";
+        case IMPORT:
+            return "IMPORT";
         case EXPONENT:
             return "EXPONENT";
         case INT_KEYW:

@@ -33,10 +33,10 @@ namespace lang {
         char last_char() {
             return data->c_str()[data->length()-1];
         }
-
+        //TODO: If this breaks its because I replaces last_char() with \0
         char peek(int amount = 0) {
             if(past_end(amount))
-                return last_char();
+                return '\0';
             return data->c_str()[current+amount];
         }
 

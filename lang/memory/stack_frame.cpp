@@ -3,7 +3,15 @@
 #include "../interpreter.h"
 
 bool stack_frame::set(char *identifier, data *val) {
+    // if it already exists, delete old value
+    if(exists(identifier)) {
+        delete_var(identifier);
+    }
     return memory->set(identifier, val);
+}
+
+bool stack_frame::exists(char *identifier) {
+    return memory->exists(identifier);
 }
 
 bool stack_frame::assign(char *identifier, char *identifier2) {

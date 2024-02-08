@@ -18,6 +18,7 @@ public:
     }
 
     bool set(char* identifier, data* val);
+    bool exists(char* identifier);
     bool assign(char* identifier, char* identifier2);
 
     void delete_var(char* identifier);

@@ -46,8 +46,8 @@ public:
         return *(char*)value;
     }
 
-    char* get_string() {
-        return (char*)value;
+    std::string get_string() {
+        return *(std::string*)value;
     }
 
     bool get_bool() {
@@ -90,65 +90,15 @@ public:
         return (unsigned long long*)value;
     }
 
-    void set_value_int(int val) {
-        if(!is_ptr)
-            *(int*)value = val;
-        else {
-            value = new int(val);
-        }
-    }
-    void set_value_float(float val) {
-        if(!is_ptr)
-            *(float*)value = val;
-        else {
-            value = new float(val);
-        }
-    }
-    void set_value_double(double val) {
-        if(!is_ptr)
-            *(double*)value = val;
-        else {
-            value = new double(val);
-        }
-    }
-    void set_value_long(long val) {
-        if(!is_ptr)
-            *(long*)value = val;
-        else {
-            value = new long(val);
-        }
-    }
-    void set_value_char(char val) {
-        if(!is_ptr)
-            *(char*)value = val;
-        else {
-            value = new char(val);
-        }
-    }
-    void set_value_string(char* val) {
-        if(!is_ptr)
-            *(char**)value = val;
-        else {
-            value = new char*(val);
-            std::cout << val << std::endl;
-        }
-    }
-    void set_value_bool(bool val) {
-        if(!is_ptr)
-            *(bool*)value = val;
-        else {
-            value = new bool(val);
-        }
-    }
-    void set_value_ulonglong(unsigned long long val) {
-        if(!is_ptr)
-            *(unsigned long long*)value = val;
-        else {
-            value = new unsigned long long(val);
-        }
-    }
+    void set_value_int(int val);
+    void set_value_float(float val);
+    void set_value_double(double val);
+    void set_value_long(long val);
+    void set_value_char(char val);
+    void set_value_string(const std::string& val);
+    void set_value_bool(bool val);
 
-
+    void set_value_ulonglong(unsigned long long val);
 
     std::string to_string() {
         if (type == "int") {
@@ -188,7 +138,7 @@ public:
             std::cout << "Not deleting data of type: " << type << " because it is a pointer" << std::endl;
             return;
         }
-        std::cout << "Deleting data of type: " << type << std::endl;
+        //std::cout << "Deleting data of type: " << type << std::endl;
         if (type == "int") {
             delete (int*)value;
         }

@@ -2,12 +2,12 @@
 
 #include <fstream>
 #include <stack>
-#include <string.h>
+#include <cstring>
 
 #include "evaluator/group_evaluator.h"
 #include "memory/stack_frame.h"
 #include "tokenizer/tokens.h"
-
+#include "built_in_runner.h"
 void lang::interpreter::input_loop() {
     auto* input = new std::string();
     if(scan == nullptr) {
@@ -69,9 +69,8 @@ void lang::interpreter::process_variable_declaration(const std::vector<token*> &
                 break;
             }
             case STRING_KEYW: {
-                char** val = new char*;
-                *val = (char*)malloc(sizeof(char)*1);
-                frame->set(name, new data(val, "string"));
+
+                frame->set(name, new data(new std::string(), "string"));
                 break;
             }
             case CHAR_KEYW: {
@@ -112,6 +111,7 @@ bool lang::interpreter::set_literal(const std::vector<token *> &tokens, data *d)
             std::vector<token*> rest(tokens.begin() + 2, tokens.end());
             token_group* group = token_grouper::recursive_group(rest);
             group_evaluator::eval_group(group);
+            std::cout << "cast" << std::endl;
             d->set_value_int(std::any_cast<int>(group->value));
         }
         else if (d->get_type() == "float") {
@@ -124,7 +124,9 @@ bool lang::interpreter::set_literal(const std::vector<token *> &tokens, data *d)
             d->set_value_long(std::any_cast<long>(tokens[2]->get_value()));
         }
         else if (d->get_type() == "string") {
-            d->set_value_string(const_char_convert(std::any_cast<const char*>(tokens[2]->get_lexeme())));
+            // copy str
+            char* str = (char*)malloc(sizeof(char)*strlen(const_char_convert(std::any_cast<const char*>(tokens[2]->get_lexeme())))+1);
+            d->set_value_string(str);
         }
         else if (d->get_type() == "char") {
             // value is going to be a string so we take the first character
@@ -197,70 +199,14 @@ void lang::interpreter::process_variable_update(const std::vector<token *> &toke
     }
 }
 
-void lang::interpreter::print(const std::vector<token *>& tokens) {
-    if(tokens.size() < 2) {
-        error("Not enough tokens for print statement");
-        return;
-    }
-    if(tokens[1]->get_name()== IDENTIFIER) {
-        data* d = stack->top()->get_data(const_char_convert(tokens[1]->get_lexeme()));
-        if(d) {
-            std::cout << d->to_string() << std::endl;
-        }
-    }
-    else if(tokens[1]->is_literal_non_id()) {
-        std::cout << tokens[1]->get_lexeme() << std::endl;
-    }
-    else {
-        std::cout << id_to_name(tokens[1]->get_name()) << std::endl;
-    }
-}
-
-void lang::interpreter::define(const std::vector<token *> &tokens) {
-    if (tokens.size() == 2) {
-        defined->push_back(const_char_convert(tokens[1]->get_lexeme()));
-        std::cout << tokens[1]->get_lexeme() << " defined" << std::endl;
-    }
-}
-
-void lang::interpreter::undefine(const std::vector<token *> &tokens) {
-    if (tokens.size() == 2) {
-        char* name = const_char_convert(tokens[1]->get_lexeme());
-        for (int i = 0; i < defined->size(); i++) {
-            if (strcmp(defined->at(i), name) == 0) {
-                defined->erase(defined->begin() + i);
-                std::cout << tokens[1]->get_lexeme() << " undefined" << std::endl;
-                return;
-            }
-        }
-        std::cout << tokens[1]->get_lexeme() << " not defined" << std::endl;
-    }
-}
-
-void lang::interpreter::is_defined(const std::vector<token *> &tokens) {
-    if (tokens.size() == 2) {
-        char* name = const_char_convert(tokens[1]->get_lexeme());
-        for (int i = 0; i < defined->size(); i++) {
-            if (strcmp(defined->at(i), name) == 0) {
-                std::cout << tokens[1]->get_lexeme() << " is defined" << std::endl;
-                return;
-            }
-        }
-        std::cout << tokens[1]->get_lexeme() << " is not defined" << std::endl;
-    }
-}
-
-void lang::interpreter::delete_var(const std::vector<token *> &tokens) {
-    if(tokens.size() == 2) {
-        if(tokens[0]->get_name() == DELETE && tokens[1]->get_name() == IDENTIFIER) {
-            stack->top()->delete_var(const_char_convert(tokens[1]->get_lexeme()));
-        }
-    }
-}
-
 void lang::interpreter::process(const std::vector<token *>& tokens) {
-    token_group* group = token_grouper::recursive_group(tokens);
+    /*for (const token* t : tokens) {
+        std::cout << *t << std::endl;
+    }
+    return;*/
+    token_group* group = token_grouper::gen_group(tokens);
     group_evaluator::eval_group(group);
+    group->print_group();
     if(group->value.has_value()) {
         if(group->type == INT) {
             std::cout << std::any_cast<int>(group->value) << std::endl;
@@ -323,30 +269,8 @@ void lang::interpreter::process_input( std::string *input) {
             }
         }
         if(token_vector[0]->is_builtin()) {
-            if (token_vector[0]->get_name() == PRINT) {
-                print(token_vector);
-                return;
-            }
-            if (token_vector[0]->get_name() == DUMP) {
-                stack->top()->dump_memory();
-                return;
-            }
-            if (token_vector[0]->get_name() == DEFINE) {
-                define(token_vector);
-                return;
-            }
-            if (token_vector[0]->get_name() == UNDEFINE) {
-                undefine(token_vector);
-                return;
-            }
-            if (token_vector[0]->get_name() == ISDEFINED) {
-                is_defined(token_vector);
-                return;
-            }
-            if (token_vector[0]->get_name() == DELETE) {
-                delete_var(token_vector);
-                return;
-            }
+            run_builtins(tokens);
+            return;
         }
         if(token_vector.size() >=2) {
             if(token_vector[0]->get_name() == IDENTIFIER && token_vector[1]->get_name() == EQUAL) {
@@ -354,7 +278,7 @@ void lang::interpreter::process_input( std::string *input) {
                 return;
             }
         }
-        //process(token_vector);
+        process(token_vector);
     }
 }
 
@@ -374,8 +298,6 @@ void lang::interpreter::read_from_file(const char *path) {
         process_input(&str);
     }
     file.close();
-
-
 }
 
 void lang::interpreter::error(std::string err) {

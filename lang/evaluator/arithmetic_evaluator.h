@@ -27,7 +27,13 @@ public:
     static bool check_errs(std::vector<token_element> tokens) {
         token* last_token = nullptr;
         for (int i = 0; i < tokens.size(); ++i) {
+            if(is_group(tokens[1]))
+                continue;
             token* curr = std::get<token*>(tokens[i]);
+            //std::cout << *curr << std::endl;
+            if(last_token != nullptr) {
+                //std::cout << "last: " << *last_token << std::endl;
+            }
             if(i == 0 && curr->is_arithmetic() && curr->is_add_sub()) {
                 lang::interpreter::error("operator with no antecedent");
                 return false;
@@ -48,6 +54,15 @@ public:
                     lang::interpreter::error("two is_numeric side by side without an operator");
                     return false;
                 }
+                if(last_token->is_arithmetic() && curr->is_truthy()) {
+                    lang::interpreter::error("arithmetic operator followed by truthy value");
+                    return false;
+                }
+                if(last_token->is_arithmetic() && curr->is_builtin()) {
+                    lang::interpreter::error("arithmetic operator followed by builtin function");
+                    return false;
+                }
+                last_token = curr;
             }
             else {
                 last_token = curr;
@@ -107,36 +122,12 @@ public:
                 return;
             }
         }
-        else {
-            // Check if there is only one literal token, if so, return the value of that token
-            int literal_count = 0;
-            for (int i = 0; i < tokens.size(); ++i) {
-                if(!is_group(tokens[i])) {
-                    token* t = std::get<token*>(tokens[i]);
-                    if(t->is_literal()) {
-                        literal_count += 1;
-                    }
-                }
-            }
-            if(literal_count == 1) {
-                for (int i = 0; i < tokens.size(); ++i) {
-                    if(!is_group(tokens[i])) {
-                        token* t = std::get<token*>(tokens[i]);
-                        if(t->is_literal()) {
-                            g->type = t->get_name();
-                            g->value = t->get_value();
-                            return;
-                        }
-                    }
-                }
-            }
-        }
-
         // all parenthesis are gone, all groups evaluated, just eval.
-        bool has_ops = true;
 
         if(!check_errs(tokens))
             return;
+
+        bool has_ops = true;
 
         while (has_ops) {
             has_ops = false;

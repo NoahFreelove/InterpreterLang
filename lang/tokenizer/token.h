@@ -35,14 +35,14 @@
 // >=
 #define LTE 21
 // <=
-#define ID_GRAB 22
+#define BANG_EQUAL 22
+#define AND 23
+#define OR 24
+#define SLASHI 25
+#define XOR 26
+#define EXPONENT 27
+#define ID_GRAB 28
 // &
-#define BANG_EQUAL 23
-#define SLASHI 24
-#define AND 25
-#define OR 26
-#define XOR 27
-#define EXPONENT 28
 // /i
 
 // LITERALS
@@ -95,7 +95,7 @@
 #define DEFINE 10007
 #define UNDEFINE 10008
 #define ISDEFINED 10009
-
+#define IMPORT 10010
 
 class token {
     int name;
@@ -152,7 +152,7 @@ public:
     }
 
     bool is_arithmetic() const {
-        return name >= PLUS && name <= EXPONENT;
+        return (name >= PLUS && name <= SLASH) || name == EXPONENT;
     }
 
     bool is_add_sub() const {
@@ -168,11 +168,23 @@ public:
     }
 
     bool is_numeric() const {
-        return name >= INT && name <= ULONG64;
+        return name <= INT && name >= ULONG64;
     }
 
     bool is_truthy() const {
         return name == TRUE || name == FALSE;
+    }
+
+    bool is_logical() const {
+        return name >= GT && name <= OR;
+    }
+
+    bool is_comparison() const {
+        return name == EQUAL || name == BANG_EQUAL || name == GT || name == LT || name == GTE || name == LTE;
+    }
+
+    bool is_connective() const {
+        return name == AND || name == OR;
     }
 
     friend std::ostream &operator<<(std::ostream &os, const token &token) {
