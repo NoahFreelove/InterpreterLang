@@ -6,6 +6,7 @@
 
 // These represent the evaluation type of the group
 #define UNDETERMINED 1
+#define ERROR (-1)
 
 class token_group {
 public:
@@ -52,7 +53,6 @@ public:
                } else {
                    std::cout << id_to_name(tk->get_name());
                }
-
                 },
                 [depth](token_group* grp) {
                     std::cout << "[";

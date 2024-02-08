@@ -1,0 +1,7 @@
+print "What's your favorite number?"
+var x as int
+x = input
+
+print "Your favorite number is " + x + "?"
+
+print "That's my favorite number too!"

@@ -191,6 +191,30 @@ public:
         os << "name: " << id_to_name(token.name) << " lexeme: " << token.lexeme << " value?: " << (token.value.type() != typeid(nullptr)) << " line: " << token.line;
         return os;
     }
+
+    std::string to_string() {
+        if(name == INT) {
+            return std::to_string(std::any_cast<int>(value));
+        }
+        else if(name == FLOAT) {
+            return std::to_string(std::any_cast<float>(value));
+        }
+        else if(name == DOUBLE) {
+            return std::to_string(std::any_cast<double>(value));
+        }
+        else if(name == STRING) {
+            return std::any_cast<std::string>(value);
+        }
+        else if(name == TRUE) {
+            return "true";
+        }
+        else if(name == FALSE) {
+            return "false";
+        }
+        else {
+            return lexeme;
+        }
+    }
 };
 
 

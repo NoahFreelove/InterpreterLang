@@ -105,7 +105,6 @@ class truthy_evaluator {
                 }
             }
             g->print_group();
-            return;
 
             for (int i = 0; i < tokens.size(); ++i) {
                 token* t = nullptr;

@@ -9,17 +9,17 @@ public:
     using token_element = std::variant<token*, token_group*>;
     template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
     template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
-    static void recursive_replace(token_group* g) {
+    static bool recursive_replace(token_group* g) {
         int i = 0;
+        bool allgood = true;
         for (const token_element& element : g->tokens) {
             std::visit(overloaded{
-                [g, i](token* tk) {
+                [g, i, &allgood](token* tk) {
                     if(tk->get_name() == IDENTIFIER) {
                         // Replace token in group with value obtained from memory
                         data* d = lang::interpreter::stack->top()->get_data(lang::interpreter::const_char_convert(tk->get_lexeme()));
                         if (d) {
                             if(d->get_type() == "int") {
-                                std::cout << "int" << std::endl;
                                 g->tokens[i] = new token(108, "INT", 0, d->get_int());
                             }
                             else if(d->get_type() == "float") {
@@ -43,6 +43,7 @@ public:
                         }
                         else {
                             lang::interpreter::error("Variable not found");
+                            allgood = false;
                         }
                     }
                 },
@@ -52,13 +53,58 @@ public:
             }, element);
             i+=1;
         }
+        return allgood;
     }
-    static void eval_group(token_group* g) {
-        recursive_replace(g);
-        g->print_group();
+
+    static bool is_group(const token_element& t) {
+        return std::visit(overloaded{
+                [](token* tk) {
+                    return false;
+                },
+                [](token_group* grp) {
+                    return true;
+                }
+            }, t);
+    }
+
+    static void set_group_val(token_group* g) {
+        token* t = std::get<token*>(g->tokens[0]);
+        if(t->get_name() == TRUE) {
+            g->type = TRUE;
+            g->value = true;
+        }
+        else if(t->get_name() == FALSE) {
+            g->type = FALSE;
+            g->value = false;
+        }
+        else if (t->get_name() == INT) {
+            g->type = INT;
+            g->value = t->get_value();
+        }
+        else if (t->get_name() == FLOAT) {
+            g->type = FLOAT;
+            g->value = t->get_value();
+        }
+        else if (t->get_name() == DOUBLE) {
+            g->type = DOUBLE;
+            g->value = t->get_value();
+        }
+        else if (t->get_name() == STRING) {
+            g->type = STRING;
+            g->value = t->get_value();
+        }
+    }
+    static void eval_group(token_group* g, int depth = 0) {
+        bool result = recursive_replace(g);
+        if(!result) {
+            g->type = ERROR;
+            g->value = nullptr;
+            return;
+        }
         bool has_arithmetic = false;
         bool is_pure_arithmetic = true;
-        std::cout << "Len: " << g->tokens.size() << std::endl;
+        bool has_err = false;
+        //std::cout << "Len: " << g->tokens.size() << std::endl;
         for (const token_element& element : g->tokens) {
             std::visit(overloaded{
                 [g, &has_arithmetic, &is_pure_arithmetic](token* tk) {
@@ -67,13 +113,20 @@ public:
                     }
                     else if (tk->get_name() != IDENTIFIER && !tk->is_numeric()) {
                         is_pure_arithmetic = false;
-                        std::cout << "Token type: " << tk->get_name() << std::endl;
                     }
                 },
-                [g](token_group* grp) {
-                    eval_group(grp);
+                [g, depth, &has_err](token_group* grp) {
+                    eval_group(grp, depth+1);
+                    if(grp->type == ERROR) {
+                        has_err = true;
+                    }
                 }
             }, element);
+        }
+        if(has_err) {
+            g->type = ERROR;
+            g->value = nullptr;
+            return;
         }
 
         bool has_literal = false;
@@ -84,26 +137,59 @@ public:
                         has_literal = true;
                     }
                 },
-                [g](token_group* grp) {
-                    eval_group(grp);
+                [g, depth, &has_err](token_group* grp) {
+                    eval_group(grp,depth+1);
+                    if(grp->type == ERROR) {
+                        has_err = true;
+                    }
                 }
             }, element);
         }
+
+        if(has_err) {
+            g->type = ERROR;
+            g->value = nullptr;
+            return;
+        }
+
+        //g->print_group();
+
         if(has_arithmetic || has_literal) {
             arithmetic_evaluator::recursive_evaluation(g);
         }
+
         if(!is_pure_arithmetic) {
-            std::cout << "not purely arithmetic" << std::endl;
+            //std::cout << "not purely arithmetic" << std::endl;
             g->value = nullptr;
             g->type = UNDETERMINED;
         }
-        else {
+        if (g->tokens.size() == 1) {
+            if(is_group(g->tokens[0])) {
+                token_group* group = std::get<token_group*>(g->tokens[0]);
+                g->value = group->value;
+                g->type = group->type;
+            }
+            else {
+                set_group_val(g);
+            }
             return;
+
         }
 
         // now that its evaluated, we check truthy values
         truthy_evaluator::truth_eval(g);
 
+        // if there is only one token, set the group type and value to that token
+        if (g->tokens.size() == 1) {
+            if(is_group(g->tokens[0])) {
+                token_group* group = std::get<token_group*>(g->tokens[0]);
+                g->value = group->value;
+                g->type = group->type;
+            }
+            else {
+                set_group_val(g);
+            }
+        }
     }
 };
 

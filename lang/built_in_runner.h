@@ -50,14 +50,34 @@ static void print(const std::vector<token *>& tokens) {
         lang::interpreter::error("Not enough tokens for print statement");
         return;
     }
-    if(tokens[1]->get_name()== IDENTIFIER) {
-        data* d = lang::interpreter::stack->top()->get_data(lang::interpreter::const_char_convert(tokens[1]->get_lexeme()));
-        if(d) {
-            std::cout << d->to_string() << std::endl;
+    std::vector<token*> rest(tokens.begin() + 1, tokens.end());
+    token_group* group = token_grouper::recursive_group(rest);
+    group_evaluator::eval_group(group);
+    if(group->type == UNDETERMINED || group->type == ERROR) {
+        std::cout << std::endl;
+    }
+
+    if(group->type == INT) {
+        std::cout << std::any_cast<int>(group->value) << std::endl;
+    }
+    else if(group->type == FLOAT) {
+        std::cout << std::any_cast<float>(group->value) << std::endl;
+    }
+    else if(group->type == DOUBLE) {
+        std::cout << std::any_cast<double>(group->value) << std::endl;
+    }
+    else if(group->type == STRING) {
+        std::cout << std::any_cast<std::string>(group->value) << std::endl;
+    }
+    else if(group->type == TRUE) {
+        if(std::any_cast<bool>(group->value)) {
+            std::cout << "true" << std::endl;
         }
     }
-    else if(tokens[1]->is_literal_non_id()) {
-        std::cout << tokens[1]->get_lexeme() << std::endl;
+    else if(group->type == FALSE) {
+        if(!std::any_cast<bool>(group->value)) {
+            std::cout << "false" << std::endl;
+        }
     }
     else {
         std::cout << id_to_name(tokens[1]->get_name()) << std::endl;
@@ -75,7 +95,7 @@ static void process_import(std::vector<token*> tokens) {
     lang::interpreter::read_from_file(tokens[1]->get_lexeme());
 }
 
-static void run_builtins(std::vector<token*> tokens) {
+static void run_builtins(const std::vector<token*>& tokens) {
     if (tokens[0]->get_name() == PRINT) {
         print(tokens);
         return;

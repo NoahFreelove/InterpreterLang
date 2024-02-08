@@ -275,10 +275,9 @@ token * lang::scanner::get_string() {
         interpreter::error("Unterminated string");
         return nullptr;
     }
-    next();
     std::string str(chars.begin(), chars.end());
     const char* cstr = strcpy(new char[str.length() + 1], str.c_str());
-    return new token(STRING, cstr, line, new std::string(cstr));
+    return new token(STRING, cstr, line, std::string(cstr));
 }
 
 

@@ -85,21 +85,18 @@ public:
                     tokens.insert(tokens.begin(), new token(LEFT_PAREN, "(",0,0));
                     i++;
                 }
-                else if (i == tokens.size()-1) {
-                    tokens.insert(tokens.end(), new token(RIGHT_PAREN, ")",0,0));
-                    i++;
-                }
             }
         }
+        tokens.insert(tokens.end(), new token(RIGHT_PAREN, ")",0,0));
     }
     static token_group* gen_group(std::vector<token*> tokens) {
         generate_parens(tokens);
 
-        // print them out
+        /*// print them out
         for (auto* tk : tokens) {
             std::cout << tk->get_lexeme() << " ";
         }
-        std::cout << std::endl;
+        std::cout << std::endl;*/
 
         return recursive_group(tokens);
 

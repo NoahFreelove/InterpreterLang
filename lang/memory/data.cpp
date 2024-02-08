@@ -44,8 +44,7 @@ void data::set_value_char(char val) {
 
 void data::set_value_string(const std::string& val) {
     if (type != "string") {
-        lang::interpreter::error("Type is not string, cannot set.");
-        return;
+        //lang::interpreter::error("Type is not string, cannot set.");
     }
 
     if(!is_ptr)

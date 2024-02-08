@@ -106,12 +106,17 @@ void lang::interpreter::process_variable_declaration(const std::vector<token*> &
 
 bool lang::interpreter::set_literal(const std::vector<token *> &tokens, data *d) {
     if(d) {
+        std::vector<token*> rest(tokens.begin() + 2, tokens.end());
+        token_group* group = token_grouper::recursive_group(rest);
+        group_evaluator::eval_group(group);
+        if(group->type == ERROR) {
+            error("error evaluating group");
+            return false;
+        }
         // token value is std::any, so we need to cast it to the correct type
         if(d->get_type() == "int") {
-            std::vector<token*> rest(tokens.begin() + 2, tokens.end());
-            token_group* group = token_grouper::recursive_group(rest);
-            group_evaluator::eval_group(group);
-            std::cout << "cast" << std::endl;
+
+            //std::cout << "cast" << std::endl;
             d->set_value_int(std::any_cast<int>(group->value));
         }
         else if (d->get_type() == "float") {
@@ -125,8 +130,8 @@ bool lang::interpreter::set_literal(const std::vector<token *> &tokens, data *d)
         }
         else if (d->get_type() == "string") {
             // copy str
-            char* str = (char*)malloc(sizeof(char)*strlen(const_char_convert(std::any_cast<const char*>(tokens[2]->get_lexeme())))+1);
-            d->set_value_string(str);
+            //char* str = (char*)malloc(sizeof(char)*strlen(const_char_convert(std::any_cast<const char*>(tokens[2]->get_lexeme())))+1);
+            d->set_value_string(std::any_cast<std::string>(tokens[2]->get_lexeme()));
         }
         else if (d->get_type() == "char") {
             // value is going to be a string so we take the first character
@@ -205,8 +210,12 @@ void lang::interpreter::process(const std::vector<token *>& tokens) {
     }
     return;*/
     token_group* group = token_grouper::gen_group(tokens);
+    //group->print_group();
     group_evaluator::eval_group(group);
-    group->print_group();
+    if(group->type == ERROR) {
+        error("error processing input group");
+    }
+    //group->print_group();
     if(group->value.has_value()) {
         if(group->type == INT) {
             std::cout << std::any_cast<int>(group->value) << std::endl;
@@ -221,7 +230,7 @@ void lang::interpreter::process(const std::vector<token *>& tokens) {
             std::cout << std::any_cast<long>(group->value) << std::endl;
         }
         else if(group->type == STRING) {
-            std::cout << std::any_cast<const char*>(group->value) << std::endl;
+            std::cout << std::any_cast<std::string>(group->value) << std::endl;
         }
         else if(group->type == ULONG64) {
             std::cout << std::any_cast<unsigned long long>(group->value) << std::endl;
@@ -265,17 +274,17 @@ void lang::interpreter::process_input( std::string *input) {
         if (token_vector[0]->is_keyword()) {
             if (token_vector[0]->get_name() == VAR) {
                 process_variable_declaration(token_vector);
-                return;
+                continue;
             }
         }
         if(token_vector[0]->is_builtin()) {
-            run_builtins(tokens);
-            return;
+            run_builtins(token_vector);
+            continue;
         }
         if(token_vector.size() >=2) {
             if(token_vector[0]->get_name() == IDENTIFIER && token_vector[1]->get_name() == EQUAL) {
                 process_variable_update(token_vector);
-                return;
+                continue;
             }
         }
         process(token_vector);

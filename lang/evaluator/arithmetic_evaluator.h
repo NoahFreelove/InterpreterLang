@@ -226,7 +226,51 @@ public:
                 if(ant == nullptr) {
                     ant = invalid_ant;
                 }
+                if((!cons->is_numeric() || !ant->is_numeric()) && (cons->get_name() != STRING && ant->get_name() != STRING)){
+                    lang::interpreter::error("non-numeric/string value in arithmetic operation");
+                    return;
+                }
                 //std::cout << "all valid" << std::endl;
+                // if ant or cons is a string and op is add, cast the non-string to a string and add them together
+                if(ant->get_name() == STRING && op->get_name() == PLUS && cons->is_numeric()) {
+
+                    token* old = cons;
+                    std::string cons_str = cons->to_string();
+                    tokens.erase(tokens.begin() + (ant_index+2), tokens.begin() + (ant_index+3));
+                    const char* cpy = (const char*)malloc(cons_str.size() + 1);
+                    std::strcpy((char*)cpy, cons_str.c_str());
+                    token* new_cons = new token(STRING, cpy, 0, cons_str);
+                    cons = new_cons;
+                    tokens.insert(tokens.begin() + ant_index,cons);
+                    delete old;
+                }
+                else if(cons->get_name() == STRING && op->get_name() == PLUS && ant->is_numeric()) {
+                    token* old = ant;
+                    std::string ant_str = ant->to_string();
+                    tokens.erase(tokens.begin() + (ant_index), tokens.begin() + (ant_index+1));
+                    const char* cpy = (const char*)malloc(ant_str.size() + 1);
+                    std::strcpy((char*)cpy, ant_str.c_str());
+                    token* new_ant = new token(STRING, cpy, 0, ant_str);
+                    ant = new_ant;
+                    tokens.insert(tokens.begin() + ant_index,ant);
+                    delete old;
+                }
+
+                if(ant->get_name() == STRING && cons->get_name() == STRING && op->get_name() == PLUS) {
+                    std::string val = std::any_cast<std::string>(ant->get_value()) + std::any_cast<std::string>(cons->get_value());
+                    if(ant_index == -1) {
+                        continue;
+                    }
+                    else {
+                        tokens.erase(tokens.begin() + (ant_index), tokens.begin() + (ant_index+3));
+                        const char* cpy = (const char*)malloc(val.size() + 1);
+                        std::strcpy((char*)cpy, val.c_str());
+                        tokens.insert(tokens.begin() + ant_index,
+                            new token(STRING, cpy, 0, val));
+                        g->type = STRING;
+                        g->value = val;
+                    }
+                }
 
                 if(ant->get_name() == INT && cons->get_name() == INT) {
                     //std::cout << "integer" << std::endl;
@@ -257,7 +301,6 @@ public:
                     else {
                         tokens.erase(tokens.begin() + (ant_index), tokens.begin() + (ant_index+3));
                         tokens.insert(tokens.begin() + ant_index, new token(INT, "INT", 0, val));
-
                     }
                     g->type = INT;
                     g->value = val;
