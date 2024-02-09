@@ -1,5 +1,5 @@
 print "What's your favorite number?"
-var x as int
+var x as float
 x = input
 
 print "Your favorite number is " + x + "?"

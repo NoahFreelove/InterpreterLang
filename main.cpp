@@ -2,7 +2,7 @@
 #include "lang/lang.h"
 int main()
 {
-    lang::interpreter::read_from_file("game.lang");
+    //lang::interpreter::read_from_file("game.lang");
 
     token* openp2 = new token(LEFT_PAREN, "(", 0);
     token* openp = new token(LEFT_PAREN, "(", 0);
@@ -14,7 +14,6 @@ int main()
     token* mul = new token(STAR, "*", 0);
     token* t3 = new token(INT, "5", 0, 5);
     // Equivalent to (5+x)*5
-
     //lang::interpreter::stack = new std::stack<stack_frame*>();
     //lang::interpreter::stack->push(lang::interpreter::global_frame);
     //lang::interpreter::global_frame->set(lang::interpreter::const_char_convert("x"), new data(new int(5), "int"));
@@ -26,7 +25,7 @@ int main()
 
 
     //std::cout << std::any_cast<int>(final->get_value()) << std::endl;
-    //lang::interpreter::input_loop();
+    lang::interpreter::input_loop();
 
     return 0;
 }

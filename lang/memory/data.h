@@ -23,6 +23,10 @@ public:
         return type;
     }
 
+    std::string get_type_string() {
+        return std::string(type);
+    }
+
     // Byval keyword gets value and copies it into a new address
     // otherwise all data is passed by pointer (reference)
 
@@ -101,6 +105,7 @@ public:
     void set_value_ulonglong(unsigned long long val);
 
     std::string to_string() {
+        std::string type = get_type_string();
         if (type == "int") {
             return std::to_string(get_int());
         }
@@ -125,7 +130,7 @@ public:
         else if (type == "unsigned long long") {
             return std::to_string(*static_cast<unsigned long long *>(value));
         }
-        return "Invalid type";
+        return "Invalid type" + std::string(type);
     }
 
     bool is_pointer() const {
@@ -138,6 +143,7 @@ public:
             std::cout << "Not deleting data of type: " << type << " because it is a pointer" << std::endl;
             return;
         }
+        std::string type = get_type_string();
         //std::cout << "Deleting data of type: " << type << std::endl;
         if (type == "int") {
             delete (int*)value;

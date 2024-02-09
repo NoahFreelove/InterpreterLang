@@ -3,11 +3,32 @@
 #include <fstream>
 #include <stack>
 #include <cstring>
+#include <bits/fs_fwd.h>
+#include <bits/fs_path.h>
 
 #include "evaluator/group_evaluator.h"
 #include "memory/stack_frame.h"
 #include "tokenizer/tokens.h"
 #include "built_in_runner.h"
+
+void lang::interpreter::init() {
+    if(has_init)
+        return;
+    global_frame = new stack_frame();
+    stack = new std::stack<stack_frame*>();
+    stack->push(new stack_frame());
+    std::filesystem::__cxx11::path cwd = std::filesystem::current_path();
+    stack->top()->set(const_char_convert("WORKING_DIRECTORY"), new data(new std::string(cwd.string()), "string"));
+    has_init = true;
+}
+
+token_group * lang::interpreter::evaluate_tokens(std::vector<token*> tokens, int offset) {
+    std::vector<token*> rest(tokens.begin() + offset, tokens.end());
+    token_group* group = token_grouper::recursive_group(rest);
+    group_evaluator::eval_group(group);
+    return group;
+}
+
 void lang::interpreter::input_loop() {
     auto* input = new std::string();
     if(scan == nullptr) {
@@ -29,21 +50,45 @@ void lang::interpreter::input_loop() {
 }
 
 void lang::interpreter::process_variable_declaration(const std::vector<token*> &tokens) {
-    if (tokens.size() >= 3) {
+    token* type;
+    bool persistent = false;
+
+    if (tokens.size() == 4) {
         if(tokens[1]->get_name() != IDENTIFIER || tokens[2]->get_name() != AS || !tokens[3]->is_typeword()) {
             error("Invalid variable declaration");
             return;
         }
+        type = tokens[3];
+    }
+    else if (tokens.size()>4) {
+        if(tokens[1]->get_name() != IDENTIFIER || tokens[2]->get_name() != AS || !tokens[4]->is_typeword() || tokens[3]->get_name() != PERSISTENT) {
+            error("Invalid variable declaration");
+            return;
+        }
+        type = tokens[4];
+        persistent = true;
+    }
+    else {
+        error("Not enough tokens for variable declaration");
+        return;
+    }
+
         // if the name ends with _old, it is invalid
         if(strstr(tokens[1]->get_lexeme(), "_old")) {
             error("Invalid variable name, _old is reserved");
             return;
         }
 
-        auto* frame = stack->top();
+        stack_frame* frame;
+        if(persistent) {
+            frame = global_frame;
+        }
+        else {
+            frame = stack->top();
+        }
         char* name = const_char_convert(tokens[1]->get_lexeme());
 
-        switch (tokens[3]->get_name()) {
+        switch (type->get_name()) {
             case INT_KEYW: {
                 int* val = new int;
                 *val = 0;
@@ -97,41 +142,40 @@ void lang::interpreter::process_variable_declaration(const std::vector<token*> &
             }
         }
         //std::cout << frame->get_data(name)->get() << std::endl;
-    }
-    else {
-        error("Not enough tokens for variable declaration");
-        return;
-    }
+
 }
 
 bool lang::interpreter::set_literal(const std::vector<token *> &tokens, data *d) {
     if(d) {
-        std::vector<token*> rest(tokens.begin() + 2, tokens.end());
-        token_group* group = token_grouper::recursive_group(rest);
-        group_evaluator::eval_group(group);
+        auto* group = evaluate_tokens(tokens, 2);
         if(group->type == ERROR) {
             error("error evaluating group");
             return false;
         }
+
+        if(d->get_type() != token::type_to_char(group->type)) {
+            error("incompatible types, cannot set");
+            return false;
+        }
+
         // token value is std::any, so we need to cast it to the correct type
         if(d->get_type() == "int") {
-
             //std::cout << "cast" << std::endl;
             d->set_value_int(std::any_cast<int>(group->value));
         }
         else if (d->get_type() == "float") {
-            d->set_value_float(std::any_cast<float>(tokens[2]->get_value()));
+            d->set_value_float(std::any_cast<float>(group->value));
         }
         else if (d->get_type() == "double") {
-            d->set_value_double(std::any_cast<double>(tokens[2]->get_value()));
+            d->set_value_double(std::any_cast<double>(group->value));
         }
         else if (d->get_type() == "long") {
-            d->set_value_long(std::any_cast<long>(tokens[2]->get_value()));
+            d->set_value_long(std::any_cast<long>(group->value));
         }
         else if (d->get_type() == "string") {
             // copy str
             //char* str = (char*)malloc(sizeof(char)*strlen(const_char_convert(std::any_cast<const char*>(tokens[2]->get_lexeme())))+1);
-            d->set_value_string(std::any_cast<std::string>(tokens[2]->get_lexeme()));
+            d->set_value_string(std::any_cast<std::string>(group->value));
         }
         else if (d->get_type() == "char") {
             // value is going to be a string so we take the first character
@@ -245,10 +289,7 @@ void lang::interpreter::process_input( std::string *input) {
         if(scan == nullptr) {
             scan = new scanner();
         }
-        if(stack == nullptr) {
-            stack = new std::stack<stack_frame*>();
-            stack->push(new stack_frame());
-        }
+        init();
 
     auto tokens = scan->scan_line(input);
     if(tokens.empty())

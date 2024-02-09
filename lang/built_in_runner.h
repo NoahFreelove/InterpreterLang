@@ -50,9 +50,7 @@ static void print(const std::vector<token *>& tokens) {
         lang::interpreter::error("Not enough tokens for print statement");
         return;
     }
-    std::vector<token*> rest(tokens.begin() + 1, tokens.end());
-    token_group* group = token_grouper::recursive_group(rest);
-    group_evaluator::eval_group(group);
+    auto* group = lang::interpreter::evaluate_tokens(tokens, 1);
     if(group->type == UNDETERMINED || group->type == ERROR) {
         std::cout << std::endl;
     }
@@ -84,6 +82,7 @@ static void print(const std::vector<token *>& tokens) {
     }
 }
 static void process_import(std::vector<token*> tokens) {
+
     if (tokens.size() != 2) {
         lang::interpreter::error("Invalid usage of import: import <\"filepath\">");
         return;

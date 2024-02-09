@@ -4,6 +4,7 @@
 
 #include "../tokenizer/token_group.h"
 #include "../tokenizer/token.h"
+#include "type_arithmetic.h"
 class arithmetic_evaluator {
 public:
     using token_element = std::variant<token*, token_group*>;
@@ -71,6 +72,24 @@ public:
         return true;
     }
 
+    static int get_highest_level_op(token_group* g) {
+        int highest = 0;
+        for (token_element& t : g->tokens) {
+            if(!is_group(t)) {
+                token* tk = std::get<token*>(t);
+                if(tk->is_arithmetic()) {
+                    if (tk->is_mul_div()) {
+                        highest = std::max(highest, 1);
+                    }
+                    if (tk->get_name() == EXPONENT) {
+                        highest = std::max(highest, 2);
+                    }
+                }
+            }
+        }
+        return highest;
+    }
+
     static void recursive_evaluation(token_group* g) {
         // Following BEDMAS rules, recursively evaluate expressions which are in the form of a group
         // At this point everything should be a primitive, so if a group is found, it should be evaluated
@@ -128,7 +147,8 @@ public:
             return;
 
         bool has_ops = true;
-
+        int highest_level_op = 0;
+        // 0 - add/sub, 1 - mult/div, 2 - exponent
         while (has_ops) {
             has_ops = false;
             // find antecedent and consequent of any operators
@@ -149,6 +169,10 @@ public:
                 else {
                     t = std::get<token*>(tokens[i]);
                 }
+                highest_level_op = get_highest_level_op(g);
+                //std::cout << "highest op: " << highest_level_op << std::endl;
+
+                //g->print_group();
 
                 if(t->is_arithmetic()) {
                     if(t->get_name() == EXPONENT) {
@@ -161,7 +185,7 @@ public:
                             break;
                         }
                     }
-                    if(t->get_name() == STAR || t->get_name() == SLASH) {
+                    if( highest_level_op == 1 && (t->get_name() == STAR || t->get_name() == SLASH)) {
                         //std::cout << "star or slash" << std::endl;
                         if(has_next(g, i, 1)) {
                             ant_index = i-1;
@@ -172,7 +196,7 @@ public:
                             break;
                         }
                     }
-                    if(t->get_name() == PLUS || t->get_name() == MINUS) {
+                    if(highest_level_op == 0 && (t->get_name() == PLUS || t->get_name() == MINUS)) {
                         //std::cout << "add or sub" << std::endl;
 
                         if(has_next(g, i, 1)) {
@@ -271,40 +295,107 @@ public:
                         g->value = val;
                     }
                 }
+                if(!ant->is_numeric() || !cons->is_numeric())
+                    return;
+                int type = INT;
+                const char* type_str = "";
+                std::any val;
+
+                // Logic for adding different types, the larger one takes precedent
+
+                if((ant->get_name() == DOUBLE || cons->get_name() == DOUBLE) && (cons->is_DFI() && ant->is_DFI())) {
+                    double ant_val = 0;
+                    double cons_val = 0;
+
+                    if(ant->get_name() == DOUBLE) {
+                        ant_val = std::any_cast<double>(ant->get_value());
+                    }
+                    else if(ant->get_name() == FLOAT) {
+                        ant_val = std::any_cast<float>(ant->get_value());
+                    }
+                    if(ant->get_name() == INT) {
+                        ant_val = std::any_cast<int>(ant->get_value());
+                    }
+
+                    if(cons->get_name() == DOUBLE) {
+                        cons_val = std::any_cast<double>(cons->get_value());
+                    }
+                    else if(cons->get_name() == FLOAT) {
+                        cons_val = std::any_cast<float>(cons->get_value());
+                    }
+                    if(cons->get_name() == INT) {
+                        cons_val = std::any_cast<int>(cons->get_value());
+                    }
+
+                    val = type_arithmetic::result(ant_val, cons_val, op->get_name());
+                    type = DOUBLE;
+                    type_str = "DOUBLE";
+                }
+
+                if((ant->get_name() == FLOAT || cons->get_name() == FLOAT) && (cons->is_FI() && ant->is_FI())) {
+                    float ant_val = 0;
+                    float cons_val = 0;
+
+                    if(ant->get_name() == FLOAT) {
+                        ant_val = std::any_cast<float>(ant->get_value());
+                    }
+                    if(ant->get_name() == INT) {
+                        ant_val = std::any_cast<int>(ant->get_value());
+                    }
+
+                   if(cons->get_name() == FLOAT) {
+                        cons_val = std::any_cast<float>(cons->get_value());
+                    }
+                    if(cons->get_name() == INT) {
+                        cons_val = std::any_cast<int>(cons->get_value());
+                    }
+
+                    val = type_arithmetic::result(ant_val, cons_val, op->get_name());
+                    type = FLOAT;
+                    type_str = "FLOAT";
+                }
+
+                if((ant->get_name() == LONG || cons->get_name() == LONG) && (cons->is_LI() && ant->is_LI())) {
+                    long ant_val = 0;
+                    long cons_val = 0;
+
+                    if(ant->get_name() == LONG) {
+                        ant_val = std::any_cast<long>(ant->get_value());
+                    }
+                    if(ant->get_name() == INT) {
+                        ant_val = std::any_cast<int>(ant->get_value());
+                    }
+
+                    if(cons->get_name() == LONG) {
+                        cons_val = std::any_cast<long>(cons->get_value());
+                    }
+                    if(cons->get_name() == INT) {
+                        cons_val = std::any_cast<int>(cons->get_value());
+                    }
+
+                    val = type_arithmetic::result(ant_val, cons_val, op->get_name());
+                    type = LONG;
+                    type_str = "LONG";
+                }
 
                 if(ant->get_name() == INT && cons->get_name() == INT) {
-                    //std::cout << "integer" << std::endl;
-                    int val = 0;
                     int ant_val = std::any_cast<int>(ant->get_value());
                     int cons_val = std::any_cast<int>(cons->get_value());
-                    if(op->get_name() == EXPONENT) {
-                        val = std::pow<int>(ant_val, cons_val);
-                    }
-                    else if(op->get_name() == STAR) {
-                        val = ant_val * cons_val;
-                    }
-                    else if(op->get_name() == SLASH) {
-                        val = ant_val / cons_val;
-                    }
-                    else if(op->get_name() == PLUS) {
-                        //std::cout << "adding: " << ant_val << " " << cons_val << std::endl;
-                        val = ant_val + cons_val;
-                    }
-                    else if(op->get_name() == MINUS) {
-                        val = ant_val - cons_val;
-                    }
-                    //std::cout << "val: " << val << std::endl;
-                    if(ant_index == -1) {
-                        tokens.erase(tokens.begin(), tokens.begin() + 2);
-                        tokens.insert(tokens.begin(), new token(INT, "INT", 0, val));
-                    }
-                    else {
-                        tokens.erase(tokens.begin() + (ant_index), tokens.begin() + (ant_index+3));
-                        tokens.insert(tokens.begin() + ant_index, new token(INT, "INT", 0, val));
-                    }
-                    g->type = INT;
-                    g->value = val;
+                    val = type_arithmetic::result(ant_val, cons_val, op->get_name());
+                    type = INT;
+                    type_str = "INT";
                 }
+
+                if(ant_index == -1) {
+                    tokens.erase(tokens.begin(), tokens.begin() + 2);
+                    tokens.insert(tokens.begin(), new token(type, type_str, 0, val));
+                }
+                else {
+                    tokens.erase(tokens.begin() + (ant_index), tokens.begin() + (ant_index+3));
+                    tokens.insert(tokens.begin() + ant_index, new token(type, type_str, 0, val));
+                }
+                g->type = type;
+                g->value = val;
             }
         }
     }

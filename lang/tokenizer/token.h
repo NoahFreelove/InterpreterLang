@@ -168,7 +168,7 @@ public:
     }
 
     bool is_numeric() const {
-        return name <= INT && name >= ULONG64;
+        return name <= 108 && name >= 104;
     }
 
     bool is_truthy() const {
@@ -179,12 +179,41 @@ public:
         return name >= GT && name <= OR;
     }
 
+    bool is_DFI() const {
+        return name == DOUBLE || name == FLOAT || name == INT;
+    }
+
+    bool is_FI() const {
+        return name == FLOAT || name == INT;
+    }
+
+    bool is_LI() const {
+        return name == LONG || name == INT;
+    }
+
     bool is_comparison() const {
         return name == EQUAL || name == BANG_EQUAL || name == GT || name == LT || name == GTE || name == LTE;
     }
 
     bool is_connective() const {
         return name == AND || name == OR;
+    }
+
+    static const char* type_to_char(int i) {
+        switch (i) {
+            case DOUBLE: {
+                return "double";
+            }
+            case FLOAT:
+                return "float";
+            case INT:
+                return "int";
+            case LONG:
+                return "long";
+            case STRING:
+                return "string";
+        }
+        return "";
     }
 
     friend std::ostream &operator<<(std::ostream &os, const token &token) {

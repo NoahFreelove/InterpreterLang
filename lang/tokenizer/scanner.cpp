@@ -73,12 +73,11 @@ token * lang::scanner::get_digit(char first_num) {
         while (isdigit(peek()) && !past_end()) {
             decimals.push_back(next());
         }
-        std::string str(chars.begin(), chars.end());
         std::string str2(decimals.begin(), decimals.end());
         const char* cstr = strcpy(new char[str.length() + 1], str.c_str());
-
         // check if float
-        if(peek() != 'd') {
+        if(peek() == 'f') {
+            next();
             // if its too big, return error
             if(str.length() + str2.length() > 10) {
                 err = true;
@@ -88,7 +87,7 @@ token * lang::scanner::get_digit(char first_num) {
             return new token(FLOAT, cstr, line, std::stof(str + "." + str2));
         }
         // check if double
-        if(peek() == 'd') {
+        if(peek() == 'd' || peek() == '\0') {
             next();
             // if its too big, return error
             if(str.length() + str2.length() > 19) {

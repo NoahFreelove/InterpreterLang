@@ -1,0 +1,4 @@
+var pi as float
+pi = 3.1415926535
+var e as persistent float
+e = 2.7182818284
