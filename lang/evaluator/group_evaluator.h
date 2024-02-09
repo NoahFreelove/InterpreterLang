@@ -116,7 +116,8 @@ public:
                     }
                 },
                 [g, depth, &has_err](token_group* grp) {
-                    eval_group(grp, depth+1);
+                    if(grp->type == UNDETERMINED)
+                        eval_group(grp,depth+1);
                     if(grp->type == ERROR) {
                         has_err = true;
                     }
@@ -138,7 +139,9 @@ public:
                     }
                 },
                 [g, depth, &has_err](token_group* grp) {
-                    eval_group(grp,depth+1);
+                    if(grp->type == UNDETERMINED)
+                        eval_group(grp,depth+1);
+
                     if(grp->type == ERROR) {
                         has_err = true;
                     }

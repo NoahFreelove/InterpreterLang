@@ -90,7 +90,7 @@ public:
         return highest;
     }
 
-    static void recursive_evaluation(token_group* g) {
+    static void recursive_evaluation(token_group* g, int depth = 0) {
         // Following BEDMAS rules, recursively evaluate expressions which are in the form of a group
         // At this point everything should be a primitive, so if a group is found, it should be evaluated
         // If a string is found to be used in an operation (i.e. not alone), throw an error
@@ -113,7 +113,7 @@ public:
                     groups_found = true;
                     token_group* tg = std::get<token_group*>(tokens[i]);
                     if(tg->type == UNDETERMINED) {
-                        recursive_evaluation(tg);
+                        recursive_evaluation(tg, depth+1);
                     }
                     if(tg->type == INT) {
                         g->tokens[i] = new token(INT, "INT", 0, tg->value);
