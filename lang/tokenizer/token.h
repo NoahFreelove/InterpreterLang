@@ -210,6 +210,10 @@ public:
         return name == OR || name == XOR || name == AND;
     }
 
+    bool is_control_flow() const {
+        return name == IF || name == END_IF || name == ELSE || name == ELSE_IF;
+    }
+
     static const char* type_to_char(int i) {
         switch (i) {
             case DOUBLE: {

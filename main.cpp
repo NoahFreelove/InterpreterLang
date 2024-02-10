@@ -1,8 +1,7 @@
 #include <iostream>
 #include "lang/lang.h"
 int main()
-{
-    //lang::interpreter::read_from_file("game.lang");
+{lang::interpreter::read_from_file("game.lang");
 
     token* openp2 = new token(LEFT_PAREN, "(", 0);
     token* openp = new token(LEFT_PAREN, "(", 0);

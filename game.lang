@@ -1,7 +1,11 @@
 print "What's your favorite number?"
-var x as float
+var x as int
 x = input
 
 print "Your favorite number is " + x + "?"
-
-print "That's my favorite number too!"
+if x!=5
+print "That's a nice number."
+endif
+if x == 5
+print "5 is my favorite number too!"
+endif

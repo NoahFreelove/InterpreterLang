@@ -1,7 +1,7 @@
 #ifndef BUILT_IN_RUNNER_H
 #define BUILT_IN_RUNNER_H
-#include "tokenizer/token.h"
-#include "interpreter.h"
+#include "../tokenizer/token.h"
+#include "../interpreter.h"
 
 void define(const std::vector<std::shared_ptr<token>> &tokens) {
     if (tokens.size() == 2) {

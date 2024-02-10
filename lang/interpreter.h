@@ -13,12 +13,14 @@ namespace lang {
 
     class interpreter {
     public:
-        inline static std::vector<char*>* defined = new std::vector<char*>;
+        inline static std::vector<const char*>* defined = new std::vector<const char*>;
+        static bool is_defined(const char* c);
 
         inline static stack_frame* global_frame = new stack_frame();
         inline static std::stack<stack_frame*>* stack = nullptr;
         inline static scanner* scan = nullptr;
         inline static bool has_init = false;
+        inline static std::stack<bool>* if_block_statuses = nullptr;
 
         static void init();
         static char* const_char_convert(const char* input) {

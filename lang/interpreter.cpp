@@ -9,7 +9,17 @@
 #include "evaluator/group_evaluator.h"
 #include "memory/stack_frame.h"
 #include "tokenizer/tokens.h"
-#include "built_in_runner.h"
+#include "executors/built_in_runner.h"
+#include "executors/control_flow_runner.h"
+
+bool lang::interpreter::is_defined(const char *c) {
+    for (const char* name : *defined) {
+        if(strcmp(name, c) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
 
 void lang::interpreter::init() {
     if(has_init)
@@ -20,11 +30,13 @@ void lang::interpreter::init() {
     std::filesystem::__cxx11::path cwd = std::filesystem::current_path();
     stack->top()->set(const_char_convert("WORKING_DIRECTORY"), new data(new std::string(cwd.string()), "string"));
     has_init = true;
+    if_block_statuses = new std::stack<bool>();
+    defined->push_back("IMPLICIT_FLOAT_DOUBLE");
 }
 
 std::shared_ptr<token_group> lang::interpreter::evaluate_tokens(std::vector<std::shared_ptr<token>> tokens, int offset) {
-    std::vector<std::shared_ptr<token>> rest(tokens.begin() + offset, tokens.end());
-    auto group = token_grouper::recursive_group(rest);
+    std::vector rest(tokens.begin() + offset, tokens.end());
+    auto group = token_grouper::gen_group(rest);
     group_evaluator::eval_group(group);
     return group;
 }
@@ -154,8 +166,16 @@ bool lang::interpreter::set_literal(const std::vector<std::shared_ptr<token>> &t
         }
 
         if(d->get_type() != token::type_to_char(group->type)) {
-            error("incompatible types, cannot set");
-            return false;
+            // The default value for literals with decimals is a double which can be inconvinent if you have a float
+            // as in most cases the float value can use the double value.
+            if(d->get_type() == "float" && group->type == DOUBLE && is_defined("IMPLICIT_FLOAT_DOUBLE")) {
+                group->value = (float)std::any_cast<double>(group->value);
+                group->type = FLOAT;
+            }
+            else {
+                error("incompatible types, cannot set");
+                return false;
+            }
         }
 
         // token value is std::any, so we need to cast it to the correct type
@@ -320,11 +340,24 @@ void lang::interpreter::process_input( std::string *input) {
     }
 
     for (auto &token_vector : token_vectors) {
+        if(!if_block_statuses->empty()) {
+            if(token_vector[0]->get_name() == END_IF) {
+                if_block_statuses->pop();
+                continue;
+            }
+            if(if_block_statuses->top() == false) {
+                continue;
+            }
+        }
         if (token_vector[0]->is_keyword()) {
             if (token_vector[0]->get_name() == VAR) {
                 process_variable_declaration(token_vector);
                 continue;
             }
+        }
+        if(token_vector[0]->is_control_flow()) {
+            control_flow_runner::process_control_flow(tokens);
+            continue;
         }
         if(token_vector[0]->is_builtin()) {
             run_builtins(token_vector);
