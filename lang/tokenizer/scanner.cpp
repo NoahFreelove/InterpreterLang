@@ -1,8 +1,9 @@
 #include "scanner.h"
 
 #include <cstring>
+#include <memory>
 
-token * lang::scanner::get_digit(char first_num) {
+std::shared_ptr<token> lang::scanner::get_digit(char first_num) {
     std::vector<char> chars = std::vector<char>();
     chars.push_back(first_num);
     while (isdigit(peek()) && !past_end()) {
@@ -20,7 +21,7 @@ token * lang::scanner::get_digit(char first_num) {
                 interpreter::error("Number too big: " + std::string(chars.begin(), chars.end()) + peek() + " for int");
                 return nullptr;
             }
-            return new token(INT, cstr, line, std::stoi(str));
+            return std::make_shared<token>(INT, cstr, line, std::stoi(str));
         }
         // check if long
         if(c == 'l' && peek_str(3) != "ull") {
@@ -30,7 +31,7 @@ token * lang::scanner::get_digit(char first_num) {
                 interpreter::error("Number too big: " + std::string(chars.begin(), chars.end()) + peek() + " for long");
                 return nullptr;
             }
-            return new token(LONG, cstr, line, std::stol(str));
+            return std::make_shared<token>(LONG, cstr, line, std::stol(str));
         }
         // Check if ulong64
         if(peek_str(3) == "ull" && c != 'l' && c != 'f' && c != 'd') {
@@ -42,7 +43,7 @@ token * lang::scanner::get_digit(char first_num) {
                 interpreter::error("Number too big: " + std::string(chars.begin(), chars.end()) + peek() + " for ulong64");
                 return nullptr;
             }
-            return new token(ULONG64, cstr, line, std::stoull(str));
+            return std::make_shared<token>(ULONG64, cstr, line, std::stoull(str));
         }
         // check if float but no decimal
         if (peek() == 'f' && c != 'l' && peek_str(3) != "ull") {
@@ -53,7 +54,7 @@ token * lang::scanner::get_digit(char first_num) {
                 interpreter::error("Number too big: " + std::string(chars.begin(), chars.end()) + peek() + " for float");
                 return nullptr;
             }
-            return new token(FLOAT, cstr, line, std::stof(str));
+            return std::make_shared<token>(FLOAT, cstr, line, std::stof(str));
         }
         // check if double but no decimal
         if (peek() == 'd' && c != 'l' && peek_str(3) != "ull") {
@@ -64,7 +65,7 @@ token * lang::scanner::get_digit(char first_num) {
                 interpreter::error("Number too big: " + std::string(chars.begin(), chars.end()) + peek() + " for double");
                 return nullptr;
             }
-            return new token(DOUBLE, cstr, line, std::stod(str));
+            return std::make_shared<token>(DOUBLE, cstr, line, std::stod(str));
         }
     }
     else{
@@ -84,7 +85,7 @@ token * lang::scanner::get_digit(char first_num) {
                 interpreter::error("Number too big: " + std::string(chars.begin(), chars.end()) + peek() + " for float");
                 return nullptr;
             }
-            return new token(FLOAT, cstr, line, std::stof(str + "." + str2));
+            return std::make_shared<token>(FLOAT, cstr, line, std::stof(str + "." + str2));
         }
         // check if double
         if(peek() == 'd' || peek() == '\0') {
@@ -95,7 +96,7 @@ token * lang::scanner::get_digit(char first_num) {
                 interpreter::error("Number too big: " + std::string(chars.begin(), chars.end()) + peek() + " for double");
                 return nullptr;
             }
-            return new token(DOUBLE, cstr, line, std::stod(str + "." + str2));
+            return std::make_shared<token>(DOUBLE, cstr, line, std::stod(str + "." + str2));
 
         }
         err = true;
@@ -108,7 +109,7 @@ token * lang::scanner::get_digit(char first_num) {
     return nullptr;
 }
 
-token * lang::scanner::get_identifier(char c) {
+std::shared_ptr<token> lang::scanner::get_identifier(char c) {
     // Keep adding to the identifier until we hit a non-alphanumeric character
             std::vector<char> chars = std::vector<char>();
             chars.push_back(c);
@@ -123,128 +124,128 @@ token * lang::scanner::get_identifier(char c) {
 
     // Check if keyword
     if(str == "if") {
-        return new token(IF, cstr, line);
+        return std::make_shared<token>(IF, cstr, line);
     }
     if(str == "else") {
-        return new token(ELSE, cstr, line);
+        return std::make_shared<token>(ELSE, cstr, line);
     }if(str == "else-if") {
-        return new token(ELSE_IF, cstr, line);
+        return std::make_shared<token>(ELSE_IF, cstr, line);
     }
     if(str == "for") {
-        return new token(FOR, cstr, line);
+        return std::make_shared<token>(FOR, cstr, line);
     }
     if(str == "while") {
-        return new token(WHILE, cstr, line);
+        return std::make_shared<token>(WHILE, cstr, line);
     }
     if(str == "struct") {
-        return new token(STRUCT, cstr, line);
+        return std::make_shared<token>(STRUCT, cstr, line);
     }
     if(str == "class") {
-        return new token(CLASS, cstr, line);
+        return std::make_shared<token>(CLASS, cstr, line);
     }
     if(str == "private") {
-        return new token(PRIVATE, cstr, line);
+        return std::make_shared<token>(PRIVATE, cstr, line);
     }
     if(str == "public") {
-        return new token(PUBLIC, cstr, line);
+        return std::make_shared<token>(PUBLIC, cstr, line);
     }
     if(str == "true") {
-        return new token(TRUE, cstr, line);
+        return std::make_shared<token>(TRUE, cstr, line);
     }
     if(str == "false") {
-        return new token(FALSE, cstr, line);
+        return std::make_shared<token>(FALSE, cstr, line);
     }
     if(str == "return") {
-        return new token(RETURN, cstr, line);
+        return std::make_shared<token>(RETURN, cstr, line);
     }
     if(str == "function") {
-        return new token(FUNCTION, cstr, line);
+        return std::make_shared<token>(FUNCTION, cstr, line);
     }
     if(str == "null") {
-        return new token(NULL_LANG, cstr, line);
+        return std::make_shared<token>(NULL_LANG, cstr, line);
     }
     if(str == "var") {
-        return new token(VAR, cstr, line);
+        return std::make_shared<token>(VAR, cstr, line);
     }
     if(str == "as") {
-        return new token(AS, cstr, line);
+        return std::make_shared<token>(AS, cstr, line);
     }
     if(str == "byval") {
-        return new token(BYVAL, cstr, line);
+        return std::make_shared<token>(BYVAL, cstr, line);
     }
     if(str == "discard") {
-        return new token(DISCARD, cstr, line);
+        return std::make_shared<token>(DISCARD, cstr, line);
     }
     if(str == "persistent") {
-        return new token(PERSISTENT, cstr, line);
+        return std::make_shared<token>(PERSISTENT, cstr, line);
     }
     if(str == "and") {
-        return new token(AND, cstr, line);
+        return std::make_shared<token>(AND, cstr, line);
     }
     if(str == "or") {
-        return new token(OR, cstr, line);
+        return std::make_shared<token>(OR, cstr, line);
     }
     if(str == "not") {
-        return new token(BANG, cstr, line);
+        return std::make_shared<token>(BANG, cstr, line);
     }
     if(str == "xor") {
-        return new token(XOR, cstr, line);
+        return std::make_shared<token>(XOR, cstr, line);
     }
     if(str == "print") {
-        return new token(PRINT, cstr, line);
+        return std::make_shared<token>(PRINT, cstr, line);
     }
     if(str == "dump") {
-        return new token(DUMP, cstr, line);
+        return std::make_shared<token>(DUMP, cstr, line);
     }
     if(str == "input") {
-        return new token(INPUT, cstr, line);
+        return std::make_shared<token>(INPUT, cstr, line);
     }
     if(str == "typeof") {
-        return new token(TYPEOF, cstr, line);
+        return std::make_shared<token>(TYPEOF, cstr, line);
     }
     if(str == "sizeof") {
-        return new token(SIZEOF, cstr, line);
+        return std::make_shared<token>(SIZEOF, cstr, line);
     }
     if(str == "delete") {
-        return new token(DELETE, cstr, line);
+        return std::make_shared<token>(DELETE, cstr, line);
     }
     if(str == "define") {
-        return new token(DEFINE, cstr, line);
+        return std::make_shared<token>(DEFINE, cstr, line);
     }
     if(str == "undefine") {
-        return new token(UNDEFINE, cstr, line);
+        return std::make_shared<token>(UNDEFINE, cstr, line);
     }
     if(str == "isdefined") {
-        return new token(ISDEFINED, cstr, line);
+        return std::make_shared<token>(ISDEFINED, cstr, line);
     }
     if(str == "import") {
-        return new token(IMPORT, cstr, line);
+        return std::make_shared<token>(IMPORT, cstr, line);
     }
     if(str == "int") {
-        return new token(INT_KEYW, cstr, line);
+        return std::make_shared<token>(INT_KEYW, cstr, line);
     }
     if(str == "float") {
-        return new token(FLOAT_KEYW, cstr, line);
+        return std::make_shared<token>(FLOAT_KEYW, cstr, line);
     }
     if(str == "double") {
-        return new token(DOUBLE_KEYW, cstr, line);
+        return std::make_shared<token>(DOUBLE_KEYW, cstr, line);
     }
     if(str == "long") {
-        return new token(LONG_KEYW, cstr, line);
+        return std::make_shared<token>(LONG_KEYW, cstr, line);
     }
     if(str == "string") {
-        return new token(STRING_KEYW, cstr, line);
+        return std::make_shared<token>(STRING_KEYW, cstr, line);
     }
     if(str == "char") {
-        return new token(CHAR_KEYW, cstr, line);
+        return std::make_shared<token>(CHAR_KEYW, cstr, line);
     }
     if(str == "bool") {
-        return new token(BOOL_KEYW, cstr, line);
+        return std::make_shared<token>(BOOL_KEYW, cstr, line);
     }
     if(str == "ulong64") {
-        return new token(ULONG64_KEYW, cstr, line);
+        return std::make_shared<token>(ULONG64_KEYW, cstr, line);
     }
-    return new token(IDENTIFIER, cstr, line);
+    return std::make_shared<token>(IDENTIFIER, cstr, line);
 }
 
 void lang::scanner::skip(int amount) {
@@ -254,13 +255,13 @@ void lang::scanner::skip(int amount) {
     }
 }
 
-token* lang::scanner::trigger_error(char c) {
+std::shared_ptr<token> lang::scanner::trigger_error(char c) {
     err = true;
     interpreter::error("Unexpected character: " + std::string(1, c));
     return nullptr;
 }
 
-token * lang::scanner::get_string() {
+std::shared_ptr<token> lang::scanner::get_string() {
     char c = next();
     std::vector<char> chars = std::vector<char>();
 
@@ -276,11 +277,11 @@ token * lang::scanner::get_string() {
     }
     std::string str(chars.begin(), chars.end());
     const char* cstr = strcpy(new char[str.length() + 1], str.c_str());
-    return new token(STRING, cstr, line, std::string(cstr));
+    return std::make_shared<token>(STRING, cstr, line, std::string(cstr));
 }
 
 
-token * lang::scanner::parse_token() {
+std::shared_ptr<token> lang::scanner::parse_token() {
     char c = next();
 
     if(in_multi_comment()) {
@@ -305,61 +306,61 @@ token * lang::scanner::parse_token() {
                 case '\t':
                     return nullptr;
                 case '(':
-                    return new token(LEFT_PAREN, "(", line, nullptr);
+                    return std::make_shared<token>(LEFT_PAREN, "(", line, nullptr);
                 case ')':
-                    return new token(RIGHT_PAREN, ")", line, nullptr);
+                    return std::make_shared<token>(RIGHT_PAREN, ")", line, nullptr);
                 case '{':
-                    return new token(LEFT_BRACE, "{", line, nullptr);
+                    return std::make_shared<token>(LEFT_BRACE, "{", line, nullptr);
                 case '}':
-                    return new token(RIGHT_BRACE, "}", line, nullptr);
+                    return std::make_shared<token>(RIGHT_BRACE, "}", line, nullptr);
                 case '[':
-                    return new token(LEFT_BRACKET, "[", line, nullptr);
+                    return std::make_shared<token>(LEFT_BRACKET, "[", line, nullptr);
                 case ']':
-                    return new token(RIGHT_BRACKET, "]", line, nullptr);
+                    return std::make_shared<token>(RIGHT_BRACKET, "]", line, nullptr);
                 case ';':
-                    return new token(SEMICOLON, ";", line, nullptr);
+                    return std::make_shared<token>(SEMICOLON, ";", line, nullptr);
                 case ',':
-                    return new token(COMMA, ",", line, nullptr);
+                    return std::make_shared<token>(COMMA, ",", line, nullptr);
                 case '.':
-                    return new token(DOT, ".", line, nullptr);
+                    return std::make_shared<token>(DOT, ".", line, nullptr);
                 case '!': {
                     if(peek() == '=') {
                         skip();
-                        return new token(BANG_EQUAL, "!=", line, nullptr);
+                        return std::make_shared<token>(BANG_EQUAL, "!=", line, nullptr);
                     }
-                    return new token(BANG, "!", line, nullptr);
+                    return std::make_shared<token>(BANG, "!", line, nullptr);
                 }
                 case '=': {
                     if(peek(1) == '=') {
                         skip(2);
-                        return new token(TEQUAL, "===", line, nullptr);
+                        return std::make_shared<token>(TEQUAL, "===", line, nullptr);
                     }
                     if(peek() == '=') {
                         skip();
-                        return new token(DEQUAL, "==", line, nullptr);
+                        return std::make_shared<token>(DEQUAL, "==", line, nullptr);
                     }
-                    return new token(EQUAL, "=", line, nullptr);
+                    return std::make_shared<token>(EQUAL, "=", line, nullptr);
                 }
                 case '>': {
                     if(peek() == '=') {
                         skip();
-                        return new token(GTE, ">=", line, nullptr);
+                        return std::make_shared<token>(GTE, ">=", line, nullptr);
                     }
-                    return new token(GT, ">", line, nullptr);
+                    return std::make_shared<token>(GT, ">", line, nullptr);
                 }
                 case '<': {
                     if(peek() == '=') {
                         skip();
-                        return new token(LTE, "<=", line, nullptr);
+                        return std::make_shared<token>(LTE, "<=", line, nullptr);
                     }
-                    return new token(LT, "<", line, nullptr);
+                    return std::make_shared<token>(LT, "<", line, nullptr);
                 }
                 case '+':
-                    return new token(PLUS, "+", line, nullptr);
+                    return std::make_shared<token>(PLUS, "+", line, nullptr);
                 case '-':
-                    return new token(MINUS, "-", line, nullptr);
+                    return std::make_shared<token>(MINUS, "-", line, nullptr);
                 case '*':
-                    return new token(STAR, "*", line, nullptr);
+                    return std::make_shared<token>(STAR, "*", line, nullptr);
                 case '/': {
                     // We ignore comments
                     if(peek() == '/') {
@@ -374,21 +375,21 @@ token * lang::scanner::parse_token() {
                     }
                     if(peek() == 'i') {
                         skip();
-                        return new token(SLASHI, "/i", line, nullptr);
+                        return std::make_shared<token>(SLASHI, "/i", line, nullptr);
                     }
-                    return new token(SLASH, "/", line, nullptr);
+                    return std::make_shared<token>(SLASH, "/", line, nullptr);
                 }
                 case '&': {
                     if(peek() == '&') {
                         skip();
-                        return new token(AND, "&&", line, nullptr);
+                        return std::make_shared<token>(AND, "&&", line, nullptr);
                     }
-                    return new token(ID_GRAB, "&", line, nullptr);
+                    return std::make_shared<token>(ID_GRAB, "&", line, nullptr);
                 }
                 case '|': {
                     if(peek() == '|') {
                         skip();
-                        return new token(OR, "||", line, nullptr);
+                        return std::make_shared<token>(OR, "||", line, nullptr);
                     }
                     return trigger_error(c);
 
@@ -396,9 +397,9 @@ token * lang::scanner::parse_token() {
                 case '^': {
                     if(peek() == '^') {
                         skip();
-                        return new token(XOR, "^^", line, nullptr);
+                        return std::make_shared<token>(XOR, "^^", line, nullptr);
                     }
-                    return new token(EXPONENT, "^", line, nullptr);
+                    return std::make_shared<token>(EXPONENT, "^", line, nullptr);
                 }
 
                 default: {
@@ -418,7 +419,7 @@ token * lang::scanner::parse_token() {
 
 lang::scanner::scanner() = default;
 
-std::vector<token *> lang::scanner::scan_line(std::string *data) {
+std::vector<std::shared_ptr<token>> lang::scanner::scan_line(std::string *data) {
     scanner::data = data;
     if(scanner::data == nullptr)
         return {};
@@ -434,12 +435,12 @@ std::vector<token *> lang::scanner::scan_line(std::string *data) {
     if(last_char() == '\\') {
         in_multi_line_expression = true;
     }
-    std::vector<token*> tokens = std::vector<token*>();
+    std::vector<std::shared_ptr<token>> tokens = std::vector<std::shared_ptr<token>>();
     err = false;
     for (current = 0; current < end;) {
         if(err)
             break;
-        auto* t = parse_token();
+        auto t = parse_token();
         if(t != nullptr) {
             if(in_multi_line_expression) {
                 multi_line_expression.push_back(t);

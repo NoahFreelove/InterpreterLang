@@ -3,14 +3,14 @@
 #include "tokenizer/token.h"
 #include "interpreter.h"
 
-void define(const std::vector<token *> &tokens) {
+void define(const std::vector<std::shared_ptr<token>> &tokens) {
     if (tokens.size() == 2) {
         lang::interpreter::defined->push_back(lang::interpreter::const_char_convert(tokens[1]->get_lexeme()));
         std::cout << tokens[1]->get_lexeme() << " defined" << std::endl;
     }
 }
 
-void undefine(const std::vector<token *> &tokens) {
+void undefine(const std::vector<std::shared_ptr<token>> &tokens) {
     if (tokens.size() == 2) {
         char* name = lang::interpreter::const_char_convert(tokens[1]->get_lexeme());
         for (int i = 0; i < lang::interpreter::defined->size(); i++) {
@@ -24,7 +24,7 @@ void undefine(const std::vector<token *> &tokens) {
     }
 }
 
-void is_defined(const std::vector<token *> &tokens) {
+void is_defined(const std::vector<std::shared_ptr<token>> &tokens) {
     if (tokens.size() == 2) {
         char* name = lang::interpreter::const_char_convert(tokens[1]->get_lexeme());
         for (int i = 0; i < lang::interpreter::defined->size(); i++) {
@@ -37,7 +37,7 @@ void is_defined(const std::vector<token *> &tokens) {
     }
 }
 
-void delete_var(const std::vector<token *> &tokens) {
+void delete_var(const std::vector<std::shared_ptr<token>> &tokens) {
     if(tokens.size() == 2) {
         if(tokens[0]->get_name() == DELETE && tokens[1]->get_name() == IDENTIFIER) {
             lang::interpreter::stack->top()->delete_var(lang::interpreter::const_char_convert(tokens[1]->get_lexeme()));
@@ -45,12 +45,12 @@ void delete_var(const std::vector<token *> &tokens) {
     }
 }
 
-static void print(const std::vector<token *>& tokens) {
+static void print(const std::vector<std::shared_ptr<token>>& tokens) {
     if(tokens.size() < 2) {
         lang::interpreter::error("Not enough tokens for print statement");
         return;
     }
-    auto* group = lang::interpreter::evaluate_tokens(tokens, 1);
+    auto group = lang::interpreter::evaluate_tokens(tokens, 1);
     if(group->type == UNDETERMINED || group->type == ERROR) {
         std::cout << std::endl;
     }
@@ -81,7 +81,7 @@ static void print(const std::vector<token *>& tokens) {
         std::cout << id_to_name(tokens[1]->get_name()) << std::endl;
     }
 }
-static void process_import(std::vector<token*> tokens) {
+static void process_import(std::vector<std::shared_ptr<token>> tokens) {
 
     if (tokens.size() != 2) {
         lang::interpreter::error("Invalid usage of import: import <\"filepath\">");
@@ -94,7 +94,7 @@ static void process_import(std::vector<token*> tokens) {
     lang::interpreter::read_from_file(tokens[1]->get_lexeme());
 }
 
-static void run_builtins(const std::vector<token*>& tokens) {
+static void run_builtins(const std::vector<std::shared_ptr<token>>& tokens) {
     if (tokens[0]->get_name() == PRINT) {
         print(tokens);
         return;

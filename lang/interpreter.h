@@ -25,15 +25,15 @@ namespace lang {
             char* name = (char*)malloc(sizeof(char)*strlen(input));
             return strcpy(name, input);
         }
-        static token_group* evaluate_tokens(std::vector<token*> tokens, int offset);
+        static std::shared_ptr<token_group> evaluate_tokens(std::vector<std::shared_ptr<token>> tokens, int offset);
         static void input_loop();
-        static void process_variable_declaration(const std::vector<token*> &tokens);
+        static void process_variable_declaration(const std::vector<std::shared_ptr<token>> &tokens);
 
-        static bool set_literal(const std::vector<token *> &tokens, data *d);
+        static bool set_literal(const std::vector<std::shared_ptr<token>> &tokens, data *d);
 
-        static void process_variable_update(const std::vector<token*> &tokens);
+        static void process_variable_update(const std::vector<std::shared_ptr<token>> &tokens);
 
-        static void process(const std::vector<token*>& tokens);
+        static void process(const std::vector<std::shared_ptr<token>>& tokens);
         static void process_input(std::string* input);
         static void read_from_file(const char* path);
         static void error(std::string err);

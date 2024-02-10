@@ -7,30 +7,33 @@
 #include "type_arithmetic.h"
 class arithmetic_evaluator {
 public:
-    using token_element = std::variant<token*, token_group*>;
+    using token_element = std::variant<std::shared_ptr<token>, std::shared_ptr<token_group>>;
     template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
     template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
-    inline static token* invalid_ant = new token(INT, "INT", 0, 0);
     static bool is_group(const token_element& t) {
         return std::visit(overloaded{
-                [](token* tk) {
+                [](const std::shared_ptr<token>& tk) {
                     return false;
                 },
-                [](token_group* grp) {
+                [](const std::shared_ptr<token_group>& grp) {
                     return true;
                 }
             }, t);
     }
-    static bool has_next(token_group* g, int i, int inc) {
+    static bool has_next(std::shared_ptr<token_group> g, int i, int inc) {
         return (i+inc) < g->tokens.size();
     }
+    static std::shared_ptr<token_element> convert(int name, const char* lexeme, int line, std::any value) {
+        return std::make_shared<token_element>(std::make_shared<token>(name, lexeme, 0, value));
+    }
+    inline static std::shared_ptr<token> invalid_ant = std::make_shared<token>(INT, "INT", 0, 0);
 
-    static bool check_errs(std::vector<token_element> tokens) {
-        token* last_token = nullptr;
+    static bool check_errs(std::vector<std::shared_ptr<token_element>> tokens) {
+        std::shared_ptr<token> last_token = nullptr;
         for (int i = 0; i < tokens.size(); ++i) {
-            if(is_group(tokens[1]))
+            if(is_group(*tokens[1]))
                 continue;
-            token* curr = std::get<token*>(tokens[i]);
+            auto curr = std::get<std::shared_ptr<token>>(*tokens[i]);
             //std::cout << *curr << std::endl;
             if(last_token != nullptr) {
                 //std::cout << "last: " << *last_token << std::endl;
@@ -72,11 +75,11 @@ public:
         return true;
     }
 
-    static int get_highest_level_op(token_group* g) {
+    static int get_highest_level_op(std::shared_ptr<token_group> g) {
         int highest = 0;
-        for (token_element& t : g->tokens) {
-            if(!is_group(t)) {
-                token* tk = std::get<token*>(t);
+        for (const auto& t : g->tokens) {
+            if(!is_group(*t)) {
+                auto tk = std::get<std::shared_ptr<token>>(*t);
                 if(tk->is_arithmetic()) {
                     if (tk->is_mul_div()) {
                         highest = std::max(highest, 1);
@@ -90,7 +93,7 @@ public:
         return highest;
     }
 
-    static void recursive_evaluation(token_group* g, int depth = 0) {
+    static void recursive_evaluation(const std::shared_ptr<token_group>& g, int depth = 0) {
         // Following BEDMAS rules, recursively evaluate expressions which are in the form of a group
         // At this point everything should be a primitive, so if a group is found, it should be evaluated
         // If a string is found to be used in an operation (i.e. not alone), throw an error
@@ -104,40 +107,40 @@ public:
         //std::cout << "recursive eval" << std::endl;
         //std::cout << g->tokens.size() << std::endl;
 
-        std::vector<token_element>& tokens = g->tokens;
+        std::vector<std::shared_ptr<token_element>>& tokens = g->tokens;
         bool groups_found = true;
         while (groups_found) {
             groups_found = false;
             for (int i = 0; i < tokens.size(); ++i) {
-                if(is_group(tokens[i])) {
+                if(is_group(*tokens[i])) {
                     groups_found = true;
-                    token_group* tg = std::get<token_group*>(tokens[i]);
+                    auto tg = std::get<std::shared_ptr<token_group>>(*tokens[i]);
                     if(tg->type == UNDETERMINED) {
                         recursive_evaluation(tg, depth+1);
                     }
                     if(tg->type == INT) {
-                        g->tokens[i] = new token(INT, "INT", 0, tg->value);
+                        g->tokens[i] = convert(INT, "INT", 0, tg->value);
                     }
                     if(tg->type == FLOAT) {
-                        g->tokens[i] = new token(FLOAT, "FLOAT", 0, tg->value);
+                        g->tokens[i] = convert(FLOAT, "FLOAT", 0, tg->value);
                     }
                     if(tg->type == DOUBLE) {
-                        g->tokens[i] = new token(DOUBLE, "DOUBLE", 0, tg->value);
+                        g->tokens[i] = convert(DOUBLE, "DOUBLE", 0, tg->value);
                     }
                     if(tg->type == LONG) {
-                        g->tokens[i] = new token(LONG, "LONG", 0, tg->value);
+                        g->tokens[i] = convert(LONG, "LONG", 0, tg->value);
                     }
                     if(tg->type == ULONG64) {
-                        g->tokens[i] = new token(ULONG64, "ULONG64", 0, tg->value);
+                        g->tokens[i] = convert(ULONG64, "ULONG64", 0, tg->value);
                     }
                 }
             }
         }
 
         if(g->tokens.size() == 1) {
-            if (!is_group(g->tokens[0])) {
+            if (!is_group(*g->tokens[0])) {
                 g->type = INT;
-                g->value = std::get<token*>(g->tokens[0])->get_value();
+                g->value = std::get<std::shared_ptr<token>>(*g->tokens[0])->get_value();
                 return;
             }
         }
@@ -156,18 +159,18 @@ public:
             // If these aren't found, find the first of + or -
             // Replace the op, ant, and cons with a new token of the arithmetic value
             int ant_index = -1;
-            token* ant = nullptr;
-            token* cons = nullptr;
-            token* op = nullptr;
+            std::shared_ptr<token> ant = nullptr;
+            std::shared_ptr<token> cons = nullptr;
+            std::shared_ptr<token> op = nullptr;
             for (int i = 0; i < tokens.size(); ++i) {
-                token* t = nullptr;
+                std::shared_ptr<token> t = nullptr;
                 // if its an instance of group, cout it
-                if(is_group(tokens[i])) {
+                if(is_group(*tokens[i])) {
                     std::cout << "GROUP" << std::endl;
                     return;
                 }
                 else {
-                    t = std::get<token*>(tokens[i]);
+                    t = std::get<std::shared_ptr<token>>(*tokens[i]);
                 }
                 highest_level_op = get_highest_level_op(g);
                 //std::cout << "highest op: " << highest_level_op << std::endl;
@@ -178,9 +181,9 @@ public:
                     if(t->get_name() == EXPONENT) {
                         if(has_next(g, i, 1)) {
                             ant_index = i-1;
-                            ant = std::get<token*>(tokens[i-1]);
-                            cons = std::get<token*>(tokens[i+1]);
-                            op = std::get<token*>(tokens[i]);
+                            ant = std::get<std::shared_ptr<token>>(*tokens[i-1]);
+                            cons = std::get<std::shared_ptr<token>>(*tokens[i+1]);
+                            op = std::get<std::shared_ptr<token>>(*tokens[i]);
                             has_ops = true;
                             break;
                         }
@@ -189,9 +192,9 @@ public:
                         //std::cout << "star or slash" << std::endl;
                         if(has_next(g, i, 1)) {
                             ant_index = i-1;
-                            ant = std::get<token*>(tokens[i-1]);
-                            cons = std::get<token*>(tokens[i+1]);
-                            op = std::get<token*>(tokens[i]);
+                            ant = std::get<std::shared_ptr<token>>(*tokens[i-1]);
+                            cons = std::get<std::shared_ptr<token>>(*tokens[i+1]);
+                            op = std::get<std::shared_ptr<token>>(*tokens[i]);
                             has_ops = true;
                             break;
                         }
@@ -205,10 +208,10 @@ public:
                                 ant = nullptr;
                             }
                             else
-                                ant = std::get<token*>(tokens[i-1]);
+                                ant = std::get<std::shared_ptr<token>>(*tokens[i-1]);
 
-                            op = std::get<token*>(tokens[i]);
-                            cons = std::get<token*>(tokens[i+1]);
+                            op = std::get<std::shared_ptr<token>>(*tokens[i]);
+                            cons = std::get<std::shared_ptr<token>>(*tokens[i+1]);
                             // if cons is a minus, take the value after it, and negate it, then replace the cons with the new value
                             // after the minus and delete the minus so its just an addition
                             if(cons->get_name() == MINUS && op->is_arithmetic()) {
@@ -216,7 +219,7 @@ public:
                                 //std::cout << "replacing" << std::endl;
                                 if(!has_next(g,i,2))
                                     continue;
-                                token* cons2 = std::get<token*>(tokens[i+2]);
+                                std::shared_ptr<token> cons2 = std::get<std::shared_ptr<token>>(*tokens[i+2]);
                                 if(cons2->get_name() == INT) {
                                     cons2->set_value(-std::any_cast<int>(cons2->get_value()));
                                 }
@@ -237,7 +240,7 @@ public:
                             }
                             else if(cons->get_name() == PLUS && op->is_arithmetic()) {
                                 tokens.erase(tokens.begin() + (i+1), tokens.begin() + (i+2));
-                                cons = std::get<token*>(tokens[i+1]);
+                                cons = std::get<std::shared_ptr<token>>(*tokens[i+1]);
                             }
                             //g->print_group();
                             has_ops = true;
@@ -258,26 +261,24 @@ public:
                 // if ant or cons is a string and op is add, cast the non-string to a string and add them together
                 if(ant->get_name() == STRING && op->get_name() == PLUS && cons->is_numeric()) {
 
-                    token* old = cons;
+                    std::shared_ptr<token> old = cons;
                     std::string cons_str = cons->to_string();
                     tokens.erase(tokens.begin() + (ant_index+2), tokens.begin() + (ant_index+3));
                     const char* cpy = (const char*)malloc(cons_str.size() + 1);
                     std::strcpy((char*)cpy, cons_str.c_str());
-                    token* new_cons = new token(STRING, cpy, 0, cons_str);
+                    std::shared_ptr<token> new_cons = std::make_shared<token>(STRING, cpy, 0, cons_str);
                     cons = new_cons;
-                    tokens.insert(tokens.begin() + ant_index,cons);
-                    delete old;
+                    tokens.insert(tokens.begin() + ant_index, std::make_shared<token_element>(cons));
                 }
                 else if(cons->get_name() == STRING && op->get_name() == PLUS && ant->is_numeric()) {
-                    token* old = ant;
+                    std::shared_ptr<token> old = ant;
                     std::string ant_str = ant->to_string();
                     tokens.erase(tokens.begin() + (ant_index), tokens.begin() + (ant_index+1));
                     const char* cpy = (const char*)malloc(ant_str.size() + 1);
                     std::strcpy((char*)cpy, ant_str.c_str());
-                    token* new_ant = new token(STRING, cpy, 0, ant_str);
+                    std::shared_ptr<token> new_ant = std::make_shared<token>(STRING, cpy, 0, ant_str);
                     ant = new_ant;
-                    tokens.insert(tokens.begin() + ant_index,ant);
-                    delete old;
+                    tokens.insert(tokens.begin() + ant_index,std::make_shared<token_element>(ant));
                 }
 
                 if(ant->get_name() == STRING && cons->get_name() == STRING && op->get_name() == PLUS) {
@@ -289,8 +290,7 @@ public:
                         tokens.erase(tokens.begin() + (ant_index), tokens.begin() + (ant_index+3));
                         const char* cpy = (const char*)malloc(val.size() + 1);
                         std::strcpy((char*)cpy, val.c_str());
-                        tokens.insert(tokens.begin() + ant_index,
-                            new token(STRING, cpy, 0, val));
+                        tokens.insert(tokens.begin() + ant_index, convert(STRING, cpy, 0, val));
                         g->type = STRING;
                         g->value = val;
                     }
@@ -388,11 +388,11 @@ public:
 
                 if(ant_index == -1) {
                     tokens.erase(tokens.begin(), tokens.begin() + 2);
-                    tokens.insert(tokens.begin(), new token(type, type_str, 0, val));
+                    tokens.insert(tokens.begin(), convert(type,type_str,0,val));
                 }
                 else {
                     tokens.erase(tokens.begin() + (ant_index), tokens.begin() + (ant_index+3));
-                    tokens.insert(tokens.begin() + ant_index, new token(type, type_str, 0, val));
+                    tokens.insert(tokens.begin() + ant_index, convert(type,type_str,0,val));
                 }
                 g->type = type;
                 g->value = val;

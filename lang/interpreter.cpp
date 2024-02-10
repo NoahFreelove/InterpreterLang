@@ -22,9 +22,9 @@ void lang::interpreter::init() {
     has_init = true;
 }
 
-token_group * lang::interpreter::evaluate_tokens(std::vector<token*> tokens, int offset) {
-    std::vector<token*> rest(tokens.begin() + offset, tokens.end());
-    token_group* group = token_grouper::recursive_group(rest);
+std::shared_ptr<token_group> lang::interpreter::evaluate_tokens(std::vector<std::shared_ptr<token>> tokens, int offset) {
+    std::vector<std::shared_ptr<token>> rest(tokens.begin() + offset, tokens.end());
+    auto group = token_grouper::recursive_group(rest);
     group_evaluator::eval_group(group);
     return group;
 }
@@ -49,8 +49,8 @@ void lang::interpreter::input_loop() {
     }
 }
 
-void lang::interpreter::process_variable_declaration(const std::vector<token*> &tokens) {
-    token* type;
+void lang::interpreter::process_variable_declaration(const std::vector<std::shared_ptr<token>> &tokens) {
+    std::shared_ptr<token> type;
     bool persistent = false;
 
     if (tokens.size() == 4) {
@@ -145,9 +145,9 @@ void lang::interpreter::process_variable_declaration(const std::vector<token*> &
 
 }
 
-bool lang::interpreter::set_literal(const std::vector<token *> &tokens, data *d) {
+bool lang::interpreter::set_literal(const std::vector<std::shared_ptr<token>> &tokens, data *d) {
     if(d) {
-        auto* group = evaluate_tokens(tokens, 2);
+        auto group = evaluate_tokens(tokens, 2);
         if(group->type == ERROR) {
             error("error evaluating group");
             return false;
@@ -210,7 +210,7 @@ bool lang::interpreter::set_literal(const std::vector<token *> &tokens, data *d)
     return false;
 }
 
-void lang::interpreter::process_variable_update(const std::vector<token *> &tokens) {
+void lang::interpreter::process_variable_update(const std::vector<std::shared_ptr<token>> &tokens) {
     if(tokens.size() < 3) {
         error("Not enough tokens for variable update");
         return;
@@ -248,12 +248,12 @@ void lang::interpreter::process_variable_update(const std::vector<token *> &toke
     }
 }
 
-void lang::interpreter::process(const std::vector<token *>& tokens) {
-    /*for (const token* t : tokens) {
+void lang::interpreter::process(const std::vector<std::shared_ptr<token>>& tokens) {
+    /*for (const std::shared_ptr<token> t : tokens) {
         std::cout << *t << std::endl;
     }
     return;*/
-    token_group* group = token_grouper::gen_group(tokens);
+    std::shared_ptr<token_group> group = token_grouper::gen_group(tokens);
     //group->print_group();
     group_evaluator::eval_group(group);
     if(group->type == ERROR) {
@@ -296,8 +296,8 @@ void lang::interpreter::process_input( std::string *input) {
         return;
 
     // create seperate token vectors whenever a semicolon is found as a token. semicolon id = 13
-    std::vector<std::vector<token*>> token_vectors;
-    std::vector<token*> current_vector;
+    std::vector<std::vector<std::shared_ptr<token>>> token_vectors;
+    std::vector<std::shared_ptr<token>> current_vector;
     for(auto token : tokens) {
         if(token->get_name() == SEMICOLON) {
             token_vectors.push_back(current_vector);

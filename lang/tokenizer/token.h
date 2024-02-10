@@ -176,7 +176,7 @@ public:
     }
 
     bool is_logical() const {
-        return name >= GT && name <= OR;
+        return name >= DEQUAL && name <= OR;
     }
 
     bool is_DFI() const {
@@ -212,8 +212,9 @@ public:
                 return "long";
             case STRING:
                 return "string";
+            default:
+                return "";
         }
-        return "";
     }
 
     friend std::ostream &operator<<(std::ostream &os, const token &token) {

@@ -8,7 +8,7 @@
 
 class token_grouper {
 public:
-    static token_group* recursive_group(std::vector<token*> tokens) {
+    static std::shared_ptr<token_group> recursive_group(std::vector<std::shared_ptr<token>> tokens) {
         // brackets in the form of ( and ) are used to group tokens
         // so (1+2 + 3*(4+5)) would be grouped as
         // (1,+,2,+,3,*),(4,+,5)
@@ -22,43 +22,44 @@ public:
         // if(token.get_name() == LEFT_PAREN)
         // if(token.get_name() == RIGHT_PAREN)
         //
-        std::stack<token_group*> groups;
-        token_group* root_group = new token_group(); // This will be the root group
+        std::stack<std::shared_ptr<token_group>> groups;
+        auto root_group = std::make_shared<token_group>(); // This will be the root group
         groups.push(root_group); // Start with the root group on the stack
 
-        for (auto* tk : tokens) {
+        for (auto tk : tokens) {
             int type = tk->get_name();
 
             if (type == LEFT_PAREN) {
                 // Start a new group for everything inside the parentheses
-                token_group* new_group = new token_group();
-                groups.top()->add(new_group); // Add this new group to the current group
+                auto new_group = std::make_shared<token_group>();
+                std::shared_ptr<token_group::token_element> element = std::make_shared<token_group::token_element>(new_group);
+
+                groups.top()->add(element); // Add this new group to the current group
                 groups.push(new_group); // Make this the current group
             } else if (type == RIGHT_PAREN) {
                 // End the current group and go back to the parent group
                 groups.pop(); // Pop without adding, it's already added when LEFT_PAREN was encountered
                 if (groups.empty()) {
                     // Error handling: encountered a closing parenthesis without a matching opening one
-                    delete root_group;
-                    return new token_group(); // Return an empty group or handle error
+                    return std::make_shared<token_group>(); // Return an empty group or handle error
                 }
             }
             else {
                 // Add the token to the current group
-                groups.top()->add(tk);
+                std::shared_ptr<token_group::token_element> element = std::make_shared<token_group::token_element>(tk);
+                groups.top()->add(element);
             }
         }
 
         if (groups.size() != 1) {
             // Error handling: not all groups were properly closed
-            delete root_group;
-            return new token_group(); // Return an empty group or handle error
+            return std::make_shared<token_group>(); // Return an empty group or handle error
         }
 
         // At this point, `root_group` contains all tokens properly grouped
         return root_group; // Return the root group
     }
-    static void generate_parens(std::vector<token*>& tokens) {
+    static void generate_parens(std::vector<std::shared_ptr<token>>& tokens) {
         // if there is a truthy check: == aka. DEQUAL,
         // we want to put parenthesis around the antecedent and concequents
         // so: 5-5 == false -> (5-5) == (false)
@@ -66,7 +67,7 @@ public:
         // we want to put parenthesis around the antecedent and concequents
         // so: 5-5 && false -> (5-5) && (false)
         for (size_t i = 0; i < tokens.size(); ++i) {
-            if (tokens[i]->get_name() == DEQUAL || tokens[i]->get_name() == AND) {
+            if (tokens[i]->is_logical()) {
                 if(i == 0) {
                     lang::interpreter::error("Cannot start an expression with a binary operator");
                     return;
@@ -75,28 +76,28 @@ public:
                     lang::interpreter::error("Cannot end an expression with a binary operator");
                     return;
                 }
-                tokens.insert(tokens.begin() + i, new token(RIGHT_PAREN, ")",0,0));
+                tokens.insert(tokens.begin() + i, std::make_unique<token>(RIGHT_PAREN, ")",0,0));
                 i++;
-                tokens.insert(tokens.begin() + i+1, new token(LEFT_PAREN, "(",0,0));
+                tokens.insert(tokens.begin() + i+1, std::make_unique<token>(LEFT_PAREN, "(",0,0));
                 i++;
             }
             else {
                 if(i == 0) {
-                    tokens.insert(tokens.begin(), new token(LEFT_PAREN, "(",0,0));
+                    tokens.insert(tokens.begin(), std::make_unique<token>(LEFT_PAREN, "(",0,0));
                     i++;
                 }
             }
         }
-        tokens.insert(tokens.end(), new token(RIGHT_PAREN, ")",0,0));
+        tokens.insert(tokens.end(), std::make_unique<token>(RIGHT_PAREN, ")",0,0));
     }
-    static token_group* gen_group(std::vector<token*> tokens) {
+    static std::shared_ptr<token_group> gen_group(std::vector<std::shared_ptr<token>> tokens) {
         generate_parens(tokens);
 
-        /*// print them out
-        for (auto* tk : tokens) {
+        // print them out
+        for (auto tk : tokens) {
             std::cout << tk->get_lexeme() << " ";
         }
-        std::cout << std::endl;*/
+        std::cout << std::endl;
 
         return recursive_group(tokens);
 

@@ -6,38 +6,43 @@
 #include "../tokenizer/token.h"
 class group_evaluator {
 public:
-    using token_element = std::variant<token*, token_group*>;
+    using token_element = std::variant<std::shared_ptr<token>, std::shared_ptr<token_group>>;
     template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
     template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
-    static bool recursive_replace(token_group* g) {
+
+    static std::shared_ptr<token_element> convert(int name, const char* lexeme, int line, std::any value) {
+        return std::make_shared<token_element>(std::make_shared<token>(name, lexeme, 0, value));
+    }
+
+    static bool recursive_replace(std::shared_ptr<token_group> g) {
         int i = 0;
         bool allgood = true;
-        for (const token_element& element : g->tokens) {
+        for (const std::shared_ptr<token_element>& element : g->tokens) {
             std::visit(overloaded{
-                [g, i, &allgood](token* tk) {
+                [g, i, &allgood](std::shared_ptr<token> tk) {
                     if(tk->get_name() == IDENTIFIER) {
                         // Replace token in group with value obtained from memory
                         data* d = lang::interpreter::stack->top()->get_data(lang::interpreter::const_char_convert(tk->get_lexeme()));
                         if (d) {
                             if(d->get_type() == "int") {
-                                g->tokens[i] = new token(108, "INT", 0, d->get_int());
+                                g->tokens[i] = convert(108, "INT", 0, d->get_int());
                             }
                             else if(d->get_type() == "float") {
-                                g->tokens[i] = new token(104, "FLOAT", 0, d->get_float());
+                                g->tokens[i] = convert(104, "FLOAT", 0, d->get_float());
                             }
                             else if(d->get_type() == "double") {
-                                g->tokens[i] = new token(105, "DOUBLE", 0, d->get_double());
+                                g->tokens[i] = convert(105, "DOUBLE", 0, d->get_double());
                             }
                             else if (d->get_type() == "string") {
-                                g->tokens[i] = new token(102, "STRING", 0, d->get_string());
+                                g->tokens[i] = convert(102, "STRING", 0, d->get_string());
                             }
                             else if(d->get_type() == "bool") {
                                 bool val = d->get_bool();
                                 if(val) {
-                                    g->tokens[i] = new token(110, "FALSE", 0, false);
+                                    g->tokens[i] = convert(110, "FALSE", 0, false);
                                 }
                                 else {
-                                    g->tokens[i] = new token(109, "TRUE", 0, true);
+                                    g->tokens[i] = convert(109, "TRUE", 0, true);
                                 }
                             }
                         }
@@ -47,10 +52,10 @@ public:
                         }
                     }
                 },
-                [](token_group* grp) {
+                [](std::shared_ptr<token_group> grp) {
                     recursive_replace(grp);
                 }
-            }, element);
+            }, *element);
             i+=1;
         }
         return allgood;
@@ -58,17 +63,17 @@ public:
 
     static bool is_group(const token_element& t) {
         return std::visit(overloaded{
-                [](token* tk) {
+                [](const std::shared_ptr<token>& tk) {
                     return false;
                 },
-                [](token_group* grp) {
+                [](const std::shared_ptr<token_group>& grp) {
                     return true;
                 }
             }, t);
     }
 
-    static void set_group_val(token_group* g) {
-        token* t = std::get<token*>(g->tokens[0]);
+    static void set_group_val(std::shared_ptr<token_group> g) {
+        std::shared_ptr<token> t = std::get<std::shared_ptr<token>>(*g->tokens[0]);
         if(t->get_name() == TRUE) {
             g->type = TRUE;
             g->value = true;
@@ -94,7 +99,7 @@ public:
             g->value = t->get_value();
         }
     }
-    static void eval_group(token_group* g, int depth = 0) {
+    static void eval_group(std::shared_ptr<token_group> g, int depth = 0) {
         bool result = recursive_replace(g);
         if(!result) {
             g->type = ERROR;
@@ -105,9 +110,9 @@ public:
         bool is_pure_arithmetic = true;
         bool has_err = false;
         //std::cout << "Len: " << g->tokens.size() << std::endl;
-        for (const token_element& element : g->tokens) {
+        for (const std::shared_ptr<token_element>& element : g->tokens) {
             std::visit(overloaded{
-                [g, &has_arithmetic, &is_pure_arithmetic](token* tk) {
+                [g, &has_arithmetic, &is_pure_arithmetic](const std::shared_ptr<token>& tk) {
                     if(tk->is_arithmetic()) {
                         has_arithmetic = true;
                     }
@@ -115,14 +120,14 @@ public:
                         is_pure_arithmetic = false;
                     }
                 },
-                [g, depth, &has_err](token_group* grp) {
+                [g, depth, &has_err](std::shared_ptr<token_group> grp) {
                     if(grp->type == UNDETERMINED)
                         eval_group(grp,depth+1);
                     if(grp->type == ERROR) {
                         has_err = true;
                     }
                 }
-            }, element);
+            }, *element);
         }
         if(has_err) {
             g->type = ERROR;
@@ -131,14 +136,14 @@ public:
         }
 
         bool has_literal = false;
-        for (const token_element& element : g->tokens) {
+        for (const std::shared_ptr<token_element>& element : g->tokens) {
             std::visit(overloaded{
-                [g, &has_literal](token* tk) {
+                [g, &has_literal](std::shared_ptr<token> tk) {
                     if(tk->is_literal()) {
                         has_literal = true;
                     }
                 },
-                [g, depth, &has_err](token_group* grp) {
+                [g, depth, &has_err](std::shared_ptr<token_group> grp) {
                     if(grp->type == UNDETERMINED)
                         eval_group(grp,depth+1);
 
@@ -146,7 +151,7 @@ public:
                         has_err = true;
                     }
                 }
-            }, element);
+            }, *element);
         }
 
         if(has_err) {
@@ -167,8 +172,8 @@ public:
             g->type = UNDETERMINED;
         }
         if (g->tokens.size() == 1) {
-            if(is_group(g->tokens[0])) {
-                token_group* group = std::get<token_group*>(g->tokens[0]);
+            if(is_group(*g->tokens[0])) {
+                auto group = std::get<std::shared_ptr<token_group>>(*g->tokens[0]);
                 g->value = group->value;
                 g->type = group->type;
             }
@@ -184,8 +189,8 @@ public:
 
         // if there is only one token, set the group type and value to that token
         if (g->tokens.size() == 1) {
-            if(is_group(g->tokens[0])) {
-                token_group* group = std::get<token_group*>(g->tokens[0]);
+            if(is_group(*g->tokens[0])) {
+                auto group = std::get<std::shared_ptr<token_group>>(*g->tokens[0]);
                 g->value = group->value;
                 g->type = group->type;
             }

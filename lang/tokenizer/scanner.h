@@ -1,5 +1,6 @@
 #ifndef SCANNER_H
 #define SCANNER_H
+#include <memory>
 #include <vector>
 
 #include "token.h"
@@ -14,7 +15,7 @@ namespace lang {
         bool in_multi_line_expression = false;
         bool in_multi_str = false;
         bool in_multi_com = false;
-        std::vector<token*> multi_line_expression = {};
+        std::vector<std::shared_ptr<token>> multi_line_expression = {};
         std::string* data;
         bool err = false;
 
@@ -57,21 +58,21 @@ namespace lang {
             return data->c_str()[current++];
         }
 
-        token* get_digit(char first_num);
+        std::shared_ptr<token> get_digit(char first_num);
 
-        token * get_identifier(char c);
+        std::shared_ptr<token> get_identifier(char c);
 
         void skip(int amount = 1);
 
-        token* trigger_error(char c);
+        std::shared_ptr<token> trigger_error(char c);
 
-        token * get_string();
+        std::shared_ptr<token> get_string();
 
-        token* parse_token();
+        std::shared_ptr<token> parse_token();
 
     public:
         scanner();
-        std::vector<token*> scan_line(std::string* data);
+        std::vector<std::shared_ptr<token>> scan_line(std::string* data);
         bool in_multi_line() const;
         bool in_multi_string() const;
         bool in_multi_comment() const;

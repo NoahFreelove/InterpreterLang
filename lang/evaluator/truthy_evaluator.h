@@ -3,45 +3,49 @@
 #include "../tokenizer/token_group.h"
 #include "../tokenizer/token.h"
 class truthy_evaluator {
-    using token_element = std::variant<token*, token_group*>;
+    using token_element = std::variant<std::shared_ptr<token>, std::shared_ptr<token_group>>;
     template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
     template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
     inline static token* invalid_ant = new token(INT, "INT", 0, 0);
     static bool is_group(const token_element& t) {
         return std::visit(overloaded{
-                [](token* tk) {
+                [](const std::shared_ptr<token>& tk) {
                     return false;
                 },
-                [](token_group* grp) {
+                [](const std::shared_ptr<token_group>& grp) {
                     return true;
                 }
             }, t);
     }
 
-    static void recursive_evaluation(token_group* g) {
-        std::vector<token_element>& tokens = g->tokens;
+    static std::shared_ptr<token_element> convert(int name, const char* lexeme, int line, std::any value) {
+        return std::make_shared<token_element>(std::make_shared<token>(name, lexeme, 0, value));
+    }
+
+    static void recursive_evaluation(std::shared_ptr<token_group> g) {
+        std::vector<std::shared_ptr<token_element>>& tokens = g->tokens;
         bool groups_found = true;
         while (groups_found) {
             groups_found = false;
             for (int i = 0; i < tokens.size(); ++i) {
-                if(is_group(tokens[i])) {
+                if(is_group(*tokens[i])) {
                     groups_found = true;
-                    token_group* tg = std::get<token_group*>(tokens[i]);
+                    auto tg = std::get<std::shared_ptr<token_group>>(*tokens[i]);
                     if(tg->type == UNDETERMINED) {
                         recursive_evaluation(tg);
                     }
                     if(tg->type == TRUE) {
-                        g->tokens[i] = new token(TRUE, "TRUE", 0, true);
+                        g->tokens[i] = convert(TRUE, "TRUE", 0, true);
                     }
                     if(tg->type == FALSE) {
-                        g->tokens[i] = new token(FALSE, "FALSE", 0, false);
+                        g->tokens[i] = convert(FALSE, "FALSE", 0, false);
                     }
                 }
             }
         }
         // if there is a single true or false token, just set this groups' value to that
         if (tokens.size() == 1) {
-            token* t = std::get<token*>(tokens[0]);
+            auto t = std::get<std::shared_ptr<token>>(*tokens[0]);
             if(t->get_name() == TRUE) {
                 g->type = TRUE;
             }
@@ -52,8 +56,8 @@ class truthy_evaluator {
         else {
             // if there are no logical operators, then we can just set the type to UNDETERMINED
             bool has_ops = false;
-            for (int i = 0; i < tokens.size(); ++i) {
-                token* t = std::get<token*>(tokens[i]);
+            for (auto & i : tokens) {
+                auto t = std::get<std::shared_ptr<token>>(*i);
                 if(t->is_logical()) {
                     has_ops = true;
                     break;
@@ -69,34 +73,32 @@ class truthy_evaluator {
         while (has_ops) {
             has_ops = false;
             int ant_index = -1;
-            token* ant = nullptr;
-            token* cons = nullptr;
-            token* op = nullptr;
+            std::shared_ptr<token> ant;
+            std::shared_ptr<token> cons;
+            std::shared_ptr<token> op;
 
             // before we eval, we must check for if ! is attached to a lone token
             // if so, we must evaluate it first
 
             for (int i = 0; i < tokens.size(); ++i) {
-                token* t = nullptr;
-                if(is_group(tokens[i])) {
+                std::shared_ptr<token> t;
+                if(is_group(*tokens[i])) {
                     std::cout << "GROUP" << std::endl;
                     return;
                 }
                 else {
-                    t = std::get<token*>(tokens[i]);
+                    t = std::get<std::shared_ptr<token>>(*tokens[i]);
                 }
                 if(t->get_name() == BANG) {
                     if(i+1 < tokens.size()) {
-                        t = std::get<token*>(tokens[i+1]);
+                        t = std::get<std::shared_ptr<token>>(*tokens[i+1]);
                         if(t->get_name() == TRUE) {
-                            tokens[i] = new token(FALSE, "FALSE", 0, false);
+                            tokens[i] = convert(FALSE, "FALSE", 0, false);
                             tokens.erase(tokens.begin() + i + 1);
-                            delete t;
                         }
                         else if (t->get_name() == FALSE) {
-                            tokens[i] = new token(TRUE, "TRUE", 0, true);
+                            tokens[i] = convert(TRUE, "TRUE", 0, true);
                             tokens.erase(tokens.begin() + i + 1);
-                            delete t;
                         }
                         else {
                             lang::interpreter::error("cannot apply ! to non-logical value");
@@ -107,28 +109,28 @@ class truthy_evaluator {
             //g->print_group();
 
             for (int i = 0; i < tokens.size(); ++i) {
-                token* t = nullptr;
-                if(is_group(tokens[i])) {
+                std::shared_ptr<token> t = nullptr;
+                if(is_group(*tokens[i])) {
                     std::cout << "GROUP" << std::endl;
                     return;
                 }
                 else {
-                    t = std::get<token*>(tokens[i]);
+                    t = std::get<std::shared_ptr<token>>(*tokens[i]);
                 }
                 if(t->is_logical()) {
                     // do and and or first because they have lower precedence over
                     if(t->get_name() == AND) {
                         ant_index = i - 1;
-                        ant = std::get<token*>(tokens[ant_index]);
-                        cons = std::get<token*>(tokens[i + 1]);
+                        ant = std::get<std::shared_ptr<token>>(*tokens[ant_index]);
+                        cons = std::get<std::shared_ptr<token>>(*tokens[i + 1]);
                         op = t;
                         has_ops = true;
                         break;
                     }
                     else if(t->get_name() == OR) {
                         ant_index = i - 1;
-                        ant = std::get<token*>(tokens[ant_index]);
-                        cons = std::get<token*>(tokens[i + 1]);
+                        ant = std::get<std::shared_ptr<token>>(*tokens[ant_index]);
+                        cons = std::get<std::shared_ptr<token>>(*tokens[i + 1]);
                         op = t;
                         has_ops = true;
                         break;
@@ -138,8 +140,8 @@ class truthy_evaluator {
         }
     }
 public:
-    static void truth_eval(token_group* g) {
-        recursive_evaluation(g);
+    static void truth_eval(std::shared_ptr<token_group> g) {
+        //recursive_evaluation(g);
     }
 };
 #endif //TRUTHY_EVALUATOR_H
