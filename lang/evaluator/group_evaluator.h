@@ -38,11 +38,11 @@ public:
                             }
                             else if(d->get_type() == "bool") {
                                 bool val = d->get_bool();
-                                if(val) {
-                                    g->tokens[i] = convert(110, "FALSE", 0, false);
+                                if(!val) {
+                                    g->tokens[i] = convert(FALSE, "FALSE", 0, false);
                                 }
                                 else {
-                                    g->tokens[i] = convert(109, "TRUE", 0, true);
+                                    g->tokens[i] = convert(TRUE, "TRUE", 0, true);
                                 }
                             }
                         }

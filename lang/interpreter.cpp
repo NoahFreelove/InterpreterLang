@@ -189,15 +189,17 @@ bool lang::interpreter::set_literal(const std::vector<std::shared_ptr<token>> &t
             }
         }
         else if (d->get_type() == "bool") {
-            std::cout << "Setting bool" << std::endl;
-            std::cout<< tokens[2]->get_name() << std::endl;
-            if(tokens[2]->get_name() == FALSE)
-                d->set_value_bool(false);
-            else if(tokens[2]->get_name() == TRUE)
+            if(group->type == TRUE) {
                 d->set_value_bool(true);
-            else {
-                error("invalid bool value");
             }
+            else if(group->type == FALSE) {
+                d->set_value_bool(false);
+            }
+            else {
+                error("invalid bool type");
+            }
+
+
         }
         else if (d->get_type() == "unsigned long long") {
             d->set_value_ulonglong(std::any_cast<unsigned long long>(tokens[2]->get_value()));

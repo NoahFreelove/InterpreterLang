@@ -190,7 +190,6 @@ class truthy_evaluator {
                     int type = INT;
                     const char* type_str = "";
                     std::any val;
-                    std::cout << id_to_name(op->get_name()) << std:: endl;
                 bool result = false;
                 if(op->is_first_order_logic()) {
                     bool a = (ant->get_name() == TRUE);

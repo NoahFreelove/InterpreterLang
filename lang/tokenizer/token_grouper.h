@@ -94,10 +94,10 @@ public:
         generate_parens(tokens);
 
         // print them out
-        for (auto tk : tokens) {
+        /*for (auto tk : tokens) {
             std::cout << tk->get_lexeme() << " ";
         }
-        std::cout << std::endl;
+        std::cout << std::endl;*/
 
         return recursive_group(tokens);
 
