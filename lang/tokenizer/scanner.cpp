@@ -126,9 +126,12 @@ std::shared_ptr<token> lang::scanner::get_identifier(char c) {
     if(str == "if") {
         return std::make_shared<token>(IF, cstr, line);
     }
+    if(str == "endif") {
+        return std::make_shared<token>(END_IF, cstr, line);
+    }
     if(str == "else") {
         return std::make_shared<token>(ELSE, cstr, line);
-    }if(str == "else-if") {
+    }if(str == "elseif") {
         return std::make_shared<token>(ELSE_IF, cstr, line);
     }
     if(str == "for") {
@@ -158,11 +161,11 @@ std::shared_ptr<token> lang::scanner::get_identifier(char c) {
     if(str == "return") {
         return std::make_shared<token>(RETURN, cstr, line);
     }
-    if(str == "function") {
-        return std::make_shared<token>(FUNCTION, cstr, line);
+    if(str == "proc") {
+        return std::make_shared<token>(PROC, cstr, line);
     }
-    if(str == "null") {
-        return std::make_shared<token>(NULL_LANG, cstr, line);
+    if(str == "endproc") {
+        return std::make_shared<token>(END_PROC, cstr, line);
     }
     if(str == "var") {
         return std::make_shared<token>(VAR, cstr, line);
@@ -245,6 +248,14 @@ std::shared_ptr<token> lang::scanner::get_identifier(char c) {
     if(str == "ulong64") {
         return std::make_shared<token>(ULONG64_KEYW, cstr, line);
     }
+    if(str == "not")
+        return std::make_shared<token>(BANG, "!", line, nullptr);
+    if(str == "is")
+        return std::make_shared<token>(TEQUAL, "===", line, nullptr);
+    if(str == "isnt")
+        return std::make_shared<token>(BANG_EQUAL, "!=", line, nullptr);
+
+
     return std::make_shared<token>(IDENTIFIER, cstr, line);
 }
 

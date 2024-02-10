@@ -279,6 +279,12 @@ void lang::interpreter::process(const std::vector<std::shared_ptr<token>>& token
         else if(group->type == ULONG64) {
             std::cout << std::any_cast<unsigned long long>(group->value) << std::endl;
         }
+        else if (group->type == TRUE) {
+            std::cout << "true" << std::endl;
+        }
+        else if (group->type == FALSE) {
+            std::cout << "false" << std::endl;
+        }
         else {
             std::cout << "No value" << std::endl;
         }

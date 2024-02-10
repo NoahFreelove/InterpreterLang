@@ -72,7 +72,7 @@ public:
             }, t);
     }
 
-    static void set_group_val(std::shared_ptr<token_group> g) {
+    static void set_group_val(std::shared_ptr<token_group>& g) {
         std::shared_ptr<token> t = std::get<std::shared_ptr<token>>(*g->tokens[0]);
         if(t->get_name() == TRUE) {
             g->type = TRUE;
@@ -198,6 +198,7 @@ public:
                 set_group_val(g);
             }
         }
+
     }
 };
 

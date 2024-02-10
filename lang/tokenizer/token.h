@@ -38,8 +38,8 @@
 #define BANG_EQUAL 22
 #define AND 23
 #define OR 24
-#define SLASHI 25
-#define XOR 26
+#define XOR 25
+#define SLASHI 26
 #define EXPONENT 27
 #define ID_GRAB 28
 // &
@@ -67,13 +67,16 @@
 #define PRIVATE 1008
 #define PUBLIC 1009
 #define RETURN 1012
-#define FUNCTION 1013
-#define NULL_LANG 1014
+#define PROC 1013
 #define VAR 1015
 #define AS 1016
 #define BYVAL 1017
 #define DISCARD 1018
 #define PERSISTENT 1019
+#define END_IF 1020
+#define END_PROC 1021
+// I think persistent is a good word because something like global or heap wouldn't make sense
+// Everything is heap, and global could work, but I don't like it.
 
 // TYPEWORDS
 #define INT_KEYW 1120
@@ -176,7 +179,7 @@ public:
     }
 
     bool is_logical() const {
-        return name >= DEQUAL && name <= OR;
+        return name >= DEQUAL && name <= XOR;
     }
 
     bool is_DFI() const {
@@ -199,6 +202,14 @@ public:
         return name == AND || name == OR;
     }
 
+    bool is_bool() const {
+        return name == TRUE || name == FALSE;
+    }
+
+    bool is_first_order_logic() const {
+        return name == OR || name == XOR || name == AND;
+    }
+
     static const char* type_to_char(int i) {
         switch (i) {
             case DOUBLE: {
@@ -212,6 +223,10 @@ public:
                 return "long";
             case STRING:
                 return "string";
+            case TRUE:
+                return "bool";
+            case FALSE:
+                return "false";
             default:
                 return "";
         }

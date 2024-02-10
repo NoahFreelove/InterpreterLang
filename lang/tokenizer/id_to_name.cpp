@@ -68,6 +68,8 @@ std::string id_to_name(int id) {
             return "INT";
         case IF:
             return "IF";
+        case END_IF:
+            return "END_IF";
         case ELSE:
             return "ELSE";
         case ELSE_IF:
@@ -90,10 +92,10 @@ std::string id_to_name(int id) {
             return "FALSE";
         case RETURN:
             return "RETURN";
-        case FUNCTION:
-            return "FUNCTION";
-        case NULL_LANG:
-            return "NULL_LANG";
+        case PROC:
+            return "PROC";
+        case END_PROC:
+            return "END_PROC";
         case VAR:
             return "VAR";
         case AS:
