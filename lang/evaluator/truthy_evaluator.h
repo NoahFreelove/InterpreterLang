@@ -195,7 +195,7 @@ class truthy_evaluator {
                     bool a = (ant->get_name() == TRUE);
                     bool b = (cons->get_name() == TRUE);
                     if(op->get_name() == XOR) {
-                        result = (a && !b) || (b && !a);
+                        result = a^b;
                     }
                     else if(op->get_name() == OR) {
                         result = a || b;

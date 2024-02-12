@@ -28,8 +28,8 @@ void lang::interpreter::init() {
     stack = new std::vector<stack_frame*>();
     stack->push_back(global_frame);
     std::filesystem::__cxx11::path cwd = std::filesystem::current_path();
-    global_frame->set(const_char_convert("WORKING_DIRECTORY"), new data(new std::string(cwd.string()), "string"));
-    global_frame->set(const_char_convert("VERSION"), new data(new float(VERSION_MAJOR + (VERSION_MINOR*0.01f)), "float"));
+    //global_frame->set(const_char_convert("WORKING_DIRECTORY"), new data(new std::string(cwd.string()), "string"));
+    //global_frame->set(const_char_convert("VERSION"), new data(new float(VERSION_MAJOR + (VERSION_MINOR*0.01f)), "float"));
 
     has_init = true;
     if_block_statuses = new std::stack<bool>();
@@ -79,7 +79,7 @@ void lang::interpreter::process_variable_declaration(const std::vector<std::shar
         }
         type = tokens[0];
     }
-    else if (tokens.size()>3) {
+    else if (tokens.size()>=3) {
         if(tokens[1]->get_name() != IDENTIFIER || !tokens[0]->is_typeword()) {
             error("Invalid variable declaration");
             return;
@@ -350,7 +350,7 @@ void lang::interpreter::process(const std::vector<std::shared_ptr<token>>& token
             std::cout << std::any_cast<long>(group->value) << std::endl;
         }
         else if(group->type == STRING) {
-            std::cout << std::any_cast<std::string>(group->value) << std::endl;
+            std::cout << '"' <<std::any_cast<std::string>(group->value) << '"' << std::endl;
         }
         else if(group->type == ULONG64) {
             std::cout << std::any_cast<unsigned long long>(group->value) << std::endl;
@@ -405,18 +405,18 @@ void lang::interpreter::process_input( std::string *input) {
 
     for (auto &token_vector : token_vectors) {
 
-        if(token_vector[0]->get_name() == LEFT_BRACE) {
-            push_stackframe();
-            token_vector.erase(token_vector.begin());
-        }
-
         if(!if_block_statuses->empty()) {
             if(token_vector[0]->get_name() == END_IF) {
                 if_block_statuses->pop();
-                if_results->pop();
                 check_pop_stack(tokens);
                 continue;
             }
+            if(if_block_statuses->top() == false)
+                continue;
+        }
+        if(token_vector[0]->get_name() == LEFT_BRACE) {
+            push_stackframe();
+            token_vector.erase(token_vector.begin());
         }
         if (token_vector[0]->is_typeword()) {
             process_variable_declaration(token_vector);

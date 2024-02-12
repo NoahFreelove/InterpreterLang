@@ -33,7 +33,7 @@ Example:
 ## Operands
 * `and` or `&&` - And
 * `or` or `||` - Or
-* 'xor' - Exclusive or
+* `xor` - Exclusive or
 * `(` - open paren
 * `)` - close paren
 * `{` - start code block

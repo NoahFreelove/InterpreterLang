@@ -68,7 +68,7 @@ static void print(const std::vector<std::shared_ptr<token>>& tokens, int offset 
         std::cout << std::any_cast<long>(group->value) << std::endl;
     }
     else if(group->type == STRING) {
-        std::cout << '"' <<std::any_cast<std::string>(group->value) << '"' << std::endl;
+        std::cout << std::any_cast<std::string>(group->value) << std::endl;
     }
     else if(group->type == TRUE) {
         if(std::any_cast<bool>(group->value)) {

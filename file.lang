@@ -1,6 +1,13 @@
 /*
     This is a file read test of Interpreter Lang
 */
+
+{
 int x
+print "Set an int value: "
 x = input
-print x
+print "Your value: " + x
+}
+print "Does your number exist anymore? Let's try:"
+x
+print ":("
