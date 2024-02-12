@@ -8,12 +8,9 @@ Should support standard "C-Style" language keywords like:
 `if, else, for, while, struct, private, public, true, false, return`
 
 In addition, it should have the following keywords
-`function, null, var, as, byval, discard, persistent`
+`proc, byval, discard, persistent`
 
-* `function` - Declares function: `function name(int var1, string var2){}`
-* `null` - Points to null memory address, any operations on null should be ignored. Ex: `null = 0`, `null = object`
-* `var` - Defines a variable. Identifier should come after declaration. Ex: `var name`
-* `as` - Sets variable's type in declaration. Ex: `var name as int;`
+* `proc` - Declares function: `proc name(int var1, string var2){}`
 * `byval` - To be used in function calls, passes object in by value not by address. This creates a copy in the function's
 scope. Ex: `func(byval variable_name);` would (deep)copy the value of variable_name into `func()`
 * `discard` - Moves the inputted variable into the function's scope so it is deleted after the function exits.
@@ -31,11 +28,12 @@ deletion.
 * Ints - Default for any whole number literal can also be specified by `i`
 
 Example:
-`var` name = `3.14d` : This should create a double with value 3.14 under the name 'var'
+`double` name = `3.14d` : This should create a double with value 3.14 under the name 'name'
 
 ## Operands
 * `and` or `&&` - And
 * `or` or `||` - Or
+* 'xor' - Exclusive or
 * `(` - open paren
 * `)` - close paren
 * `{` - start code block
@@ -60,4 +58,3 @@ Example:
 * `=` - set operator
 * `==` - equal operator (byval)
 * `===` - abs-equality operator (checks memory addresses)
-* `^^` - xor operator

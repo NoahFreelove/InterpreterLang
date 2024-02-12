@@ -68,8 +68,6 @@
 #define PUBLIC 1009
 #define RETURN 1012
 #define PROC 1013
-#define VAR 1015
-#define AS 1016
 #define BYVAL 1017
 #define DISCARD 1018
 #define PERSISTENT 1019

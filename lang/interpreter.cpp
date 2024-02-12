@@ -65,21 +65,27 @@ void lang::interpreter::input_loop() {
 void lang::interpreter::process_variable_declaration(const std::vector<std::shared_ptr<token>> &tokens) {
     std::shared_ptr<token> type;
     bool persistent = false;
+    bool set_after = false;
 
-    if (tokens.size() == 4) {
-        if(tokens[1]->get_name() != IDENTIFIER || tokens[2]->get_name() != AS || !tokens[3]->is_typeword()) {
+    if (tokens.size() == 2) {
+        if(tokens[1]->get_name() != IDENTIFIER || !tokens[0]->is_typeword()) {
             error("Invalid variable declaration");
             return;
         }
-        type = tokens[3];
+        type = tokens[0];
     }
-    else if (tokens.size()>4) {
-        if(tokens[1]->get_name() != IDENTIFIER || tokens[2]->get_name() != AS || !tokens[4]->is_typeword() || tokens[3]->get_name() != PERSISTENT) {
+    else if (tokens.size()>3) {
+        if(tokens[1]->get_name() != IDENTIFIER || !tokens[0]->is_typeword()) {
             error("Invalid variable declaration");
             return;
         }
-        type = tokens[4];
-        persistent = true;
+        if (tokens[2]->get_name() == PERSISTENT) {
+            persistent = true;
+        }
+        else if(tokens[2]->get_name() == EQUAL) {
+            set_after = true;
+        }
+        type = tokens[0];
     }
     else {
         error("Not enough tokens for variable declaration");
@@ -154,6 +160,14 @@ void lang::interpreter::process_variable_declaration(const std::vector<std::shar
                 return;
             }
         }
+    if(set_after) {
+        std::vector concat_vec = {tokens[1]};
+        // add everything after type index
+        for(int i = 2; i < tokens.size(); i++) {
+            concat_vec.push_back(tokens[i]);
+        }
+        process_variable_update(concat_vec);
+    }
         //std::cout << frame->get_data(name)->get() << std::endl;
 
 }
@@ -377,11 +391,9 @@ void lang::interpreter::process_input( std::string *input) {
                 continue;
             }
         }
-        if (token_vector[0]->is_keyword()) {
-            if (token_vector[0]->get_name() == VAR) {
-                process_variable_declaration(token_vector);
-                continue;
-            }
+        if (token_vector[0]->is_typeword()) {
+            process_variable_declaration(token_vector);
+            continue;
         }
         if(token_vector[0]->is_control_flow()) {
             control_flow_runner::process_control_flow(tokens);

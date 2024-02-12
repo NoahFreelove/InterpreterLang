@@ -98,10 +98,6 @@ std::string id_to_name(int id) {
             return "PROC";
         case END_PROC:
             return "END_PROC";
-        case VAR:
-            return "VAR";
-        case AS:
-            return "AS";
         case BYVAL:
             return "BYVAL";
         case DISCARD:

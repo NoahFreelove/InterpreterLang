@@ -169,12 +169,6 @@ std::shared_ptr<token> lang::scanner::get_identifier(char c) {
     if(str == "endproc") {
         return std::make_shared<token>(END_PROC, cstr, line);
     }
-    if(str == "var") {
-        return std::make_shared<token>(VAR, cstr, line);
-    }
-    if(str == "as") {
-        return std::make_shared<token>(AS, cstr, line);
-    }
     if(str == "byval") {
         return std::make_shared<token>(BYVAL, cstr, line);
     }
