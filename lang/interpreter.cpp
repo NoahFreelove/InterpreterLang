@@ -410,6 +410,14 @@ void lang::interpreter::process_input( std::string *input) {
                         arithmetic_evaluator::convert_op_eq_to_op(token_vector);
                     }
                 }
+                if(token_vector.size() == 3) {
+                    if(token_vector[1]->get_name() == PLUS && token_vector[2]->get_name() == PLUS) {
+                        arithmetic_evaluator::convert_inc_to_op(token_vector);
+                    }
+                    else if(token_vector[1]->get_name() == MINUS && token_vector[2]->get_name() == MINUS) {
+                        arithmetic_evaluator::convert_dec_to_op(token_vector);
+                    }
+                }
 
                 if(token_vector[1]->get_name() == EQUAL) {
                     process_variable_update(token_vector);

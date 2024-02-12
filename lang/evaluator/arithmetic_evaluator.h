@@ -10,6 +10,8 @@ public:
     using token_element = std::variant<std::shared_ptr<token>, std::shared_ptr<token_group>>;
     template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
     template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
+
+
     static bool is_group(const token_element& t) {
         return std::visit(overloaded{
                 [](const std::shared_ptr<token>& tk) {
@@ -415,6 +417,27 @@ public:
         /*for (int i = 0; i < tokens.size(); ++i) {
             std::cout << *tokens[i] << std::endl;
         }*/
+    }
+    static void convert_inc_to_op(std::vector<std::shared_ptr<token>> & tokens) {
+        auto id = tokens[0];
+        // erase all in tokens
+        tokens.clear();
+        tokens.push_back(id);
+        tokens.push_back(std::make_shared<token>(EQUAL, "=", 0, 0));
+        tokens.push_back(std::make_shared<token>(IDENTIFIER, id->get_lexeme(), 0, id->get_lexeme()));
+        tokens.push_back(std::make_shared<token>(PLUS, "+", 0, 0));
+        tokens.push_back(std::make_shared<token>(INT, "1", 0, 1));
+    }
+
+    static void convert_dec_to_op(std::vector<std::shared_ptr<token>> & tokens) {
+        auto id = tokens[0];
+        // erase all in tokens
+        tokens.clear();
+        tokens.push_back(id);
+        tokens.push_back(std::make_shared<token>(EQUAL, "=", 0, 0));
+        tokens.push_back(std::make_shared<token>(IDENTIFIER, id->get_lexeme(), 0, id->get_lexeme()));
+        tokens.push_back(std::make_shared<token>(MINUS, "-", 0, 0));
+        tokens.push_back(std::make_shared<token>(INT, "1", 0, 1));
     }
 };
 
