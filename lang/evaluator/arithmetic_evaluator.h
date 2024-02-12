@@ -188,7 +188,7 @@ public:
                             break;
                         }
                     }
-                    if( highest_level_op == 1 && (t->get_name() == STAR || t->get_name() == SLASH)) {
+                    if( highest_level_op == 1 && (t->get_name() == STAR || t->get_name() == SLASH || t->get_name() == SLASHI)) {
                         //std::cout << "star or slash" << std::endl;
                         if(has_next(g, i, 1)) {
                             ant_index = i-1;

@@ -9,7 +9,7 @@ public:
         else if(op == STAR) {
             return a * b;
         }
-        else if(op == SLASH) {
+        else if(op == SLASH || op == SLASHI) {
             return a / b;
         }
         else if(op == PLUS) {
@@ -33,6 +33,9 @@ public:
         else if(op == SLASH) {
             return a / b;
         }
+        else if (op == SLASHI) {
+            return (int)(a/b);
+        }
         else if(op == PLUS) {
             return a + b;
         }
@@ -53,6 +56,9 @@ public:
         else if(op == SLASH) {
             return a / b;
         }
+        else if (op == SLASHI) {
+            return (int)(a/b);
+        }
         else if(op == PLUS) {
             return a + b;
         }
@@ -70,7 +76,7 @@ public:
         else if(op == STAR) {
             return a * b;
         }
-        else if(op == SLASH) {
+        else if(op == SLASH || op == SLASHI) {
             return a / b;
         }
         else if(op == PLUS) {

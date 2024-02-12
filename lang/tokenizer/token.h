@@ -155,7 +155,7 @@ public:
     }
 
     bool is_arithmetic() const {
-        return (name >= PLUS && name <= SLASH) || name == EXPONENT;
+        return (name >= PLUS && name <= SLASH) || name == EXPONENT || name == SLASHI;
     }
 
     bool is_add_sub() const {
@@ -163,7 +163,7 @@ public:
     }
 
     bool is_mul_div() const {
-        return name == STAR || name == SLASH;
+        return name == STAR || name == SLASH || name == SLASHI;
     }
 
     bool is_typeword() const {
