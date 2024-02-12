@@ -73,10 +73,11 @@
 #define BYVAL 1017
 #define DISCARD 1018
 #define PERSISTENT 1019
-#define END_IF 1020
-#define END_PROC 1021
 // I think persistent is a good word because something like global or heap wouldn't make sense
 // Everything is heap, and global could work, but I don't like it.
+#define END_IF 1020
+#define END_PROC 1021
+#define END_ELSE 1022
 
 // TYPEWORDS
 #define INT_KEYW 1120
@@ -99,6 +100,7 @@
 #define UNDEFINE 10008
 #define ISDEFINED 10009
 #define IMPORT 10010
+#define ID 10011
 
 class token {
     int name;
@@ -250,6 +252,9 @@ public:
         }
         else if(name == DOUBLE) {
             return std::to_string(std::any_cast<double>(value));
+        }
+        else if(name == LONG) {
+            return std::to_string(std::any_cast<long>(value));
         }
         else if(name == STRING) {
             return std::any_cast<std::string>(value);

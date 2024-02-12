@@ -31,7 +31,8 @@ void lang::interpreter::init() {
     stack->top()->set(const_char_convert("WORKING_DIRECTORY"), new data(new std::string(cwd.string()), "string"));
     has_init = true;
     if_block_statuses = new std::stack<bool>();
-    defined->push_back("IMPLICIT_FLOAT_DOUBLE");
+    defined->push_back("IMPLICIT_DOUBLE_TO_FLOAT");
+    defined->push_back("IMPLICIT_UPCAST");
 }
 
 std::shared_ptr<token_group> lang::interpreter::evaluate_tokens(std::vector<std::shared_ptr<token>> tokens, int offset) {
@@ -109,7 +110,7 @@ void lang::interpreter::process_variable_declaration(const std::vector<std::shar
             }
             case FLOAT_KEYW: {
                 float *val = new float;
-                *val = 0.0;
+                *val = 0.0f;
                 frame->set(name, new data(val, "float"));
                 break;
             }
@@ -121,7 +122,7 @@ void lang::interpreter::process_variable_declaration(const std::vector<std::shar
             }
             case LONG_KEYW: {
                 long *val = new long;
-                *val = 0;
+                *val = 0L;
                 frame->set(name, new data(val, "long"));
                 break;
             }
@@ -168,9 +169,36 @@ bool lang::interpreter::set_literal(const std::vector<std::shared_ptr<token>> &t
         if(d->get_type() != token::type_to_char(group->type)) {
             // The default value for literals with decimals is a double which can be inconvinent if you have a float
             // as in most cases the float value can use the double value.
-            if(d->get_type() == "float" && group->type == DOUBLE && is_defined("IMPLICIT_FLOAT_DOUBLE")) {
+            if(d->get_type() == "float" && group->type == DOUBLE && is_defined("IMPLICIT_DOUBLE_TO_FLOAT")) {
                 group->value = (float)std::any_cast<double>(group->value);
                 group->type = FLOAT;
+            }
+            else if (is_defined("IMPLICIT_UPCAST")) {
+                if(d->get_type() == "float" && (group->type == INT || group->type == LONG)) {
+                    if(group->type == INT) {
+                        group->value = (float)std::any_cast<int>(group->value);
+                    }
+                    else if (group->type == LONG) {
+                        group->value = (float)std::any_cast<long>(group->value);
+                    }
+                    group->type = FLOAT;
+                }
+                else if(d->get_type() == "double" && (group->type == INT || group->type == LONG || group->type == FLOAT)) {
+                    if(group->type == INT) {
+                        group->value = (double)std::any_cast<int>(group->value);
+                    }
+                    else if (group->type == LONG) {
+                        group->value = (double)std::any_cast<long>(group->value);
+                    }
+                    else if (group->type == FLOAT) {
+                        group->value = (double)std::any_cast<float>(group->value);
+                    }
+                    group->type = DOUBLE;
+                }
+                else if(d->get_type() == "long" && group->type == INT) {
+                    group->value = (long)std::any_cast<int>(group->value);
+                    group->type = LONG;
+                }
             }
             else {
                 error("incompatible types, cannot set");
@@ -244,7 +272,7 @@ void lang::interpreter::process_variable_update(const std::vector<std::shared_pt
     auto* frame = stack->top();
     char* name = const_char_convert(tokens[0]->get_lexeme());
     data* d = frame->get_data(name);
-    if(tokens[2]->is_literal() || tokens[2]->get_name() == MINUS || tokens[2]->get_name() == LEFT_PAREN || tokens[2]->get_name() == RIGHT_PAREN) {
+    if(tokens[2]->is_literal() || tokens[2]->get_name() == ID || tokens[2]->get_name() == MINUS || tokens[2]->get_name() == LEFT_PAREN || tokens[2]->get_name() == RIGHT_PAREN) {
         if (set_literal(tokens, d)) return;
     }
     else if(tokens[2]->get_name() == BYVAL && tokens.size() == 4) { // Doing byval has no effect but its technically valid
@@ -364,10 +392,19 @@ void lang::interpreter::process_input( std::string *input) {
             continue;
         }
         if(token_vector.size() >=2) {
-            if(token_vector[0]->get_name() == IDENTIFIER && token_vector[1]->get_name() == EQUAL) {
-                process_variable_update(token_vector);
-                continue;
+            if(token_vector[0]->get_name() == IDENTIFIER) {
+                if(token_vector.size() >= 3) {
+                    if(token_vector[1]->is_arithmetic() && token_vector[2]->get_name() == EQUAL) {
+                        arithmetic_evaluator::convert_op_eq_to_op(token_vector);
+                    }
+                }
+
+                if(token_vector[1]->get_name() == EQUAL) {
+                    process_variable_update(token_vector);
+                    continue;
+                }
             }
+
         }
         process(token_vector);
     }

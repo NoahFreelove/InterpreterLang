@@ -14,27 +14,71 @@ public:
         return std::make_shared<token_element>(std::make_shared<token>(name, lexeme, 0, value));
     }
 
-    static bool recursive_replace(std::shared_ptr<token_group> g) {
-        int i = 0;
+    static const char* string_to_const_char(const std::string& input) {
+        // copy value completely
+        char* name = (char*)malloc(sizeof(char)*input.size());
+        return strcpy(name, input.c_str());
+    }
+
+    static bool recursive_replace(const std::shared_ptr<token_group>& g) {
         bool allgood = true;
-        for (const std::shared_ptr<token_element>& element : g->tokens) {
+        for (int i = 0; i < g->tokens.size(); ++i) {
             std::visit(overloaded{
-                [g, i, &allgood](std::shared_ptr<token> tk) {
-                    if(tk->get_name() == IDENTIFIER) {
+                [g, &i, &allgood](const std::shared_ptr<token>& tk) {
+                    // Usage of ID:  id "some_string", converts to IDENTIFIER: some_string
+                    if(tk->get_name() == ID && i+1 < g->tokens.size()) {
+                        std::string name;
+                        std::visit(overloaded{
+                            [g, i, &name](const std::shared_ptr<token>& tk) {
+                                if(tk->get_name() == STRING) {
+                                    name = std::any_cast<std::string>(tk->get_value());
+                                }
+                                else if(tk->get_name() == IDENTIFIER) {
+                                    data* d = lang::interpreter::stack->top()->get_data(lang::interpreter::const_char_convert(tk->get_lexeme()));
+                                    if(d) {
+                                        if(d->get_type() == "string") {
+                                            name = d->get_string();
+                                        }
+                                        else {
+                                            lang::interpreter::error("invalid use of ID, a string identifier must follow");
+                                        }
+                                    }
+                                }
+                                else {
+                                    lang::interpreter::error("invalid use of ID, a string must follow");
+                                }
+                            },
+                                [&name](const std::shared_ptr<token_group>& grp) {
+                                    lang::interpreter::error("invalid use of ID, a string must follow, not a group");
+                            }
+                        }, *g->tokens[i+1]);
+
+                        if(!name.empty()) {
+                            auto new_token = convert(IDENTIFIER, string_to_const_char(name), 0, name);
+                            g->tokens[i+1] = new_token;
+                            g->tokens.erase(g->tokens.begin() + i);
+                            i--;
+                        }
+
+                    }
+                    else if(tk->get_name() == IDENTIFIER) {
                         // Replace token in group with value obtained from memory
                         data* d = lang::interpreter::stack->top()->get_data(lang::interpreter::const_char_convert(tk->get_lexeme()));
                         if (d) {
                             if(d->get_type() == "int") {
-                                g->tokens[i] = convert(108, "INT", 0, d->get_int());
+                                g->tokens[i] = convert(INT, "INT", 0, d->get_int());
+                            }
+                            if(d->get_type() == "long") {
+                                g->tokens[i] = convert(LONG, "LONG", 0, d->get_long());
                             }
                             else if(d->get_type() == "float") {
-                                g->tokens[i] = convert(104, "FLOAT", 0, d->get_float());
+                                g->tokens[i] = convert(FLOAT, "FLOAT", 0, d->get_float());
                             }
                             else if(d->get_type() == "double") {
-                                g->tokens[i] = convert(105, "DOUBLE", 0, d->get_double());
+                                g->tokens[i] = convert(DOUBLE, "DOUBLE", 0, d->get_double());
                             }
                             else if (d->get_type() == "string") {
-                                g->tokens[i] = convert(102, "STRING", 0, d->get_string());
+                                g->tokens[i] = convert(STRING, "STRING", 0, d->get_string());
                             }
                             else if(d->get_type() == "bool") {
                                 bool val = d->get_bool();
@@ -55,8 +99,7 @@ public:
                 [](std::shared_ptr<token_group> grp) {
                     recursive_replace(grp);
                 }
-            }, *element);
-            i+=1;
+            }, *g->tokens[i]);
         }
         return allgood;
     }
@@ -86,6 +129,10 @@ public:
             g->type = INT;
             g->value = t->get_value();
         }
+        else if (t->get_name() == LONG) {
+            g->type = LONG;
+            g->value = t->get_value();
+        }
         else if (t->get_name() == FLOAT) {
             g->type = FLOAT;
             g->value = t->get_value();
@@ -101,6 +148,7 @@ public:
     }
     static void eval_group(std::shared_ptr<token_group> g, int depth = 0) {
         bool result = recursive_replace(g);
+        //g->print_group();
         if(!result) {
             g->type = ERROR;
             g->value = nullptr;

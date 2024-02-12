@@ -45,12 +45,12 @@ void delete_var(const std::vector<std::shared_ptr<token>> &tokens) {
     }
 }
 
-static void print(const std::vector<std::shared_ptr<token>>& tokens) {
+static void print(const std::vector<std::shared_ptr<token>>& tokens, int offset = 1) {
     if(tokens.size() < 2) {
         lang::interpreter::error("Not enough tokens for print statement");
         return;
     }
-    auto group = lang::interpreter::evaluate_tokens(tokens, 1);
+    auto group = lang::interpreter::evaluate_tokens(tokens, offset);
     if(group->type == UNDETERMINED || group->type == ERROR) {
         std::cout << std::endl;
     }
@@ -63,6 +63,9 @@ static void print(const std::vector<std::shared_ptr<token>>& tokens) {
     }
     else if(group->type == DOUBLE) {
         std::cout << std::any_cast<double>(group->value) << std::endl;
+    }
+    else if(group->type == LONG) {
+        std::cout << std::any_cast<long>(group->value) << std::endl;
     }
     else if(group->type == STRING) {
         std::cout << std::any_cast<std::string>(group->value) << std::endl;
@@ -81,6 +84,7 @@ static void print(const std::vector<std::shared_ptr<token>>& tokens) {
         std::cout << id_to_name(tokens[1]->get_name()) << std::endl;
     }
 }
+
 static void process_import(std::vector<std::shared_ptr<token>> tokens) {
 
     if (tokens.size() != 2) {
@@ -93,7 +97,6 @@ static void process_import(std::vector<std::shared_ptr<token>> tokens) {
     }
     lang::interpreter::read_from_file(tokens[1]->get_lexeme());
 }
-
 
 static void run_builtins(const std::vector<std::shared_ptr<token>>& tokens) {
     if (tokens[0]->get_name() == PRINT) {
@@ -122,6 +125,10 @@ static void run_builtins(const std::vector<std::shared_ptr<token>>& tokens) {
     }
     if(tokens[0]->get_name() == IMPORT) {
         process_import(tokens);
+        return;
+    }
+    if(tokens[0]->get_name() == ID) {
+        print(tokens,0);
         return;
     }
 }

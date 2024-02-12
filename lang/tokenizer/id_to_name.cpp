@@ -74,6 +74,8 @@ std::string id_to_name(int id) {
             return "ELSE";
         case ELSE_IF:
             return "ELSE_IF";
+        case END_ELSE:
+            return "END_ELSE";
         case FOR:
             return "FOR";
         case WHILE:
@@ -132,6 +134,8 @@ std::string id_to_name(int id) {
             return "ISDEFINED";
         case IMPORT:
             return "IMPORT";
+        case ID:
+            return "ID";
         case EXPONENT:
             return "EXPONENT";
         case INT_KEYW:

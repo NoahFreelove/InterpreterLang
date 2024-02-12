@@ -365,7 +365,6 @@ public:
                     if(ant->get_name() == INT) {
                         ant_val = std::any_cast<int>(ant->get_value());
                     }
-
                     if(cons->get_name() == LONG) {
                         cons_val = std::any_cast<long>(cons->get_value());
                     }
@@ -398,6 +397,24 @@ public:
                 g->value = val;
             }
         }
+    }
+
+    static void convert_op_eq_to_op(std::vector<std::shared_ptr<token>>& tokens) {
+        // get op from second token and save it to some variable
+        // delete it from vector
+        // get identifier from first token copy it.
+        // insert the identifier, then the op, then an open parenthesis after the new second token which should be an equal sign
+        // finally, insert a close parenthesis at the very end of tokens
+        std::shared_ptr<token> op = tokens[1];
+        tokens.erase(tokens.begin() + 1);
+        std::shared_ptr<token> id = tokens[0];
+        tokens.insert(tokens.begin() + 2, std::make_shared<token>(IDENTIFIER, id->get_lexeme(), 0, id->get_value()));
+        tokens.insert(tokens.begin() + 3, op);
+        tokens.insert(tokens.begin() + 4, std::make_shared<token>(LEFT_PAREN, "(", 0, 0));
+        tokens.push_back(std::make_shared<token>(RIGHT_PAREN, ")", 0, 0));
+        /*for (int i = 0; i < tokens.size(); ++i) {
+            std::cout << *tokens[i] << std::endl;
+        }*/
     }
 };
 

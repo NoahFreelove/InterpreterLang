@@ -38,7 +38,11 @@ public:
                    std::cout << std::any_cast<float>(tk->get_value());
                } else if(tk->get_value().type() == typeid(double)) {
                    std::cout << std::any_cast<double>(tk->get_value());
-               } else {
+               }
+               else if(tk->get_value().type() == typeid(long)) {
+                   std::cout << std::any_cast<long>(tk->get_value());
+               }
+               else {
                    std::cout << id_to_name(tk->get_name());
                }
                 },

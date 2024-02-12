@@ -87,20 +87,18 @@ std::shared_ptr<token> lang::scanner::get_digit(char first_num) {
             }
             return std::make_shared<token>(FLOAT, cstr, line, std::stof(str + "." + str2));
         }
-        // check if double
-        if(peek() == 'd' || peek() == '\0') {
-            next();
-            // if its too big, return error
-            if(str.length() + str2.length() > 19) {
-                err = true;
-                interpreter::error("Number too big: " + std::string(chars.begin(), chars.end()) + peek() + " for double");
-                return nullptr;
-            }
-            return std::make_shared<token>(DOUBLE, cstr, line, std::stod(str + "." + str2));
 
+        // assume if its not float that its double
+        if(peek() == 'd')
+            next();
+
+        // if its too big, return error
+        if(str.length() + str2.length() > 19) {
+            err = true;
+            interpreter::error("Number too big: " + std::string(chars.begin(), chars.end()) + peek() + " for double");
+            return nullptr;
         }
-        err = true;
-        interpreter::error("Invalid decimal number: " + std::string(chars.begin(), chars.end()) + peek());
+        return std::make_shared<token>(DOUBLE, cstr, line, std::stod(str + "." + str2));
 
     }
     err = true;
@@ -131,9 +129,13 @@ std::shared_ptr<token> lang::scanner::get_identifier(char c) {
     }
     if(str == "else") {
         return std::make_shared<token>(ELSE, cstr, line);
-    }if(str == "elseif") {
+    }
+    if(str == "elseif") {
         return std::make_shared<token>(ELSE_IF, cstr, line);
     }
+    if(str == "endelse")
+        return std::make_shared<token>(END_ELSE, cstr, line);
+
     if(str == "for") {
         return std::make_shared<token>(FOR, cstr, line);
     }
@@ -223,6 +225,9 @@ std::shared_ptr<token> lang::scanner::get_identifier(char c) {
     }
     if(str == "import") {
         return std::make_shared<token>(IMPORT, cstr, line);
+    }
+    if(str == "id") {
+        return std::make_shared<token>(ID, cstr, line);
     }
     if(str == "int") {
         return std::make_shared<token>(INT_KEYW, cstr, line);
