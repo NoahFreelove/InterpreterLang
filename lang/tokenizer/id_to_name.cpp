@@ -52,6 +52,8 @@ std::string id_to_name(int id) {
             return "BANG_EQUAL";
         case SLASHI:
             return "SLASHI";
+        case MOD:
+            return "MOD";
         case IDENTIFIER:
             return "IDENTIFIER";
         case STRING:
@@ -150,7 +152,6 @@ std::string id_to_name(int id) {
             return "BOOL_KEYW";
         case ULONG64_KEYW:
             return "ULONG64_KEYW";
-
         default:
             return "UNKNOWN TOKEN";
     }

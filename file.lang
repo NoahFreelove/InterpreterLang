@@ -1,6 +1,6 @@
 /*
     This is a file read test of Interpreter Lang
 */
-var x as int
+int x
 x = input
 print x

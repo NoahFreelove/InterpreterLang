@@ -141,13 +141,13 @@ public:
 
         if(g->tokens.size() == 1) {
             if (!is_group(*g->tokens[0])) {
-                g->type = INT;
+                g->type = g->type;
                 g->value = std::get<std::shared_ptr<token>>(*g->tokens[0])->get_value();
                 return;
             }
         }
-        // all parenthesis are gone, all groups evaluated, just eval.
 
+        // all parenthesis are gone, all groups evaluated, just eval.
         if(!check_errs(tokens))
             return;
 
@@ -190,7 +190,7 @@ public:
                             break;
                         }
                     }
-                    if( highest_level_op == 1 && (t->get_name() == STAR || t->get_name() == SLASH || t->get_name() == SLASHI)) {
+                    if( highest_level_op == 1 && (t->is_mul_div())) {
                         //std::cout << "star or slash" << std::endl;
                         if(has_next(g, i, 1)) {
                             ant_index = i-1;
@@ -262,7 +262,6 @@ public:
                 //std::cout << "all valid" << std::endl;
                 // if ant or cons is a string and op is add, cast the non-string to a string and add them together
                 if(ant->get_name() == STRING && op->get_name() == PLUS && cons->is_numeric()) {
-
                     std::shared_ptr<token> old = cons;
                     std::string cons_str = cons->to_string();
                     tokens.erase(tokens.begin() + (ant_index+2), tokens.begin() + (ant_index+3));
@@ -271,6 +270,7 @@ public:
                     std::shared_ptr<token> new_cons = std::make_shared<token>(STRING, cpy, 0, cons_str);
                     cons = new_cons;
                     tokens.insert(tokens.begin() + ant_index, std::make_shared<token_element>(cons));
+
                 }
                 else if(cons->get_name() == STRING && op->get_name() == PLUS && ant->is_numeric()) {
                     std::shared_ptr<token> old = ant;

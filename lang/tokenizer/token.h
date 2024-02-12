@@ -42,6 +42,7 @@
 #define SLASHI 26
 #define EXPONENT 27
 #define ID_GRAB 28
+#define MOD 29
 // &
 // /i
 
@@ -155,7 +156,7 @@ public:
     }
 
     bool is_arithmetic() const {
-        return (name >= PLUS && name <= SLASH) || name == EXPONENT || name == SLASHI;
+        return (name >= PLUS && name <= SLASH) || name == EXPONENT || name == SLASHI || name == MOD;
     }
 
     bool is_add_sub() const {
@@ -163,7 +164,7 @@ public:
     }
 
     bool is_mul_div() const {
-        return name == STAR || name == SLASH || name == SLASHI;
+        return name == STAR || name == SLASH || name == SLASHI || name == MOD;
     }
 
     bool is_typeword() const {

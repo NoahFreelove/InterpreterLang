@@ -2,7 +2,7 @@
 #define BUILT_IN_RUNNER_H
 #include "../tokenizer/token.h"
 #include "../interpreter.h"
-
+#include "../memory/stack_manager.h"
 void define(const std::vector<std::shared_ptr<token>> &tokens) {
     if (tokens.size() == 2) {
         lang::interpreter::defined->push_back(lang::interpreter::const_char_convert(tokens[1]->get_lexeme()));
@@ -37,10 +37,10 @@ void is_defined(const std::vector<std::shared_ptr<token>> &tokens) {
     }
 }
 
-void delete_var(const std::vector<std::shared_ptr<token>> &tokens) {
+inline void delete_var(const std::vector<std::shared_ptr<token>> &tokens) {
     if(tokens.size() == 2) {
         if(tokens[0]->get_name() == DELETE && tokens[1]->get_name() == IDENTIFIER) {
-            lang::interpreter::stack->top()->delete_var(lang::interpreter::const_char_convert(tokens[1]->get_lexeme()));
+            delete_variable(tokens[1]->get_lexeme());
         }
     }
 }
@@ -68,7 +68,7 @@ static void print(const std::vector<std::shared_ptr<token>>& tokens, int offset 
         std::cout << std::any_cast<long>(group->value) << std::endl;
     }
     else if(group->type == STRING) {
-        std::cout << std::any_cast<std::string>(group->value) << std::endl;
+        std::cout << '"' <<std::any_cast<std::string>(group->value) << '"' << std::endl;
     }
     else if(group->type == TRUE) {
         if(std::any_cast<bool>(group->value)) {
@@ -104,7 +104,9 @@ static void run_builtins(const std::vector<std::shared_ptr<token>>& tokens) {
         return;
     }
     if (tokens[0]->get_name() == DUMP) {
-        lang::interpreter::stack->top()->dump_memory();
+        for(stack_frame* frame : *lang::interpreter::stack) {
+            frame->dump_memory();
+        }
         return;
     }
     if (tokens[0]->get_name() == DEFINE) {

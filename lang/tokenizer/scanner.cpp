@@ -312,7 +312,6 @@ std::shared_ptr<token> lang::scanner::parse_token() {
                     line++;
                     return nullptr;
                 case '\r':
-                    return nullptr;
                 case '\t':
                     return nullptr;
                 case '(':
@@ -333,7 +332,8 @@ std::shared_ptr<token> lang::scanner::parse_token() {
                     return std::make_shared<token>(COMMA, ",", line, nullptr);
                 case '.':
                     return std::make_shared<token>(DOT, ".", line, nullptr);
-                case '!': {
+                case '!':
+                    case '~': {
                     if(peek() == '=') {
                         skip();
                         return std::make_shared<token>(BANG_EQUAL, "!=", line, nullptr);
@@ -371,6 +371,9 @@ std::shared_ptr<token> lang::scanner::parse_token() {
                     return std::make_shared<token>(MINUS, "-", line, nullptr);
                 case '*':
                     return std::make_shared<token>(STAR, "*", line, nullptr);
+                case '%':
+                    return std::make_shared<token>(MOD, "*", line, nullptr);
+
                 case '/': {
                     // We ignore comments
                     if(peek() == '/') {

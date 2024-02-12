@@ -11,7 +11,7 @@
 #include "tokenizer/tokens.h"
 #include "executors/built_in_runner.h"
 #include "executors/control_flow_runner.h"
-
+#include "memory/stack_manager.h"
 bool lang::interpreter::is_defined(const char *c) {
     for (const char* name : *defined) {
         if(strcmp(name, c) == 0) {
@@ -25,14 +25,19 @@ void lang::interpreter::init() {
     if(has_init)
         return;
     global_frame = new stack_frame();
-    stack = new std::stack<stack_frame*>();
-    stack->push(new stack_frame());
+    stack = new std::vector<stack_frame*>();
+    stack->push_back(global_frame);
     std::filesystem::__cxx11::path cwd = std::filesystem::current_path();
-    stack->top()->set(const_char_convert("WORKING_DIRECTORY"), new data(new std::string(cwd.string()), "string"));
+    global_frame->set(const_char_convert("WORKING_DIRECTORY"), new data(new std::string(cwd.string()), "string"));
+    global_frame->set(const_char_convert("VERSION"), new data(new float(VERSION_MAJOR + (VERSION_MINOR*0.01f)), "float"));
+
     has_init = true;
     if_block_statuses = new std::stack<bool>();
+    if_results = new std::stack<bool>();
+
     defined->push_back("IMPLICIT_DOUBLE_TO_FLOAT");
     defined->push_back("IMPLICIT_UPCAST");
+    errors = new std::stack<std::string>();
 }
 
 std::shared_ptr<token_group> lang::interpreter::evaluate_tokens(std::vector<std::shared_ptr<token>> tokens, int offset) {
@@ -103,7 +108,7 @@ void lang::interpreter::process_variable_declaration(const std::vector<std::shar
             frame = global_frame;
         }
         else {
-            frame = stack->top();
+            frame = stack->back();
         }
         char* name = const_char_convert(tokens[1]->get_lexeme());
 
@@ -283,9 +288,16 @@ void lang::interpreter::process_variable_update(const std::vector<std::shared_pt
         error("Invalid variable update");
         return;
     }
-    auto* frame = stack->top();
     char* name = const_char_convert(tokens[0]->get_lexeme());
-    data* d = frame->get_data(name);
+    data* d = resolve_variable(name);
+
+    if(!d) {
+        char c[strlen("Undefined variable with name: ")+ strlen(tokens[0]->get_lexeme())+1];
+        strcpy(c, "Undefined variable with name: ");
+        strcat(c,tokens[0]->get_lexeme());
+        error(c);
+        return;
+    }
     if(tokens[2]->is_literal() || tokens[2]->get_name() == ID || tokens[2]->get_name() == MINUS || tokens[2]->get_name() == LEFT_PAREN || tokens[2]->get_name() == RIGHT_PAREN) {
         if (set_literal(tokens, d)) return;
     }
@@ -308,7 +320,7 @@ void lang::interpreter::process_variable_update(const std::vector<std::shared_pt
         delete str;
     }
     else if (tokens[2]->get_name() == ID_GRAB && tokens[3]->get_name() == IDENTIFIER) {
-        frame->assign(name, const_char_convert(tokens[3]->get_lexeme()));
+        assign_variable(name, const_char_convert(tokens[3]->get_lexeme()));
     }
 }
 
@@ -321,7 +333,7 @@ void lang::interpreter::process(const std::vector<std::shared_ptr<token>>& token
     //group->print_group();
     group_evaluator::eval_group(group);
     if(group->type == ERROR) {
-        error("error processing input group");
+        error("Could not process input");
     }
     //group->print_group();
     if(group->value.has_value()) {
@@ -355,11 +367,21 @@ void lang::interpreter::process(const std::vector<std::shared_ptr<token>>& token
     }
 }
 
+void lang::interpreter::check_pop_stack(std::vector<std::shared_ptr<token>> &tokens) {
+    if(tokens[tokens.size()-1]->get_name() == RIGHT_BRACE) {
+        pop_stackframe();
+        tokens.pop_back();
+    }
+}
+
 void lang::interpreter::process_input( std::string *input) {
-        if(scan == nullptr) {
-            scan = new scanner();
-        }
-        init();
+    if(scan == nullptr) {
+        scan = new scanner();
+    }
+
+    init();
+    while (!errors->empty())
+        errors->pop();
 
     auto tokens = scan->scan_line(input);
     if(tokens.empty())
@@ -382,25 +404,33 @@ void lang::interpreter::process_input( std::string *input) {
     }
 
     for (auto &token_vector : token_vectors) {
+
+        if(token_vector[0]->get_name() == LEFT_BRACE) {
+            push_stackframe();
+            token_vector.erase(token_vector.begin());
+        }
+
         if(!if_block_statuses->empty()) {
             if(token_vector[0]->get_name() == END_IF) {
                 if_block_statuses->pop();
-                continue;
-            }
-            if(if_block_statuses->top() == false) {
+                if_results->pop();
+                check_pop_stack(tokens);
                 continue;
             }
         }
         if (token_vector[0]->is_typeword()) {
             process_variable_declaration(token_vector);
+            check_pop_stack(tokens);
             continue;
         }
         if(token_vector[0]->is_control_flow()) {
             control_flow_runner::process_control_flow(tokens);
+            check_pop_stack(tokens);
             continue;
         }
         if(token_vector[0]->is_builtin()) {
             run_builtins(token_vector);
+            check_pop_stack(tokens);
             continue;
         }
         if(token_vector.size() >=2) {
@@ -421,12 +451,17 @@ void lang::interpreter::process_input( std::string *input) {
 
                 if(token_vector[1]->get_name() == EQUAL) {
                     process_variable_update(token_vector);
+                    check_pop_stack(tokens);
                     continue;
                 }
             }
 
         }
         process(token_vector);
+        check_pop_stack(tokens);
+    }
+    if(!errors->empty()) {
+        print_errs();
     }
 }
 
@@ -448,6 +483,15 @@ void lang::interpreter::read_from_file(const char *path) {
     file.close();
 }
 
-void lang::interpreter::error(std::string err) {
-    std::cerr << "Error: " << err << std::endl;
+void lang::interpreter::error(const std::string& err) {
+    errors->push(err);
+}
+
+void lang::interpreter::print_errs() {
+    std::cerr << "Errors: " << std::endl;
+    while (!errors->empty()) {
+        std::cerr << "-> " << errors->top() << std::endl;
+        errors->pop();
+    }
+
 }

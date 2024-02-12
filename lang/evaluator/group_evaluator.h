@@ -4,6 +4,7 @@
 #include "truthy_evaluator.h"
 #include "../tokenizer/token_group.h"
 #include "../tokenizer/token.h"
+#include "../memory/stack_manager.h"
 class group_evaluator {
 public:
     using token_element = std::variant<std::shared_ptr<token>, std::shared_ptr<token_group>>;
@@ -23,6 +24,8 @@ public:
     static bool recursive_replace(const std::shared_ptr<token_group>& g) {
         bool allgood = true;
         for (int i = 0; i < g->tokens.size(); ++i) {
+            if(!allgood)
+                break;
             std::visit(overloaded{
                 [g, &i, &allgood](const std::shared_ptr<token>& tk) {
                     // Usage of ID:  id "some_string", converts to IDENTIFIER: some_string
@@ -34,7 +37,7 @@ public:
                                     name = std::any_cast<std::string>(tk->get_value());
                                 }
                                 else if(tk->get_name() == IDENTIFIER) {
-                                    data* d = lang::interpreter::stack->top()->get_data(lang::interpreter::const_char_convert(tk->get_lexeme()));
+                                    data* d =  resolve_variable(tk->get_lexeme());
                                     if(d) {
                                         if(d->get_type() == "string") {
                                             name = d->get_string();
@@ -63,7 +66,7 @@ public:
                     }
                     else if(tk->get_name() == IDENTIFIER) {
                         // Replace token in group with value obtained from memory
-                        data* d = lang::interpreter::stack->top()->get_data(lang::interpreter::const_char_convert(tk->get_lexeme()));
+                        data* d = resolve_variable(tk->get_lexeme());
                         if (d) {
                             if(d->get_type() == "int") {
                                 g->tokens[i] = convert(INT, "INT", 0, d->get_int());
@@ -96,8 +99,10 @@ public:
                         }
                     }
                 },
-                [](std::shared_ptr<token_group> grp) {
-                    recursive_replace(grp);
+                [&allgood](std::shared_ptr<token_group> grp) {
+                    if(!recursive_replace(grp)) {
+                        allgood = false;
+                    }
                 }
             }, *g->tokens[i]);
         }
@@ -125,24 +130,8 @@ public:
             g->type = FALSE;
             g->value = false;
         }
-        else if (t->get_name() == INT) {
-            g->type = INT;
-            g->value = t->get_value();
-        }
-        else if (t->get_name() == LONG) {
-            g->type = LONG;
-            g->value = t->get_value();
-        }
-        else if (t->get_name() == FLOAT) {
-            g->type = FLOAT;
-            g->value = t->get_value();
-        }
-        else if (t->get_name() == DOUBLE) {
-            g->type = DOUBLE;
-            g->value = t->get_value();
-        }
-        else if (t->get_name() == STRING) {
-            g->type = STRING;
+        else {
+            g->type = t->get_name();
             g->value = t->get_value();
         }
     }
@@ -210,6 +199,11 @@ public:
 
         //g->print_group();
 
+        // We need to evaluate methods before arithmetic or logic
+        // if the methods require some arithmetic or logic, run those evaulations in the method call parenthesis
+        // method(5+5 == 10) -> 5+5 -> 10 == 10 -> method(true)
+
+        // ReSharper disable once CppDFAConstantConditions
         if(has_arithmetic || has_literal) {
             arithmetic_evaluator::recursive_evaluation(g);
         }

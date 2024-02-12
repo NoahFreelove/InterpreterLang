@@ -25,6 +25,10 @@ public:
 
     data* get_data(char* identifier);
 
+    long get_id() {
+        return id;
+    }
+
 
     ~stack_frame() {
         delete memory;

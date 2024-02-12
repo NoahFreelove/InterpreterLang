@@ -19,6 +19,9 @@ public:
         else if(op == MINUS) {
             return a-b;
         }
+        else if(op == MOD) {
+            return a%b;
+        }
         else {
             return 0;
         }
@@ -41,6 +44,9 @@ public:
         }
         else if(op == MINUS) {
             return a-b;
+        }
+        else if(op == MOD) {
+            return (int)a%(int)b;
         }
         else {
             return 0;
@@ -65,6 +71,9 @@ public:
         else if(op == MINUS) {
             return a-b;
         }
+        else if(op == MOD) {
+            return (int)a%(int)b;
+        }
         else {
             return 0;
         }
@@ -84,6 +93,9 @@ public:
         }
         else if(op == MINUS) {
             return a-b;
+        }
+        else if(op == MOD) {
+            return a%b;
         }
         else {
             return 0;
