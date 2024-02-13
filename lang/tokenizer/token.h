@@ -77,6 +77,7 @@
 #define END_IF 1020
 #define END_PROC 1021
 #define END_ELSE 1022
+#define FINAL 1023
 
 // TYPEWORDS
 #define INT_KEYW 1120

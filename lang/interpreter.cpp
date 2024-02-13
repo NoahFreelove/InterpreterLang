@@ -12,6 +12,7 @@
 #include "executors/built_in_runner.h"
 #include "executors/control_flow_runner.h"
 #include "memory/stack_manager.h"
+
 bool lang::interpreter::is_defined(const char *c) {
     for (const char* name : *defined) {
         if(strcmp(name, c) == 0) {
@@ -24,9 +25,9 @@ bool lang::interpreter::is_defined(const char *c) {
 void lang::interpreter::init() {
     if(has_init)
         return;
-    global_frame = new stack_frame();
     stack = new std::vector<stack_frame*>();
-    stack->push_back(global_frame);
+    push_stackframe();
+    global_frame = stack->front();
     std::filesystem::__cxx11::path cwd = std::filesystem::current_path();
     //global_frame->set(const_char_convert("WORKING_DIRECTORY"), new data(new std::string(cwd.string()), "string"));
     //global_frame->set(const_char_convert("VERSION"), new data(new float(VERSION_MAJOR + (VERSION_MINOR*0.01f)), "float"));
@@ -67,29 +68,47 @@ void lang::interpreter::input_loop() {
     }
 }
 
+int lang::interpreter::get_equal_index(const std::vector<std::shared_ptr<token>> &tokens) {
+    for (int i = 0; i < tokens.size(); ++i) {
+        if(tokens[i]->get_name() == EQUAL)
+            return i;
+    }
+    return -1;
+}
+
+std::vector<int> lang::interpreter::get_flags(const std::vector<std::shared_ptr<token>> &tokens) {
+    std::vector<int> flags;
+    // Tokens 0 and 1 are type and identifier
+    for (int i = 2; i < tokens.size(); ++i) {
+        if(tokens[i]->get_name() == EQUAL) {
+            return flags;
+        }
+        if(tokens[i]->get_name() == PERSISTENT || tokens[i]->get_name() == FINAL) {
+            flags.push_back(tokens[i]->get_name());
+        }
+        else {
+            error("illegal flag: " + id_to_name( tokens[i]->get_name()));
+            return flags;
+        }
+    }
+    return flags;
+}
+
 void lang::interpreter::process_variable_declaration(const std::vector<std::shared_ptr<token>> &tokens) {
     std::shared_ptr<token> type;
-    bool persistent = false;
-    bool set_after = false;
+    const char* name;
 
-    if (tokens.size() == 2) {
+    std::vector<int> flags = get_flags(tokens);
+    bool persistent = false;
+    bool is_final = false;
+    int set_index = get_equal_index(tokens);
+
+    if (tokens.size() >= 2) {
         if(tokens[1]->get_name() != IDENTIFIER || !tokens[0]->is_typeword()) {
             error("Invalid variable declaration");
             return;
         }
-        type = tokens[0];
-    }
-    else if (tokens.size()>=3) {
-        if(tokens[1]->get_name() != IDENTIFIER || !tokens[0]->is_typeword()) {
-            error("Invalid variable declaration");
-            return;
-        }
-        if (tokens[2]->get_name() == PERSISTENT) {
-            persistent = true;
-        }
-        else if(tokens[2]->get_name() == EQUAL) {
-            set_after = true;
-        }
+        name = tokens[1]->get_lexeme();
         type = tokens[0];
     }
     else {
@@ -97,84 +116,99 @@ void lang::interpreter::process_variable_declaration(const std::vector<std::shar
         return;
     }
 
-        // if the name ends with _old, it is invalid
-        if(strstr(tokens[1]->get_lexeme(), "_old")) {
-            error("Invalid variable name, _old is reserved");
+    // if the name ends with _old, it is invalid
+    if(strstr(name, "_old")) {
+        error("Invalid variable name, _old is reserved");
+        return;
+    }
+
+    for (auto flag: flags) {
+        if(flag == PERSISTENT)
+            persistent = true;
+        else if(flag == FINAL)
+            is_final = true;
+    }
+
+    stack_frame* frame;
+    if(persistent) {
+        frame = global_frame;
+    }
+    else {
+        frame = stack->back();
+    }
+    data* d = nullptr;
+    switch (type->get_name()) {
+        case INT_KEYW: {
+            int* val = new int;
+            *val = 0;
+            d = new data(val, "int");
+             frame->set(name, d);
+             break;
+            }
+        case FLOAT_KEYW: {
+            float *val = new float;
+            *val = 0.0f;
+            d = new data(val, "float");
+            frame->set(name, d);
+            break;
+        }
+        case DOUBLE_KEYW: {
+            double *val = new double;
+            *val = 0.0;
+            d = new data(val, "double");
+            frame->set(name, d);
+            break;
+        }
+        case LONG_KEYW: {
+            long *val = new long;
+            *val = 0L;
+            d = new data(val, "long");
+            frame->set(name, d);
+            break;
+        }
+        case STRING_KEYW: {
+            d = new data(new std::string(), "string");
+            frame->set(name, d);
+            break;
+        }
+        case CHAR_KEYW: {
+            char*val = new char;
+            *val = '\0';
+            d = new data(val, "char");
+            frame->set(name, d);
+            break;
+        }
+        case BOOL_KEYW: {
+            bool* val = new bool;
+            *val = false;
+            d = new data(val, "bool");
+            frame->set(name, d);
+            break;
+        }
+        case ULONG64_KEYW: {
+            auto* val = new unsigned long long;
+            *val = 0;
+            d = new data(val, "unsigned long long");
+            frame->set(name, d);
+            break;
+        }
+        default: {
+            error("Invalid type word");
             return;
         }
-
-        stack_frame* frame;
-        if(persistent) {
-            frame = global_frame;
-        }
-        else {
-            frame = stack->back();
-        }
-        char* name = const_char_convert(tokens[1]->get_lexeme());
-
-        switch (type->get_name()) {
-            case INT_KEYW: {
-                int* val = new int;
-                *val = 0;
-                frame->set(name, new data(val, "int"));
-                break;
-            }
-            case FLOAT_KEYW: {
-                float *val = new float;
-                *val = 0.0f;
-                frame->set(name, new data(val, "float"));
-                break;
-            }
-            case DOUBLE_KEYW: {
-                double *val = new double;
-                *val = 0.0;
-                frame->set(name, new data(val, "double"));
-                break;
-            }
-            case LONG_KEYW: {
-                long *val = new long;
-                *val = 0L;
-                frame->set(name, new data(val, "long"));
-                break;
-            }
-            case STRING_KEYW: {
-
-                frame->set(name, new data(new std::string(), "string"));
-                break;
-            }
-            case CHAR_KEYW: {
-                char*val = new char;
-                *val = '\0';
-                frame->set(name, new data(val, "char"));
-                break;
-            }
-            case BOOL_KEYW: {
-                bool* val = new bool;
-                *val = false;
-                frame->set(name, new data(val, "bool"));
-                break;
-            }
-            case ULONG64_KEYW: {
-                auto* val = new unsigned long long;
-                *val = 0;
-                frame->set(name, new data(val, "unsigned long long"));
-                break;
-            }
-            default: {
-                error("Invalid type word");
-                return;
-            }
-        }
-    if(set_after) {
+    }
+    if(set_index > 1) {
         std::vector concat_vec = {tokens[1]};
         // add everything after type index
-        for(int i = 2; i < tokens.size(); i++) {
+        for(int i = set_index; i < tokens.size(); i++) {
             concat_vec.push_back(tokens[i]);
         }
         process_variable_update(concat_vec);
     }
+    if(d && is_final) {
+        d->set_final();
+    }
         //std::cout << frame->get_data(name)->get() << std::endl;
-
 }
 
 bool lang::interpreter::set_literal(const std::vector<std::shared_ptr<token>> &tokens, data *d) {
@@ -288,7 +322,7 @@ void lang::interpreter::process_variable_update(const std::vector<std::shared_pt
         error("Invalid variable update");
         return;
     }
-    char* name = const_char_convert(tokens[0]->get_lexeme());
+    const char* name = tokens[0]->get_lexeme();
     data* d = resolve_variable(name);
 
     if(!d) {
@@ -320,7 +354,7 @@ void lang::interpreter::process_variable_update(const std::vector<std::shared_pt
         delete str;
     }
     else if (tokens[2]->get_name() == ID_GRAB && tokens[3]->get_name() == IDENTIFIER) {
-        assign_variable(name, const_char_convert(tokens[3]->get_lexeme()));
+        assign_variable(name, tokens[3]->get_lexeme());
     }
 }
 
@@ -488,10 +522,15 @@ void lang::interpreter::error(const std::string& err) {
 }
 
 void lang::interpreter::print_errs() {
-    std::cerr << "Errors: " << std::endl;
+    std::cerr << "Error";
+    if(errors->size() == 1) {
+         std::cerr << ": "<< std::endl;
+    }
+    else {
+         std::cerr << "s: "<< std::endl;
+    }
     while (!errors->empty()) {
         std::cerr << "-> " << errors->top() << std::endl;
         errors->pop();
     }
-
 }

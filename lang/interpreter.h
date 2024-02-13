@@ -28,12 +28,17 @@ namespace lang {
         inline static std::stack<bool>* if_results = nullptr;
 
         static void init();
+
+        // deprecated
         static char* const_char_convert(const char* input) {
             char* name = (char*)malloc(sizeof(char)*strlen(input));
             return strcpy(name, input);
         }
+
         static std::shared_ptr<token_group> evaluate_tokens(std::vector<std::shared_ptr<token>> tokens, int offset);
         static void input_loop();
+        static int get_equal_index(const std::vector<std::shared_ptr<token>> &tokens);
+        static std::vector<int> get_flags(const std::vector<std::shared_ptr<token>> &tokens);
         static void process_variable_declaration(const std::vector<std::shared_ptr<token>> &tokens);
 
         static bool set_literal(const std::vector<std::shared_ptr<token>> &tokens, data *d);

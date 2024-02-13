@@ -2,7 +2,10 @@
 #include "../interpreter.h"
 
 void data::set_value_int(int val) {
-
+    if(is_final) {
+        lang::interpreter::error("Cannot assign final variable to new value");
+        return;
+    }
     if(!is_ptr)
         *(int*)value = val;
     else {
@@ -11,6 +14,10 @@ void data::set_value_int(int val) {
 }
 
 void data::set_value_float(float val) {
+    if(is_final) {
+        lang::interpreter::error("Cannot assign final variable to new value");
+        return;
+    }
     if(!is_ptr)
         *(float*)value = val;
     else {
@@ -19,6 +26,10 @@ void data::set_value_float(float val) {
 }
 
 void data::set_value_double(double val) {
+    if(is_final) {
+        lang::interpreter::error("Cannot assign final variable to new value");
+        return;
+    }
     if(!is_ptr)
         *(double*)value = val;
     else {
@@ -27,6 +38,10 @@ void data::set_value_double(double val) {
 }
 
 void data::set_value_long(long val) {
+    if(is_final) {
+        lang::interpreter::error("Cannot assign final variable to new value");
+        return;
+    }
     if(!is_ptr)
         *(long*)value = val;
     else {
@@ -35,6 +50,10 @@ void data::set_value_long(long val) {
 }
 
 void data::set_value_char(char val) {
+    if(is_final) {
+        lang::interpreter::error("Cannot assign final variable to new value");
+        return;
+    }
     if(!is_ptr)
         *(char*)value = val;
     else {
@@ -43,6 +62,10 @@ void data::set_value_char(char val) {
 }
 
 void data::set_value_string(const std::string& val) {
+    if(is_final) {
+        lang::interpreter::error("Cannot assign final variable to new value");
+        return;
+    }
     if (type != "string") {
         //lang::interpreter::error("Type is not string, cannot set.");
     }
@@ -55,6 +78,10 @@ void data::set_value_string(const std::string& val) {
 }
 
 void data::set_value_bool(bool val) {
+    if(is_final) {
+        lang::interpreter::error("Cannot assign final variable to new value");
+        return;
+    }
     if(!is_ptr)
         *(bool*)value = val;
     else {
@@ -63,6 +90,10 @@ void data::set_value_bool(bool val) {
 }
 
 void data::set_value_ulonglong(unsigned long long val) {
+    if(is_final) {
+        lang::interpreter::error("Cannot assign final variable to new value");
+        return;
+    }
     if(!is_ptr)
         *(unsigned long long*)value = val;
     else {

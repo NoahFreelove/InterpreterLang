@@ -11,14 +11,14 @@ public:
         memory = new std::unordered_map<std::string, data*>();
     }
 
-    bool set(char* identifier, data* val);
+    bool set(const char* identifier, data* val);
 
     // Assign assigns a pointer to a variable
     // use when assigning an identifier to another identifier
     // marks the data as a pointer so its not deleted which would lead to double free
-    bool assign(char* identifier, data* val);
+    bool assign(const char* identifier, data* val);
 
-    data* get(char* identifier);
+    data* get(const char* identifier);
 
     void print_stack_memory();
 
@@ -27,7 +27,7 @@ public:
         delete memory;
     }
 
-    void delete_var(char * identifier);
+    void delete_var(const char * identifier);
 
     void delete_memory() {
         for (auto& [key, value] : *memory) {
@@ -36,7 +36,7 @@ public:
         memory->clear();
     }
 
-    bool exists(char * identifier);
+    bool exists(const char * identifier);
 };
 
 

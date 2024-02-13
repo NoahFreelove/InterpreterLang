@@ -5,14 +5,14 @@
 #include "../memory/stack_manager.h"
 void define(const std::vector<std::shared_ptr<token>> &tokens) {
     if (tokens.size() == 2) {
-        lang::interpreter::defined->push_back(lang::interpreter::const_char_convert(tokens[1]->get_lexeme()));
+        lang::interpreter::defined->push_back(tokens[1]->get_lexeme());
         std::cout << tokens[1]->get_lexeme() << " defined" << std::endl;
     }
 }
 
 void undefine(const std::vector<std::shared_ptr<token>> &tokens) {
     if (tokens.size() == 2) {
-        char* name = lang::interpreter::const_char_convert(tokens[1]->get_lexeme());
+        const char* name = tokens[1]->get_lexeme();
         for (int i = 0; i < lang::interpreter::defined->size(); i++) {
             if (strcmp(lang::interpreter::defined->at(i), name) == 0) {
                 lang::interpreter::defined->erase(lang::interpreter::defined->begin() + i);
@@ -26,7 +26,7 @@ void undefine(const std::vector<std::shared_ptr<token>> &tokens) {
 
 void is_defined(const std::vector<std::shared_ptr<token>> &tokens) {
     if (tokens.size() == 2) {
-        char* name = lang::interpreter::const_char_convert(tokens[1]->get_lexeme());
+        const char* name = tokens[1]->get_lexeme();
         for (int i = 0; i < lang::interpreter::defined->size(); i++) {
             if (strcmp(lang::interpreter::defined->at(i), name) == 0) {
                 std::cout << tokens[1]->get_lexeme() << " is defined" << std::endl;

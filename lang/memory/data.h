@@ -8,11 +8,13 @@ class data {
     void* value;
     const char* type;
     bool is_ptr = false;
+    bool is_final = false;
 public:
-    data(void* value, const char* type, bool is_ptr = false) {
+    data(void* value, const char* type, bool is_ptr = false, bool is_final = false) {
         this->value = value;
         this->type = type;
         this->is_ptr = is_ptr;
+        this->is_final = is_final;
     }
 
     void* get() {
@@ -24,7 +26,11 @@ public:
     }
 
     std::string get_type_string() {
-        return std::string(type);
+        return {type};
+    }
+
+    [[nodiscard]] bool final() const {
+        return is_final;
     }
 
     // Byval keyword gets value and copies it into a new address
@@ -170,6 +176,10 @@ public:
         else if (type == "unsigned long long") {
             delete (unsigned long long*)value;
         }
+    }
+
+    void set_final() {
+        this->is_final = true;
     }
 };
 #endif //DATA_H

@@ -17,13 +17,13 @@ public:
         memory->print_stack_memory();
     }
 
-    bool set(char* identifier, data* val);
-    bool exists(char* identifier);
-    bool assign(char* identifier, char* identifier2);
+    bool set(const char* identifier, data* val);
+    bool exists(const char* identifier);
+    bool assign(const char* identifier, const char* identifier2);
 
-    void delete_var(char* identifier);
+    void delete_var(const char* identifier);
 
-    data* get_data(char* identifier);
+    data* get_data(const char* identifier);
 
     long get_id() {
         return id;
