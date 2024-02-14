@@ -8,6 +8,12 @@
 
 class token_grouper {
 public:
+    static std::shared_ptr<token_group> proc_group(std::vector<std::shared_ptr<token>> tokens, int index) {
+        for (int i = index; i < tokens.size(); ++i) {
+
+        }
+        return std::make_shared<token_group>();
+    }
     static std::shared_ptr<token_group> recursive_group(std::vector<std::shared_ptr<token>> tokens) {
         // brackets in the form of ( and ) are used to group tokens
         // so (1+2 + 3*(4+5)) would be grouped as
@@ -25,7 +31,7 @@ public:
         std::stack<std::shared_ptr<token_group>> groups;
         auto root_group = std::make_shared<token_group>(); // This will be the root group
         groups.push(root_group); // Start with the root group on the stack
-
+        int i = 0;
         for (auto tk : tokens) {
             int type = tk->get_name();
 
@@ -49,6 +55,7 @@ public:
                 std::shared_ptr<token_group::token_element> element = std::make_shared<token_group::token_element>(tk);
                 groups.top()->add(element);
             }
+            i++;
         }
 
         if (groups.size() != 1) {

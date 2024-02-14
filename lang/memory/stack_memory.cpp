@@ -46,6 +46,9 @@ void stack_memory::print_stack_memory() {
     for (auto& [key, value] : *memory) {
         std::cout << key << " : Value: " << value->to_string() << " : Address: " << value->get() << std::endl;
     }
+    if(memory->empty()) {
+        std::cout << "none..." << std::endl;
+    }
 }
 
 void stack_memory::delete_var(const char *identifier) {

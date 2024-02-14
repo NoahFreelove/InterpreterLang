@@ -1,7 +1,7 @@
 #include "stack_frame.h"
 
 #include "../interpreter.h"
-
+#include "proc_manager.h"
 bool stack_frame::set(const char *identifier, data *val) {
     // if it already exists, delete old value
     if(exists(identifier)) {
@@ -30,4 +30,12 @@ void stack_frame::delete_var(const char *identifier) {
 data * stack_frame::get_data(const char *identifier) {
     data* result = memory->get(identifier);
     return result;
+}
+
+void stack_frame::insert_proc(const std::string &name, proc_tokens* p, proc_type_vec* v) {
+    procs->insert_proc(name,p,v);
+}
+
+proc* stack_frame::resolve_proc(const std::string& name) {
+    return procs->resolve_proc_name(name);
 }
