@@ -29,8 +29,8 @@ void lang::interpreter::init() {
     push_stackframe();
     global_frame = stack->front();
     std::filesystem::__cxx11::path cwd = std::filesystem::current_path();
-    //global_frame->set(const_char_convert("WORKING_DIRECTORY"), new data(new std::string(cwd.string()), "string"));
-    //global_frame->set(const_char_convert("VERSION"), new data(new float(VERSION_MAJOR + (VERSION_MINOR*0.01f)), "float"));
+    global_frame->set(const_char_convert("WORKING_DIRECTORY"), new data(new std::string(cwd.string()), "string"));
+    global_frame->set(const_char_convert("VERSION"), new data(new float(VERSION_MAJOR + (VERSION_MINOR*0.01f)), "float"));
 
     has_init = true;
     if_block_statuses = new std::stack<bool>();
@@ -39,6 +39,8 @@ void lang::interpreter::init() {
     defined->push_back("IMPLICIT_DOUBLE_TO_FLOAT");
     defined->push_back("IMPLICIT_UPCAST");
     errors = new std::stack<std::string>();
+    read_from_file("about.lang");
+
 }
 
 std::shared_ptr<token_group> lang::interpreter::evaluate_tokens(std::vector<std::shared_ptr<token>> tokens, int offset) {
@@ -49,6 +51,7 @@ std::shared_ptr<token_group> lang::interpreter::evaluate_tokens(std::vector<std:
 }
 
 void lang::interpreter::input_loop() {
+    init();
     auto* input = new std::string();
     if(scan == nullptr) {
         scan = new scanner();
@@ -64,7 +67,9 @@ void lang::interpreter::input_loop() {
         if (*input == "exit") {
             break;
         }
+        start_timer();
         process_input(input);
+        end_timer();
     }
 }
 
@@ -533,4 +538,29 @@ void lang::interpreter::print_errs() {
         std::cerr << "-> " << errors->top() << std::endl;
         errors->pop();
     }
+}
+
+void lang::interpreter::start_timer() {
+    start = std::chrono::high_resolution_clock::now();
+}
+
+void lang::interpreter::end_timer() {
+    end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<float> duration = end - start;
+    time_taken = duration.count();
+    avg_time_cumulative += time_taken;
+    num_runs++;
+
+    avg_time = avg_time_cumulative/(float)num_runs;
+
+    if(last_run_data == nullptr) {
+        last_run_data = new data(new float(time_taken), "float");
+        global_frame->set("INTERPRETER_TIME", last_run_data);
+    }
+    last_run_data->set_value_float(time_taken);
+}
+
+void lang::interpreter::print_time() {
+    std::cout << "Last run time: " << time_taken << "s" << std::endl;
+    std::cout << "Average time: " << avg_time << "s" << std::endl;
 }

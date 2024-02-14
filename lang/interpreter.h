@@ -1,5 +1,6 @@
 #ifndef INTERPRETER_H
 #define INTERPRETER_H
+#include <chrono>
 #include <iostream>
 #include <stack>
 #include <cstring>
@@ -26,7 +27,14 @@ namespace lang {
         inline static bool has_init = false;
         inline static std::stack<bool>* if_block_statuses = nullptr;
         inline static std::stack<bool>* if_results = nullptr;
-
+        // measure start time and end time
+        inline static std::chrono::time_point<std::chrono::high_resolution_clock> start;
+        inline static std::chrono::time_point<std::chrono::high_resolution_clock> end;
+        inline static float time_taken = 0;
+        inline static float avg_time_cumulative = 0;
+        inline static float avg_time = 0;
+        inline static int num_runs = 0;
+        inline static data* last_run_data = nullptr;
         static void init();
 
         // deprecated
@@ -52,6 +60,10 @@ namespace lang {
         static void read_from_file(const char* path);
         static void error(const std::string& err);
         static void print_errs();
+
+        static void start_timer();
+        static void end_timer();
+        static void print_time();
 
     };
 }

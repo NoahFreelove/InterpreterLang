@@ -248,10 +248,14 @@ public:
             return std::to_string(std::any_cast<int>(value));
         }
         else if(name == FLOAT) {
-            return std::to_string(std::any_cast<float>(value));
+            std::string val = std::to_string(std::any_cast<float>(value));
+            val.erase(val.find_last_not_of('0') + 1, std::string::npos);
+            return val;
         }
         else if(name == DOUBLE) {
-            return std::to_string(std::any_cast<double>(value));
+            std::string val = std::to_string(std::any_cast<double>(value));
+            val.erase(val.find_last_not_of('0') + 1, std::string::npos);
+            return val;
         }
         else if(name == LONG) {
             return std::to_string(std::any_cast<long>(value));
