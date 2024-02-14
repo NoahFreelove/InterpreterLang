@@ -39,3 +39,7 @@ void stack_frame::insert_proc(const std::string &name, proc_tokens* p, proc_type
 proc* stack_frame::resolve_proc(const std::string& name) {
     return procs->resolve_proc_name(name);
 }
+
+void stack_frame::eval_proc(std::shared_ptr<token_group> &g) {
+    procs->execute_proc(g);
+}

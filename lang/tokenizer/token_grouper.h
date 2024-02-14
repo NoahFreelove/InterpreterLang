@@ -31,9 +31,56 @@ public:
         std::stack<std::shared_ptr<token_group>> groups;
         auto root_group = std::make_shared<token_group>(); // This will be the root group
         groups.push(root_group); // Start with the root group on the stack
-        int i = 0;
-        for (auto tk : tokens) {
+        for (int i = 0; i < tokens.size(); i++) {
+            auto tk = tokens[i];
             int type = tk->get_name();
+
+            if(type == IDENTIFIER && i+1 < tokens.size()) {
+                if(tokens[i+1]->get_name() == LEFT_PAREN) {
+                    std::cout << "Inner" << std::endl;
+                    auto* proc = lang::interpreter::top_stack()->resolve_proc(tk->get_lexeme());
+                    std::vector<std::vector<std::shared_ptr<token>>> arguments;
+                    auto curr_arg = std::vector<std::shared_ptr<token>>();
+                    if(proc) {
+                        int j = i+1;
+                        while (tokens[j]->get_name() != RIGHT_PAREN) {
+                            j++;
+                            if(j >= tokens.size()) {
+                                lang::interpreter::error("Expected ')' in procedure call");
+                                return std::make_shared<token_group>();
+                            }
+                            if(tokens[j]->get_name() == COMMA) {
+                                arguments.push_back(curr_arg);
+                                curr_arg = std::vector<std::shared_ptr<token>>();
+                            }
+                            else {
+                                curr_arg.push_back(tokens[j]);
+                            }
+                        }
+                        // Erase tokens from (i,j]
+                        tokens.erase(tokens.begin() + i+1, tokens.begin() + j+1);
+
+                        std::vector<std::shared_ptr<token_group>> grouped_args;
+                        grouped_args.reserve(arguments.size());
+                        for(auto& vec : arguments) {
+                            grouped_args.push_back(recursive_group(vec));
+                        }
+                        auto proc_ptr = std::make_shared<token>(PROC, tk->get_lexeme(), 0, grouped_args);
+                        tokens[i] = proc_ptr;
+                        auto wrapper = std::make_shared<token_group>();
+                        std::shared_ptr<token_group::token_element> element = std::make_shared<token_group::token_element>(proc_ptr);
+
+                        wrapper->tokens.push_back(element);
+                        groups.top()->tokens.push_back(std::make_shared<token_group::token_element>(wrapper));
+                        continue;
+
+                    }
+                    else {
+                        lang::interpreter::error("Expected procedure call, no procedure with name '" + std::string(tk->get_lexeme()) + "' was found.");
+                        return std::make_shared<token_group>();
+                    }
+                }
+            }
 
             if (type == LEFT_PAREN) {
                 // Start a new group for everything inside the parentheses
@@ -55,7 +102,6 @@ public:
                 std::shared_ptr<token_group::token_element> element = std::make_shared<token_group::token_element>(tk);
                 groups.top()->add(element);
             }
-            i++;
         }
 
         if (groups.size() != 1) {
@@ -100,8 +146,8 @@ public:
     static std::shared_ptr<token_group> gen_group(std::vector<std::shared_ptr<token>> tokens) {
         generate_parens(tokens);
 
-        // print them out
-        /*for (auto tk : tokens) {
+        /*// print them out
+        for (auto tk : tokens) {
             std::cout << tk->get_lexeme() << " ";
         }
         std::cout << std::endl;*/

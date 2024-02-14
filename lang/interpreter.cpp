@@ -457,7 +457,7 @@ void lang::interpreter::process(const std::vector<std::shared_ptr<token>>& token
     }
     return;*/
     std::shared_ptr<token_group> group = token_grouper::gen_group(tokens);
-    //group->print_group();
+    group->print_group();
     group_evaluator::eval_group(group);
     if(group->type == ERROR) {
         error("Could not process input");
@@ -577,7 +577,7 @@ void lang::interpreter::process_input( std::string *input) {
             check_pop_stack(tokens);
             continue;
         }
-        if(token_vector[0]->get_name() == PROC) {
+        if(token_vector[0]->get_name() == PROC_KEYW) {
             if(if_block_statuses->empty()) {
                 process_proc_declaration(tokens);
                 continue;

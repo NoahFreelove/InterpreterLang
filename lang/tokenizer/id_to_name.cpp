@@ -98,6 +98,8 @@ std::string id_to_name(int id) {
             return "RETURN";
         case PROC:
             return "PROC";
+        case PROC_KEYW:
+            return "PROC";
         case END_PROC:
             return "END_PROC";
         case FINAL:

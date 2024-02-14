@@ -7,6 +7,7 @@
 
 // These represent the evaluation type of the group
 #define UNDETERMINED 1
+#define NOTHING (-2)
 #define ERROR (-1)
 
 class token_group {

@@ -164,7 +164,7 @@ std::shared_ptr<token> lang::scanner::get_identifier(char c) {
         return std::make_shared<token>(RETURN, cstr, line);
     }
     if(str == "proc") {
-        return std::make_shared<token>(PROC, cstr, line);
+        return std::make_shared<token>(PROC_KEYW, cstr, line);
     }
     if(str == "endproc") {
         return std::make_shared<token>(END_PROC, cstr, line);

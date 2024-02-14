@@ -3,6 +3,7 @@
 #include <memory>
 #include <vector>
 #include "../tokenizer/token.h"
+#include "../tokenizer/token_group.h"
 typedef std::pair<std::shared_ptr<token>,std::shared_ptr<token>> proc_type;
 typedef std::vector<proc_type> proc_type_vec;
 typedef std::vector<std::vector<std::shared_ptr<token>>> proc_tokens;
@@ -33,6 +34,13 @@ public:
     }
     void insert_proc(std::string name, proc_tokens* p, proc_type_vec* v) {
         procs->insert(std::make_pair(name, new std::pair(p,v)));
+    }
+
+    void execute_proc(std::shared_ptr<token_group>& g) {
+        //std::vector<std::shared_ptr<token_group>> args = g.
+
+        g->type = NOTHING;
+        g->value = nullptr;
     }
 
     void print_procs() {

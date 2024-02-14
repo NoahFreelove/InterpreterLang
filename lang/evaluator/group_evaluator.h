@@ -137,6 +137,24 @@ public:
     }
     static void eval_group(std::shared_ptr<token_group> g, int depth = 0) {
         bool result = recursive_replace(g);
+
+        if(g->tokens.empty()) {
+            g->type = NOTHING;
+            g->value = nullptr;
+            return;
+        }
+        // check for proc, if it is it should always be in its own group
+        if(g->tokens.size() == 1) {
+            if(!is_group(*g->tokens[0])) {
+                auto tk = std::get<std::shared_ptr<token>>(*g->tokens[0]);
+                if(tk->get_name() == PROC) {
+                    lang::interpreter::top_stack()->eval_proc(g);
+                    return;
+                }
+
+            }
+        }
+
         //g->print_group();
         if(!result) {
             g->type = ERROR;
@@ -173,16 +191,21 @@ public:
         }
 
         bool has_literal = false;
-        for (const std::shared_ptr<token_element>& element : g->tokens) {
+        for (int i = 0; i< g->tokens.size(); i++) {
+            auto& element = g->tokens[i];
             std::visit(overloaded{
                 [g, &has_literal](std::shared_ptr<token> tk) {
                     if(tk->is_literal()) {
                         has_literal = true;
                     }
                 },
-                [g, depth, &has_err](std::shared_ptr<token_group> grp) {
+                [&g, depth, &has_err, i](std::shared_ptr<token_group> grp) {
                     if(grp->type == UNDETERMINED)
                         eval_group(grp,depth+1);
+                    if(grp->type == NOTHING) {
+                        // remove the group
+                        g->tokens.erase(g->tokens.begin() + i);
+                    }
 
                     if(grp->type == ERROR) {
                         has_err = true;

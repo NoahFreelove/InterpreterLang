@@ -56,6 +56,7 @@
 #define INT 108
 #define TRUE 109
 #define FALSE 110
+#define PROC 111
 
 // KEYWORDS
 #define IF 1001
@@ -68,7 +69,7 @@
 #define PRIVATE 1008
 #define PUBLIC 1009
 #define RETURN 1012
-#define PROC 1013
+#define PROC_KEYW 1013
 #define BYVAL 1017
 #define DISCARD 1018
 #define PERSISTENT 1019
