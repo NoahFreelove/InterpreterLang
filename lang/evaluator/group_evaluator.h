@@ -68,22 +68,22 @@ public:
                         // Replace token in group with value obtained from memory
                         data* d = resolve_variable(tk->get_lexeme());
                         if (d) {
-                            if(d->get_type() == "int") {
+                            if(d->get_type_string() == "int") {
                                 g->tokens[i] = convert(INT, "INT", 0, d->get_int());
                             }
-                            if(d->get_type() == "long") {
+                            else if(d->get_type_string() == "long") {
                                 g->tokens[i] = convert(LONG, "LONG", 0, d->get_long());
                             }
-                            else if(d->get_type() == "float") {
+                            else if(d->get_type_string() == "float") {
                                 g->tokens[i] = convert(FLOAT, "FLOAT", 0, d->get_float());
                             }
-                            else if(d->get_type() == "double") {
+                            else if(d->get_type_string() == "double") {
                                 g->tokens[i] = convert(DOUBLE, "DOUBLE", 0, d->get_double());
                             }
-                            else if (d->get_type() == "string") {
+                            else if (d->get_type_string() == "string") {
                                 g->tokens[i] = convert(STRING, "STRING", 0, d->get_string());
                             }
-                            else if(d->get_type() == "bool") {
+                            else if(d->get_type_string() == "bool") {
                                 bool val = d->get_bool();
                                 if(!val) {
                                     g->tokens[i] = convert(FALSE, "FALSE", 0, false);
@@ -91,6 +91,9 @@ public:
                                 else {
                                     g->tokens[i] = convert(TRUE, "TRUE", 0, true);
                                 }
+                            }
+                            else {
+                                std::cout << "Unknown type: " << d->get_type_string() << std::endl;
                             }
                         }
                         else {
@@ -110,6 +113,7 @@ public:
     }
 
     static bool is_group(const token_element& t) {
+
         return std::visit(overloaded{
                 [](const std::shared_ptr<token>& tk) {
                     return false;

@@ -4,6 +4,7 @@
 #include <iostream>
 #include <stack>
 #include <cstring>
+#include <queue>
 
 #include "tokenizer/scanner.h"
 #include "memory/memory.h"
@@ -42,6 +43,10 @@ namespace lang {
         inline static long proc_stack_id = -1L;
         inline static std::string proc_name;
 
+        typedef std::vector<std::shared_ptr<token>> token_vec;
+
+        inline static std::queue<token_vec> queue = std::queue<token_vec>();
+
         static void init();
 
         // deprecated
@@ -73,7 +78,8 @@ namespace lang {
         static void process(const std::vector<std::shared_ptr<token>>& tokens);
 
         static void check_pop_stack(std::vector<std::shared_ptr<token>>& tokens);
-        static void process_input(std::string* input);
+        static void queue_input(std::string * input);
+        static void run();
         static void read_from_file(const char* path);
         static void error(const std::string& err);
         static void print_errs();

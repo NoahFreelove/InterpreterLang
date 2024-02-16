@@ -50,6 +50,12 @@ static void print(const std::vector<std::shared_ptr<token>>& tokens, int offset 
         lang::interpreter::error("Not enough tokens for print statement");
         return;
     }
+
+    /*std::cout << "ALL TOKENS: " << std::endl;
+    for (auto& token : tokens) {
+        std::cout << *token << std::endl;
+    }*/
+
     auto group = lang::interpreter::evaluate_tokens(tokens, offset);
     if(group->type == UNDETERMINED || group->type == ERROR) {
         std::cout << std::endl;
@@ -106,6 +112,7 @@ static void run_builtins(const std::vector<std::shared_ptr<token>>& tokens) {
     if (tokens[0]->get_name() == DUMP) {
         for(stack_frame* frame : *lang::interpreter::stack) {
             frame->dump_memory();
+            std::cout << std::endl;
         }
         return;
     }

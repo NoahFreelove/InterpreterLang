@@ -25,6 +25,9 @@ bool lang::interpreter::is_defined(const char *c) {
 void lang::interpreter::init() {
     if(has_init)
         return;
+    if(scan == nullptr) {
+        scan = new scanner();
+    }
     stack = new std::vector<stack_frame*>();
     push_stackframe();
     global_frame = stack->front();
@@ -52,6 +55,7 @@ std::shared_ptr<token_group> lang::interpreter::evaluate_tokens(std::vector<std:
 
 void lang::interpreter::input_loop() {
     init();
+    run();
     auto* input = new std::string();
     if(scan == nullptr) {
         scan = new scanner();
@@ -59,6 +63,9 @@ void lang::interpreter::input_loop() {
     while (true) {
         if(scan->in_multi_line() || scan->in_multi_comment() || scan->in_multi_string()) {
             std::cout << "... ";
+        }
+        else if (in_proc_declaration) {
+            std::cout << ">>>> ";
         }
         else {
             std::cout << ">>> ";
@@ -68,7 +75,8 @@ void lang::interpreter::input_loop() {
             break;
         }
         start_timer();
-        process_input(input);
+        queue_input(input);
+        run();
         end_timer();
     }
 }
@@ -271,7 +279,7 @@ void lang::interpreter::process_proc_declaration(std::vector<std::shared_ptr<tok
     in_proc_declaration = true;
     proc_stack_id = stack->back()->get_id();
     proc_name = tokens[1]->get_lexeme();
-    std::cout << "start proc" << std::endl;
+    //std::cout << "start proc" << std::endl;
 }
 
 std::vector<std::shared_ptr<token>> lang::interpreter::clone_tokens(const std::vector<std::shared_ptr<token>> &tokens) {
@@ -300,8 +308,8 @@ void lang::interpreter::end_proc_declaration() {
     new_proc_tokens = nullptr;
     types = nullptr;
     proc_name = "";
-    std:: cout << "Name: " << copy << std::endl;
-    std::cout << "end proc" << std::endl;
+    //std:: cout << "Name: " << copy << std::endl;
+    //std::cout << "end proc" << std::endl;
 }
 
 bool lang::interpreter::set_literal(const std::vector<std::shared_ptr<token>> &tokens, data *d) {
@@ -457,7 +465,7 @@ void lang::interpreter::process(const std::vector<std::shared_ptr<token>>& token
     }
     return;*/
     std::shared_ptr<token_group> group = token_grouper::gen_group(tokens);
-    group->print_group();
+    //group->print_group();
     group_evaluator::eval_group(group);
     if(group->type == ERROR) {
         error("Could not process input");
@@ -489,7 +497,7 @@ void lang::interpreter::process(const std::vector<std::shared_ptr<token>>& token
             std::cout << "false" << std::endl;
         }
         else {
-            std::cout << "No value" << std::endl;
+            //std::cout << "No value" << std::endl;
         }
     }
 }
@@ -501,37 +509,39 @@ void lang::interpreter::check_pop_stack(std::vector<std::shared_ptr<token>> &tok
     }
 }
 
-void lang::interpreter::process_input( std::string *input) {
-    if(scan == nullptr) {
-        scan = new scanner();
+void lang::interpreter::queue_input(std::string *input)  {
+    init();
+    auto tokens = scan->scan_line(input);
+    if(tokens.empty())
+        return;
+    // create seperate token vectors whenever a semicolon is found as a token. semicolon id = 13
+    token_vec current_vector = token_vec();
+    for(const auto& t : tokens) {
+        if(t->get_name() == SEMICOLON) {
+            queue.emplace(current_vector);
+            current_vector.clear();
+        }
+        else {
+            current_vector.push_back(t);
+        }
     }
+    if(!current_vector.empty()) {
+        queue.push(current_vector);
+    }
+}
 
+void lang::interpreter::run() {
     init();
     while (!errors->empty())
         errors->pop();
 
-    auto tokens = scan->scan_line(input);
-    if(tokens.empty())
-        return;
-
-    // create seperate token vectors whenever a semicolon is found as a token. semicolon id = 13
-    std::vector<std::vector<std::shared_ptr<token>>> token_vectors;
-    std::vector<std::shared_ptr<token>> current_vector;
-    for(auto token : tokens) {
-        if(token->get_name() == SEMICOLON) {
-            token_vectors.push_back(current_vector);
-            current_vector.clear();
+    while (!queue.empty()) {
+        token_vec token_vector = queue.front();
+        token_vec copy = token_vec();
+        for (auto& t : token_vector) {
+            copy.push_back(t);
         }
-        else {
-            current_vector.push_back(token);
-        }
-    }
-    if(!current_vector.empty()) {
-        token_vectors.push_back(current_vector);
-    }
-
-    for (auto &token_vector : token_vectors) {
-
+        queue.pop();
         if(in_proc_declaration) {
             if(!token_vector.empty()) {
                 if(token_vector[0]->get_name() == END_PROC) {
@@ -552,7 +562,7 @@ void lang::interpreter::process_input( std::string *input) {
         if(!if_block_statuses->empty()) {
             if(token_vector[0]->get_name() == END_IF) {
                 if_block_statuses->pop();
-                check_pop_stack(tokens);
+                check_pop_stack(copy);
                 continue;
             }
             if(if_block_statuses->top() == false)
@@ -564,22 +574,22 @@ void lang::interpreter::process_input( std::string *input) {
         }
         if (token_vector[0]->is_typeword()) {
             process_variable_declaration(token_vector);
-            check_pop_stack(tokens);
+            check_pop_stack(copy);
             continue;
         }
         if(token_vector[0]->is_control_flow()) {
-            control_flow_runner::process_control_flow(tokens);
-            check_pop_stack(tokens);
+            control_flow_runner::process_control_flow(token_vector);
+            check_pop_stack(copy);
             continue;
         }
         if(token_vector[0]->is_builtin()) {
             run_builtins(token_vector);
-            check_pop_stack(tokens);
+            check_pop_stack(copy);
             continue;
         }
         if(token_vector[0]->get_name() == PROC_KEYW) {
             if(if_block_statuses->empty()) {
-                process_proc_declaration(tokens);
+                process_proc_declaration(token_vector);
                 continue;
             }
             else {
@@ -605,14 +615,14 @@ void lang::interpreter::process_input( std::string *input) {
 
                 if(token_vector[1]->get_name() == EQUAL) {
                     process_variable_update(token_vector);
-                    check_pop_stack(tokens);
+                    check_pop_stack(copy);
                     continue;
                 }
             }
 
         }
         process(token_vector);
-        check_pop_stack(tokens);
+        check_pop_stack(copy);
     }
     if(!errors->empty()) {
         print_errs();
@@ -632,7 +642,7 @@ void lang::interpreter::read_from_file(const char *path) {
         return;
     }
     while(std::getline(file, str)) {
-        process_input(&str);
+        queue_input(&str);
     }
     file.close();
 }

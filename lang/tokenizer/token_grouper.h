@@ -5,7 +5,7 @@
 #include "token.h"
 #include "token_group.h"
 #include "../interpreter.h"
-
+#include "../memory/stack_manager.h"
 class token_grouper {
 public:
     static std::shared_ptr<token_group> proc_group(std::vector<std::shared_ptr<token>> tokens, int index) {
@@ -37,33 +37,51 @@ public:
 
             if(type == IDENTIFIER && i+1 < tokens.size()) {
                 if(tokens[i+1]->get_name() == LEFT_PAREN) {
-                    std::cout << "Inner" << std::endl;
-                    auto* proc = lang::interpreter::top_stack()->resolve_proc(tk->get_lexeme());
-                    std::vector<std::vector<std::shared_ptr<token>>> arguments;
-                    auto curr_arg = std::vector<std::shared_ptr<token>>();
+                    auto* proc = resolve_proc(tk->get_lexeme());
+
                     if(proc) {
-                        int j = i+1;
+                        std::vector<std::vector<std::shared_ptr<token>>> arguments;
+                        auto curr_arg = std::vector<std::shared_ptr<token>>();
+                        int j = i+2;
                         while (tokens[j]->get_name() != RIGHT_PAREN) {
-                            j++;
                             if(j >= tokens.size()) {
                                 lang::interpreter::error("Expected ')' in procedure call");
                                 return std::make_shared<token_group>();
                             }
                             if(tokens[j]->get_name() == COMMA) {
-                                arguments.push_back(curr_arg);
-                                curr_arg = std::vector<std::shared_ptr<token>>();
+                                // copy value of vector to arguments, so we can clear it
+                                if(!curr_arg.empty()) {
+                                    arguments.emplace_back(curr_arg);
+                                }
+                                else {
+                                    std::cout << "Empty arg" << std::endl;
+                                }
+                                curr_arg.clear();
                             }
                             else {
                                 curr_arg.push_back(tokens[j]);
                             }
+                            j++;
                         }
+                        if(!curr_arg.empty()) {
+                            arguments.emplace_back(curr_arg);
+                        }
+                        /*std::cout << "PRE PRINT:" << std::endl;
+                        for (auto& tok : tokens) {
+                            std::cout << *tok << std::endl;
+                        }*/
                         // Erase tokens from (i,j]
                         tokens.erase(tokens.begin() + i+1, tokens.begin() + j+1);
+                        /*std::cout << "AFTER ERASE: " << std::endl;
+                        for (auto& tok : tokens) {
+                            std::cout << *tok << std::endl;
+                        }*/
 
                         std::vector<std::shared_ptr<token_group>> grouped_args;
                         grouped_args.reserve(arguments.size());
                         for(auto& vec : arguments) {
-                            grouped_args.push_back(recursive_group(vec));
+                            auto g = recursive_group(vec);
+                            grouped_args.push_back(g);
                         }
                         auto proc_ptr = std::make_shared<token>(PROC, tk->get_lexeme(), 0, grouped_args);
                         tokens[i] = proc_ptr;

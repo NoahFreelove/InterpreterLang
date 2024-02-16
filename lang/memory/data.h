@@ -17,6 +17,13 @@ public:
         this->is_final = is_final;
     }
 
+    explicit data(data* reference) {
+        this->type = reference->type;
+        this->value = reference->value;
+        this->is_final = reference->is_final;
+        this->is_ptr = reference->is_ptr;
+    }
+
     void* get() {
         return value;
     }
@@ -170,8 +177,7 @@ public:
             delete (bool*)value;
         }
         else if (type == "string") {
-            free(*(char**)value);
-            delete (char**)value;
+            delete (std::string*)value;
         }
         else if (type == "unsigned long long") {
             delete (unsigned long long*)value;
