@@ -32,8 +32,8 @@ data * stack_frame::get_data(const char *identifier) {
     return result;
 }
 
-void stack_frame::insert_proc(const std::string &name, proc_tokens* p, proc_type_vec* v) {
-    procs->insert_proc(name,p,v);
+void stack_frame::insert_proc(const std::string &name, int type, proc_tokens* p, proc_type_vec* v) {
+    procs->insert_proc(name,type,p,v);
 }
 
 proc* stack_frame::resolve_proc(const std::string& name) {

@@ -226,21 +226,24 @@ void lang::interpreter::process_variable_declaration(const std::vector<std::shar
 
 void lang::interpreter::process_proc_declaration(std::vector<std::shared_ptr<token>> &tokens) {
     // proc name(typename var, typename, var2, etc.)
-    if(tokens.size() < 4) {
-        error("Cannot declare procecdure, required: proc name(typename var, typename, var2, etc.)");
+    if(tokens.size() < 5) {
+        error("Cannot declare procecdure, required: proc <type_word> name(typename var, typename, var2, etc.)");
         return;
     }
-    if(tokens[1]->get_name() != IDENTIFIER) {
+    if(!tokens[1]->is_typeword()) {
+        error("Cannot declare procedure, expected type word, recieved: " + id_to_name(tokens[1]->get_name()));
+    }
+    if(tokens[2]->get_name() != IDENTIFIER) {
         error("Cannot declare procedure, expected identifier name, recieved: " + id_to_name(tokens[1]->get_name()));
         return;
     }
     auto name = std::make_shared<token>(tokens[1]->get_name(), tokens[1]->get_lexeme(), tokens[1]->get_line(), tokens[1]->get_value());
-    if(tokens[2]->get_name() != LEFT_PAREN) {
+    if(tokens[3]->get_name() != LEFT_PAREN) {
         error("Expected '(', got '" + id_to_name(tokens[1]->get_name()) +'\'');
         return;
     }
     types = new proc_type_vec();
-    for(int i = 3; i < tokens.size(); i++) {
+    for(int i = 4; i < tokens.size(); i++) {
         if(tokens[i]->get_name() == RIGHT_PAREN) {
             if(i != tokens.size()-1) {
                 error("Right parenthesis closed with tokens still remaining");
@@ -278,7 +281,8 @@ void lang::interpreter::process_proc_declaration(std::vector<std::shared_ptr<tok
     new_proc_tokens = new proc_tokens;
     in_proc_declaration = true;
     proc_stack_id = stack->back()->get_id();
-    proc_name = tokens[1]->get_lexeme();
+    proc_name = tokens[2]->get_lexeme();
+    proc_type = tokens[1]->typeword_to_type();
     //std::cout << "start proc" << std::endl;
 }
 
@@ -304,7 +308,7 @@ void lang::interpreter::end_proc_declaration() {
 
     std::string copy = proc_name;
 
-    top_stack()->insert_proc(copy, new_proc_tokens, types);
+    top_stack()->insert_proc(copy, proc_type, new_proc_tokens, types);
     new_proc_tokens = nullptr;
     types = nullptr;
     proc_name = "";
@@ -514,6 +518,7 @@ void lang::interpreter::queue_input(std::string *input)  {
     auto tokens = scan->scan_line(input);
     if(tokens.empty())
         return;
+    auto queue = std::queue<token_vec>();
     // create seperate token vectors whenever a semicolon is found as a token. semicolon id = 13
     token_vec current_vector = token_vec();
     for(const auto& t : tokens) {
@@ -528,14 +533,21 @@ void lang::interpreter::queue_input(std::string *input)  {
     if(!current_vector.empty()) {
         queue.push(current_vector);
     }
+    queue_stack.push(queue);
 }
 
 void lang::interpreter::run() {
     init();
     while (!errors->empty())
         errors->pop();
+    if(queue_stack.empty())
+        return;
 
-    while (!queue.empty()) {
+    while (!queue_stack.top().empty()) {
+        auto queue = queue_stack.top();
+        queue_stack.pop();
+
+        while (!queue.empty()) {
         token_vec token_vector = queue.front();
         token_vec copy = token_vec();
         for (auto& t : token_vector) {
@@ -623,6 +635,9 @@ void lang::interpreter::run() {
         }
         process(token_vector);
         check_pop_stack(copy);
+        }
+        if(queue_stack.empty())
+            break;
     }
     if(!errors->empty()) {
         print_errs();

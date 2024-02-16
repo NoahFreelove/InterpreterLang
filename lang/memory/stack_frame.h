@@ -31,7 +31,7 @@ public:
 
     data* get_data(const char* identifier);
 
-    void insert_proc(const std::string &name, proc_tokens* p, proc_type_vec* v);
+    void insert_proc(const std::string &name, int type, proc_tokens* p, proc_type_vec* v);
 
     proc* resolve_proc(const std::string& name);
 

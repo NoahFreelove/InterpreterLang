@@ -250,6 +250,12 @@ std::shared_ptr<token> lang::scanner::get_identifier(char c) {
     if(str == "ulong64") {
         return std::make_shared<token>(ULONG64_KEYW, cstr, line);
     }
+    if(str == "void") {
+        return std::make_shared<token>(NOTHING_KEYW, cstr, line);
+    }
+    if(str == "type") {
+        return std::make_shared<token>(TYPE_KEYW, cstr, line);
+    }
     if(str == "not")
         return std::make_shared<token>(BANG, "!", line, nullptr);
     if(str == "is")

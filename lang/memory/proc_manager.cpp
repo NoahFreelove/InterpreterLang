@@ -12,12 +12,12 @@ proc * proc_manager::resolve_proc_name(const std::string &name) {
     return (*procs)[name];
 }
 
-void proc_manager::insert_proc(const std::string &name, proc_tokens *p, proc_type_vec *v) {
+void proc_manager::insert_proc(const std::string &name, int type, proc_tokens *p, proc_type_vec *v) {
     if(procs->find(name) != procs->end()) {
         lang::interpreter::error("Attempted redefinition of proc");
         return;
     }
-    procs->insert(std::make_pair(name, new std::pair(p,v)));
+    procs->insert(std::make_pair(name, new std::pair(new std::pair(p,v),type)));
 }
 
 void push_to_stack_frame(const std::shared_ptr<token_group> &evaled_group, stack_frame* frame, const char* name) {
@@ -119,11 +119,50 @@ void push_val_directly(const std::shared_ptr<token> &t, stack_frame* frame, cons
     }
 }
 
+data* push_return_variable(stack_frame* frame, int type) {
+    data* return_var = nullptr;
+    switch (type) {
+        case INT: {
+            return_var = new data(new int(0), "int");
+            break;
+        }
+        case LONG: {
+            return_var = new data(new long(0), "long");
+            break;
+        }
+        case FLOAT: {
+            return_var = new data(new float(0), "float");
+            break;
+        }
+        case DOUBLE: {
+            return_var = new data(new double(0), "double");
+            break;
+        }
+        case STRING: {
+            return_var = new data(new std::string(), "string");
+            break;
+        }
+        case TRUE:
+            case FALSE:{
+            return_var = new data(new bool(false), "bool");
+            break;
+        }
+        case NOTHING_TYPE: {
+            return_var = new data(nullptr, "nothing");
+            break;
+        }
+        default: {
+            lang::interpreter::error("Unknown return type in procedure");
+            return nullptr;
+        }
+    }
+    frame->set("return", return_var);
+    return return_var;
+}
+
 void proc_manager::execute_proc(std::shared_ptr<token_group> &g) {
     //std::vector<std::shared_ptr<token_group>> args = g.
     auto* new_frame = new stack_frame();
-    g->type = NOTHING; // Return type
-    g->value = nullptr; // Return value
 
     if(group_evaluator::is_group(*g->tokens[0]) ) {
         lang::interpreter::error("Cannot run proc on group?");
@@ -132,7 +171,14 @@ void proc_manager::execute_proc(std::shared_ptr<token_group> &g) {
     auto tok = (*std::get<std::shared_ptr<token>>(*g->tokens[0]));
     proc* p = resolve_proc(tok.get_lexeme());
 
-    proc_type_vec types = *p->second;
+    auto* dat = push_return_variable(new_frame, p->second);
+    g->type = p->second; // Return type
+    if(g->type == NOTHING_TYPE) {
+        g->type = NOTHING;
+    }
+    g->value = nullptr; // Return value
+
+    proc_type_vec types = *p->first->second;
 
 
     auto args = std::any_cast<std::vector<std::shared_ptr<token_group>>>(tok.get_value());
@@ -168,17 +214,62 @@ void proc_manager::execute_proc(std::shared_ptr<token_group> &g) {
         }
         /*std::cout << "is group: " << group_evaluator::is_group(*arg->tokens[0]) << std::endl;
         std::cout << "type should be: " << id_to_name(types[i].first->get_name()) << std::endl;*/
-
         i++;
     }
 
     push_stackframe(new_frame);
+    std::queue<std::vector<std::shared_ptr<token>>> proc_toks;
 
-    // resolve proc checks all stacks, not just current one
-    for (const auto& t : *p->first) {
-        lang::interpreter::queue.push(t);
+    for (const auto& t : *p->first->first) {
+        proc_toks.push(t);
     }
-    lang::interpreter::queue.push({std::make_shared<token>(RIGHT_BRACE, "}",0)});
+    lang::interpreter::queue_stack.push(proc_toks);
+    lang::interpreter::run();
+
+    std::queue<std::vector<std::shared_ptr<token>>> right_brace;
+    right_brace.push({std::make_shared<token>(RIGHT_BRACE, "}",0)});
+
+    if(dat) {
+        // Convert dat return from ptr to value
+        switch (g->type) {
+            case INT: {
+                g->value = dat->get_int();
+                break;
+            }
+            case LONG: {
+                g->value = dat->get_long();
+                break;
+            }
+            case FLOAT: {
+                g->value = dat->get_float();
+                break;
+            }
+            case DOUBLE: {
+                g->value = dat->get_double();
+                break;
+            }
+            case STRING: {
+                g->value = dat->get_string();
+                break;
+            }
+            case TRUE:
+                case FALSE:{
+                g->value = dat->get_bool();
+                break;
+            }
+            case NOTHING: {
+                g->value = nullptr;
+                break;
+            }
+            default: {
+                lang::interpreter::error("Unknown return type in procedure close");
+            }
+        }
+    }
+    else {
+        std::cout <<"Invalid data" << std::endl;
+    }
+    lang::interpreter::queue_stack.push(right_brace);
     lang::interpreter::run();
 }
 
@@ -186,10 +277,10 @@ void proc_manager::print_procs() {
     for (const auto& elm : *procs) {
         std::cout << elm.first << "(";
         int i = 0;
-        for (const auto& t : (*elm.second->second)) {
+        for (const auto& t : (*elm.second->first->second)) {
             std::cout << id_to_name(t.first->get_name()) << " " << t.second->get_lexeme();
             i++;
-            if(i < elm.second->second->size()) {
+            if(i < elm.second->first->second->size()) {
                 std::cout << ", ";
             }
             else {

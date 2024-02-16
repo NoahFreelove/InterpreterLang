@@ -41,11 +41,12 @@ namespace lang {
         inline static proc_tokens* new_proc_tokens = nullptr;
         inline static proc_type_vec* types = nullptr;
         inline static long proc_stack_id = -1L;
+        inline static int proc_type = NOTHING;
         inline static std::string proc_name;
 
         typedef std::vector<std::shared_ptr<token>> token_vec;
 
-        inline static std::queue<token_vec> queue = std::queue<token_vec>();
+        inline static std::stack<std::queue<token_vec>> queue_stack = std::stack<std::queue<token_vec>>();
 
         static void init();
 

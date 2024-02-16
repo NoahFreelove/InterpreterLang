@@ -153,6 +153,7 @@ public:
                 auto tk = std::get<std::shared_ptr<token>>(*g->tokens[0]);
                 if(tk->get_name() == PROC) {
                     lang::interpreter::top_stack()->eval_proc(g);
+                    *g->tokens.erase(g->tokens.begin());
                     return;
                 }
 

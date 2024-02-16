@@ -57,6 +57,8 @@
 #define TRUE 109
 #define FALSE 110
 #define PROC 111
+#define NOTHING_TYPE -2
+#define TYPE 113
 
 // KEYWORDS
 #define IF 1001
@@ -89,6 +91,8 @@
 #define CHAR_KEYW 1125
 #define BOOL_KEYW 1126
 #define ULONG64_KEYW 1127
+#define NOTHING_KEYW 1128
+#define TYPE_KEYW 1129
 
 // builtin funcs
 #define PRINT 10001
@@ -170,7 +174,7 @@ public:
     }
 
     bool is_typeword() const {
-        return name >= INT_KEYW && name <= ULONG64_KEYW;
+        return name >= INT_KEYW && name <= NOTHING_KEYW;
     }
 
     bool is_numeric() const {
@@ -272,6 +276,26 @@ public:
         }
         else {
             return lexeme;
+        }
+    }
+    int typeword_to_type() const {
+        switch (name) {
+            case INT_KEYW:
+                return INT;
+            case FLOAT_KEYW:
+                return FLOAT;
+            case DOUBLE_KEYW:
+                return DOUBLE;
+            case LONG_KEYW:
+                return LONG;
+            case STRING_KEYW:
+                return STRING;
+            case ULONG64_KEYW:
+                return ULONG64;
+            case NOTHING_KEYW:
+                return NOTHING_TYPE;
+            default:
+                return 0;
         }
     }
 };

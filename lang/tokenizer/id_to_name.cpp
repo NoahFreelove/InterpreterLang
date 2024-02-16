@@ -68,6 +68,10 @@ std::string id_to_name(int id) {
             return "ULONG64";
         case INT:
             return "INT";
+        case TYPE:
+            return "TYPE";
+        case NOTHING_TYPE:
+            return "NOTHING";
         case IF:
             return "IF";
         case END_IF:
@@ -156,6 +160,10 @@ std::string id_to_name(int id) {
             return "BOOL_KEYW";
         case ULONG64_KEYW:
             return "ULONG64_KEYW";
+        case NOTHING_KEYW:
+            return "NOTHING_KEYW";
+        case TYPE_KEYW:
+            return "TYPE_KEYW";
         default:
             return "UNKNOWN TOKEN";
     }
