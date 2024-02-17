@@ -5,6 +5,7 @@
 #include "../tokenizer/token_group.h"
 #include "../tokenizer/token.h"
 #include "../memory/stack_manager.h"
+#include "cast_evaluator.h"
 class group_evaluator {
 public:
     using token_element = std::variant<std::shared_ptr<token>, std::shared_ptr<token_group>>;
@@ -166,6 +167,94 @@ public:
             g->value = nullptr;
             return;
         }
+
+        // Check for CAST keyword, if its there cast the next token to the type two after the cast
+        // Note even if the token after the cast is a group, we should evaluate it then cast if the type
+        // of the group is not UNDERTERMINED or ERROR or NOTHING
+        // We do the actual casting in a seperate method called cast_evaluator which requires the group
+        // And the desired type as inputs. the desired type is an int
+        // tokens is a vector of token elements, not tokens, you must use std::get to get the token
+        for (int i = 0; i < g->tokens.size(); i++) {
+            auto& element = g->tokens[i];
+            if(!is_group(*element)) {
+                auto t = std::get<std::shared_ptr<token>>(*element);
+                if(t->get_name() == CAST && g->tokens.size() > i+2) {
+                    std::shared_ptr<token> type_token = nullptr;
+                    if(!is_group(*g->tokens[i+2])) {
+                        type_token = std::get<std::shared_ptr<token>>(*g->tokens[i+2]);
+                        if(!type_token->is_typeword()) {
+                            g->type == ERROR;
+                            lang::interpreter::error("Cannot use CAST without a typeword");
+                            return;
+                        }
+                        std::any value = nullptr;
+                        int current_type = 0;
+                        int target_type = type_token->typeword_to_type();
+                        if(is_group(*g->tokens[i+1])) {
+                            auto to_cast_group = std::get<std::shared_ptr<token_group>>(*g->tokens[i+1]);
+                            if(to_cast_group->type == UNDETERMINED) {
+                                eval_group(to_cast_group);
+                            }
+                            if(to_cast_group->type == NOTHING || to_cast_group->type == ERROR || to_cast_group->type == UNDETERMINED) {
+                                lang::interpreter::error("Cannot cast nothing or an error to any value");
+                                return;
+                            }
+                            value = to_cast_group->value;
+                            current_type = to_cast_group->type;
+                        }
+                        else {
+                            auto tok = std::get<std::shared_ptr<token>>(*g->tokens[i+1]);
+                            current_type = tok->get_name();
+                            value = tok->get_value();
+                        }
+
+
+                        std::pair<std::any, bool> result = cast_evaluator::eval(value, current_type, target_type);
+                        if(result.second) {
+                            if(is_group(*g->tokens[i+1])) {
+                                auto evaled = std::get<std::shared_ptr<token_group>>(*g->tokens[i+1]);
+                                evaled->type = target_type;
+                                evaled->value = result.first;
+
+                                if(target_type == BOOL_KEYW) {
+                                    bool val = std::any_cast<bool>(result.first);
+                                    evaled->type = (val? TRUE : FALSE);
+                                    evaled->value = result.first;
+                                }
+                                else {
+                                    evaled->type = target_type;
+                                    evaled->value = result.first;
+                                }
+                            }
+                            else {
+                                auto tok = std::get<std::shared_ptr<token>>(*g->tokens[i+1]);
+                                // make sure we account for bool edgecase
+                                if(target_type == BOOL_KEYW) {
+                                    bool val = std::any_cast<bool>(result.first);
+                                    g->tokens[i+1] = convert(val? TRUE : FALSE, val? "true" : "false",0, val == true);
+                                }
+                                else {
+                                    g->tokens[i+1] = convert(target_type, t->get_lexeme(), 0, result.first);
+                                }
+                            }
+                            // erase tokens i+2 then tokens i
+                            g->tokens.erase(g->tokens.begin() + i+2);
+                            g->tokens.erase(g->tokens.begin() + i);
+                        }else {
+                            lang::interpreter::error("Failed cast from: " + id_to_name(current_type) + " to " + id_to_name(target_type));
+                        }
+                    }
+                    else {
+                        g->type == ERROR;
+                        lang::interpreter::error("Cannot use CAST without a typeword");
+                        return;
+                    }
+
+                    i+=2;
+                }
+            }
+        }
+
         bool has_arithmetic = false;
         bool is_pure_arithmetic = true;
         bool has_err = false;

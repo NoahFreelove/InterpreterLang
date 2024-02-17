@@ -114,6 +114,8 @@ std::string id_to_name(int id) {
             return "DISCARD";
         case PERSISTENT:
             return "PERSISTENT";
+        case CAST:
+            return "CAST";
         case AND:
             return "AND";
         case OR:

@@ -107,6 +107,8 @@
 #define IMPORT 10010
 #define ID 10011
 
+#define CAST 11001 // DO NOT MARK THIS AS A BUILDIN FUNC, IT WILL BREAK THE CAST SYSTEM
+
 class token {
     int name;
     const char* lexeme;
@@ -158,7 +160,7 @@ public:
     }
 
     bool is_builtin() const {
-        return name >= PRINT;
+        return name >= PRINT && name < CAST;
     }
 
     bool is_arithmetic() const {

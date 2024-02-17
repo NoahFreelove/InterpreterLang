@@ -196,6 +196,9 @@ std::shared_ptr<token> lang::scanner::get_identifier(char c) {
     if(str == "print") {
         return std::make_shared<token>(PRINT, cstr, line);
     }
+    if(str == "cast") {
+        return std::make_shared<token>(CAST, cstr, line);
+    }
     if(str == "dump") {
         return std::make_shared<token>(DUMP, cstr, line);
     }
