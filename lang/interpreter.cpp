@@ -769,6 +769,7 @@ void lang::interpreter::read_from_file(const char *path) {
     }
     while(std::getline(file, str)) {
         queue_input(&str);
+        run();
     }
     file.close();
 }

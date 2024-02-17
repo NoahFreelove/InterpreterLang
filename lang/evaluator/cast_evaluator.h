@@ -221,7 +221,7 @@ public:
                 }
             }
         }
-        else if (current_type == BOOL_KEYW) {
+        else if (current_type == BOOL_KEYW || current_type == TRUE || current_type == FALSE) {
             bool curr_val = std::any_cast<bool>(any);
             switch (target_type) {
                 case INT: {

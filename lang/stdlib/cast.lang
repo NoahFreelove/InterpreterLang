@@ -1,0 +1,97 @@
+// --- FLOATS ---
+proc float ifloat(int a)
+return cast a float
+endproc
+proc float dfloat(double a)
+return cast a float
+endproc
+proc float sfloat(string a)
+return cast a float
+endproc
+proc float lfloat(long a)
+return cast a float
+endproc
+proc float bfloat(bool a)
+return cast a float
+endproc
+
+// --- INTS ---
+proc int bint(bool a)
+return cast a int
+endproc
+proc int fint(float a)
+return cast a int
+endproc
+proc int dint(double a)
+return cast a int
+endproc
+proc int lint(long a)
+return cast a int
+endproc
+proc int sint(string a)
+return cast a int
+endproc
+
+// --- DOUBLES ---
+proc double bdouble(bool a)
+    return cast a double
+endproc
+
+proc double fdouble(float a)
+    return cast a double
+endproc
+
+proc double idouble(int a)
+    return cast a double
+endproc
+
+proc double ldouble(long a)
+    return cast a double
+endproc
+
+proc double sdouble(string a)
+    return cast a double
+endproc
+
+// --- LONG ---
+proc long blong(bool a)
+    return cast a long
+endproc
+
+proc long flong(float a)
+    return cast a long
+endproc
+
+proc long ilong(int a)
+    return cast a long
+endproc
+
+proc long dlong(double a)
+    return cast a long
+endproc
+
+proc long slong(string a)
+    return cast a long
+endproc
+
+// --- STRING ---
+proc string bstring(bool a)
+    return cast a string
+endproc
+
+proc string fstring(float a)
+    return cast a string
+endproc
+
+proc string istring(int a)
+    return cast a string
+endproc
+
+proc string dstring(double a)
+    return cast a string
+endproc
+
+proc string lstring(long a)
+    return cast a string
+endproc
+
