@@ -1,5 +1,6 @@
 #include "data.h"
 #include "../interpreter.h"
+#include "../tokenizer/token.h"
 
 void data::set_value_int(int val) {
     if(is_final) {
@@ -99,4 +100,23 @@ void data::set_value_ulonglong(unsigned long long val) {
     else {
         value = new unsigned long long(val);
     }
+}
+
+int data::get_type_int() {
+    std::string type = get_type_string();
+    if(type == "int")
+        return INT;
+    else if(type == "long")
+        return LONG;
+    if (type == "float")
+        return FLOAT;
+    if (type == "double")
+        return DOUBLE;
+    if (type == "unsigned long long")
+        return ULONG64;
+    if (type == "bool")
+        return BOOL_KEYW;
+    lang::interpreter::error("Unknown type: " + type);
+    return 0;
+
 }

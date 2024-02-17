@@ -3,7 +3,6 @@
 #include <iostream>
 #include <ostream>
 #include <string>
-
 class data {
     void* value;
     const char* type;
@@ -38,6 +37,11 @@ public:
 
     [[nodiscard]] bool final() const {
         return is_final;
+    }
+
+    // dont do this unless you know you want to
+    void set_nullptr() {
+        value = nullptr;
     }
 
     // Byval keyword gets value and copies it into a new address
@@ -183,6 +187,8 @@ public:
             delete (unsigned long long*)value;
         }
     }
+
+    int get_type_int();
 
     void set_final() {
         this->is_final = true;

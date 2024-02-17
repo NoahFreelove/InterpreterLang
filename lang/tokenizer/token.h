@@ -57,7 +57,7 @@
 #define TRUE 109
 #define FALSE 110
 #define PROC 111
-#define NOTHING_TYPE -2
+#define NOTHING_TYPE (-2)
 #define TYPE 113
 
 // KEYWORDS
@@ -294,6 +294,8 @@ public:
                 return ULONG64;
             case NOTHING_KEYW:
                 return NOTHING_TYPE;
+            case BOOL_KEYW:
+                return BOOL_KEYW;
             default:
                 return 0;
         }

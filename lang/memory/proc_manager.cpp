@@ -55,13 +55,16 @@ void push_to_stack_frame(const std::shared_ptr<token_group> &evaled_group, stack
             frame->set(name, var);
             break;
         }
-        case TRUE:
-            case FALSE:{
-            data* var = new data(new bool(evaled_group->type == TRUE), "bool", false, false);
+        case TRUE: {
+            data* var = new data(new bool(true), "bool", false, false);
             frame->set(name, var);
             break;
         }
-
+        case FALSE: {
+            data* var = new data(new bool(false), "bool", false, false);
+            frame->set(name, var);
+            break;
+        }
 
         default: {
             lang::interpreter::error("Procedure tried to use unknown group type as variable input");
@@ -108,11 +111,17 @@ void push_val_directly(const std::shared_ptr<token> &t, stack_frame* frame, cons
             break;
         }
         case TRUE:
-            case FALSE:{
-            data* var = new data(new bool(t->get_name() == TRUE), "bool", false, false);
+        {
+            data* var = new data(new bool(true), "bool", false, false);
             frame->set(name, var);
             break;
         }
+        case FALSE: {
+            data* var = new data(new bool(false), "bool", false, false);
+            frame->set(name, var);
+            break;
+        }
+
         default: {
             lang::interpreter::error("Procedure tried to use unknown token type as variable input");
         }
@@ -142,11 +151,19 @@ data* push_return_variable(stack_frame* frame, int type) {
             return_var = new data(new std::string(), "string");
             break;
         }
-        case TRUE:
-            case FALSE:{
+        case FALSE: {
             return_var = new data(new bool(false), "bool");
             break;
         }
+        case TRUE: {
+            return_var = new data(new bool(false), "bool");
+            break;
+        }
+        case BOOL_KEYW: {
+            return_var = new data(new bool(false), "bool");
+            break;
+        }
+
         case NOTHING_TYPE: {
             return_var = new data(nullptr, "nothing");
             break;
@@ -179,7 +196,6 @@ void proc_manager::execute_proc(std::shared_ptr<token_group> &g) {
     g->value = nullptr; // Return value
 
     proc_type_vec types = *p->first->second;
-
 
     auto args = std::any_cast<std::vector<std::shared_ptr<token_group>>>(tok.get_value());
     if(args.size() != types.size()) {
@@ -252,8 +268,16 @@ void proc_manager::execute_proc(std::shared_ptr<token_group> &g) {
                 g->value = dat->get_string();
                 break;
             }
-            case TRUE:
-                case FALSE:{
+            case TRUE: {
+                g->value = dat->get_bool();
+                break;
+            }
+            case FALSE: {
+                g->value = dat->get_bool();
+                break;
+            }
+            case BOOL_KEYW: {
+                g->type = (dat->get_bool() ? TRUE : FALSE);
                 g->value = dat->get_bool();
                 break;
             }

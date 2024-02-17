@@ -227,11 +227,12 @@ void lang::interpreter::process_variable_declaration(const std::vector<std::shar
 void lang::interpreter::process_proc_declaration(std::vector<std::shared_ptr<token>> &tokens) {
     // proc name(typename var, typename, var2, etc.)
     if(tokens.size() < 5) {
-        error("Cannot declare procecdure, required: proc <type_word> name(typename var, typename, var2, etc.)");
+        error("Cannot declare procedure`, required: proc <type_word> name(typename var, typename, var2, etc.)");
         return;
     }
     if(!tokens[1]->is_typeword()) {
         error("Cannot declare procedure, expected type word, recieved: " + id_to_name(tokens[1]->get_name()));
+        return;
     }
     if(tokens[2]->get_name() != IDENTIFIER) {
         error("Cannot declare procedure, expected identifier name, recieved: " + id_to_name(tokens[1]->get_name()));
@@ -314,6 +315,101 @@ void lang::interpreter::end_proc_declaration() {
     proc_name = "";
     //std:: cout << "Name: " << copy << std::endl;
     //std::cout << "end proc" << std::endl;
+}
+
+void lang::interpreter::process_return(const token_vec &tokens, int offset) {
+    data* dat = stack->back()->get_data("return");
+    if(!dat) {
+        error("Not currently in a proc with a return variable, cannot return value!");
+        return;
+    }
+    bool implicit_upcast = is_defined("IMPLICIT_UPCAST");
+    bool implicit_double_float = is_defined("IMPLICIT_DOUBLE_TO_FLOAT");
+    token_vec rest = token_vec();
+    rest.reserve(tokens.size()-offset);
+    for (int i = offset; i < tokens.size(); i++) {
+        rest.push_back(tokens[i]);
+    }
+    auto group = token_grouper::gen_group(rest);
+    group_evaluator::eval_group(group);
+
+    int target_type = dat->get_type_int();
+
+    if(group->type == ERROR || group->type == UNDETERMINED) {
+        error("Could not process return value");
+        return;
+    }
+    else if (group->type == NOTHING && target_type == NOTHING) {
+        dat->set_nullptr();
+        return;
+    }
+    if(target_type == group->type) {
+        switch (target_type) {
+            case INT: {
+                dat->set_value_int(std::any_cast<int>(group->value));
+                return;
+            }
+            case FLOAT: {
+                dat->set_value_float(std::any_cast<float>(group->value));
+                return;
+            }
+            case DOUBLE: {
+                dat->set_value_double(std::any_cast<double>(group->value));
+                return;
+            }
+            case LONG: {
+                dat->set_value_long(std::any_cast<long>(group->value));
+                return;
+            }
+            case STRING: {
+                dat->set_value_string(std::any_cast<std::string>(group->value));
+                return;
+            }
+            case ULONG64: {
+                dat->set_value_ulonglong(std::any_cast<unsigned long long>(group->value));
+                return;
+            }
+
+            default: {
+                error("Return type not supported");
+                break;
+            }
+        }
+    }
+    if(target_type == BOOL_KEYW && (group->type == TRUE || group->type == FALSE)) {
+        dat->set_value_bool(group->type == TRUE);
+        return;
+    }
+    if(target_type == FLOAT && group->type == DOUBLE && implicit_double_float) {
+        dat->set_value_float(std::any_cast<double>(group->value));
+        return;
+    }
+    if(!implicit_upcast) {
+        error("Return type does not match procedure type (" + id_to_name(target_type) + " !=" + id_to_name(group->type) + ")");
+        return;
+    }
+    else if(target_type == FLOAT && group->type == INT) {
+        dat->set_value_float(std::any_cast<int>(group->value));
+    }
+    else if(target_type == FLOAT && group->type == LONG) {
+        dat->set_value_float(std::any_cast<long>(group->value));
+    }
+    else if(target_type == DOUBLE && group->type == INT) {
+        dat->set_value_double(std::any_cast<int>(group->value));
+    }
+    else if(target_type == DOUBLE && group->type == LONG) {
+        dat->set_value_double(std::any_cast<long>(group->value));
+    }
+    else if(target_type == DOUBLE && group->type == FLOAT) {
+        dat->set_value_double(std::any_cast<float>(group->value));
+    }
+    else if(target_type == LONG && group->type == INT) {
+        dat->set_value_long(std::any_cast<int>(group->value));
+    }
+    else {
+        error("Return upcast type not supported. Cannot upcast " + id_to_name(group->type) + " to " + id_to_name(target_type));
+    }
+
 }
 
 bool lang::interpreter::set_literal(const std::vector<std::shared_ptr<token>> &tokens, data *d) {
@@ -548,93 +644,108 @@ void lang::interpreter::run() {
         queue_stack.pop();
 
         while (!queue.empty()) {
-        token_vec token_vector = queue.front();
-        token_vec copy = token_vec();
-        for (auto& t : token_vector) {
-            copy.push_back(t);
-        }
-        queue.pop();
-        if(in_proc_declaration) {
-            if(!token_vector.empty()) {
-                if(token_vector[0]->get_name() == END_PROC) {
-                    end_proc_declaration();
-                }
-                else {
-                    if(new_proc_tokens) {
-                        new_proc_tokens->push_back(clone_tokens(token_vector));
+            token_vec token_vector = queue.front();
+            token_vec copy = token_vec();
+            for (auto& t : token_vector) {
+                copy.push_back(t);
+            }
+            queue.pop();
+            if(in_proc_declaration) {
+                if(!token_vector.empty()) {
+                    if(token_vector[0]->get_name() == END_PROC) {
+                        end_proc_declaration();
                     }
                     else {
-                        error("Current procedure does not exist.");
+                        if(new_proc_tokens) {
+                            new_proc_tokens->push_back(clone_tokens(token_vector));
+                        }
+                        else {
+                            error("Current procedure does not exist.");
+                        }
                     }
                 }
+                continue;
             }
-            continue;
-        }
 
-        if(!if_block_statuses->empty()) {
-            if(token_vector[0]->get_name() == END_IF) {
-                if_block_statuses->pop();
+            if(token_vector[0]->get_name() == RETURN) {
+                while (!queue.empty()) {
+                    queue.pop();
+                }
+                if(token_vector.size() == 1) {
+                    error("Expected return value");
+                    continue;
+                }
+                else {
+                    process_return(token_vector, 1);
+                }
+                continue;
+            }
+
+            if(!if_block_statuses->empty()) {
+                if(token_vector[0]->get_name() == END_IF) {
+                    if_block_statuses->pop();
+                    check_pop_stack(copy);
+                    continue;
+                }
+                if(if_block_statuses->top() == false)
+                    continue;
+            }
+            if(token_vector[0]->get_name() == LEFT_BRACE) {
+                push_stackframe();
+                token_vector.erase(token_vector.begin());
+            }
+            if (token_vector[0]->is_typeword()) {
+                process_variable_declaration(token_vector);
                 check_pop_stack(copy);
                 continue;
             }
-            if(if_block_statuses->top() == false)
-                continue;
-        }
-        if(token_vector[0]->get_name() == LEFT_BRACE) {
-            push_stackframe();
-            token_vector.erase(token_vector.begin());
-        }
-        if (token_vector[0]->is_typeword()) {
-            process_variable_declaration(token_vector);
-            check_pop_stack(copy);
-            continue;
-        }
-        if(token_vector[0]->is_control_flow()) {
-            control_flow_runner::process_control_flow(token_vector);
-            check_pop_stack(copy);
-            continue;
-        }
-        if(token_vector[0]->is_builtin()) {
-            run_builtins(token_vector);
-            check_pop_stack(copy);
-            continue;
-        }
-        if(token_vector[0]->get_name() == PROC_KEYW) {
-            if(if_block_statuses->empty()) {
-                process_proc_declaration(token_vector);
+            if(token_vector[0]->is_control_flow()) {
+                control_flow_runner::process_control_flow(token_vector);
+                check_pop_stack(copy);
                 continue;
             }
-            else {
-                error("Cannot declare procedure in any kind of if-block");
+            if(token_vector[0]->is_builtin()) {
+                run_builtins(token_vector);
+                check_pop_stack(copy);
                 continue;
             }
-        }
-        if(token_vector.size() >=2) {
-            if(token_vector[0]->get_name() == IDENTIFIER) {
-                if(token_vector.size() >= 3) {
-                    if(token_vector[1]->is_arithmetic() && token_vector[2]->get_name() == EQUAL) {
-                        arithmetic_evaluator::convert_op_eq_to_op(token_vector);
-                    }
+            if(token_vector[0]->get_name() == PROC_KEYW) {
+                if(if_block_statuses->empty()) {
+                    process_proc_declaration(token_vector);
+                    continue;
                 }
-                if(token_vector.size() == 3) {
-                    if(token_vector[1]->get_name() == PLUS && token_vector[2]->get_name() == PLUS) {
-                        arithmetic_evaluator::convert_inc_to_op(token_vector);
-                    }
-                    else if(token_vector[1]->get_name() == MINUS && token_vector[2]->get_name() == MINUS) {
-                        arithmetic_evaluator::convert_dec_to_op(token_vector);
-                    }
-                }
-
-                if(token_vector[1]->get_name() == EQUAL) {
-                    process_variable_update(token_vector);
-                    check_pop_stack(copy);
+                else {
+                    error("Cannot declare procedure in any kind of if-block");
                     continue;
                 }
             }
 
-        }
-        process(token_vector);
-        check_pop_stack(copy);
+            if(token_vector.size() >=2) {
+                if(token_vector[0]->get_name() == IDENTIFIER) {
+                    if(token_vector.size() >= 3) {
+                        if(token_vector[1]->is_arithmetic() && token_vector[2]->get_name() == EQUAL) {
+                            arithmetic_evaluator::convert_op_eq_to_op(token_vector);
+                        }
+                    }
+                    if(token_vector.size() == 3) {
+                        if(token_vector[1]->get_name() == PLUS && token_vector[2]->get_name() == PLUS) {
+                            arithmetic_evaluator::convert_inc_to_op(token_vector);
+                        }
+                        else if(token_vector[1]->get_name() == MINUS && token_vector[2]->get_name() == MINUS) {
+                            arithmetic_evaluator::convert_dec_to_op(token_vector);
+                        }
+                    }
+
+                    if(token_vector[1]->get_name() == EQUAL) {
+                        process_variable_update(token_vector);
+                        check_pop_stack(copy);
+                        continue;
+                    }
+                }
+
+            }
+            process(token_vector);
+            check_pop_stack(copy);
         }
         if(queue_stack.empty())
             break;
