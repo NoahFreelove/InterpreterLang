@@ -27,7 +27,9 @@ namespace lang {
         inline static scanner* scan = nullptr;
         inline static bool has_init = false;
         inline static std::stack<bool>* if_block_statuses = nullptr;
-        inline static std::stack<bool>* if_results = nullptr;
+        inline static std::stack<int>* proc_num_ifs;
+        inline static int num_procs_active = 0;
+
         // measure start time and end time
         inline static std::chrono::time_point<std::chrono::high_resolution_clock> start;
         inline static std::chrono::time_point<std::chrono::high_resolution_clock> end;

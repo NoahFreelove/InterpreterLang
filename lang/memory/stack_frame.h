@@ -33,7 +33,7 @@ public:
 
     void insert_proc(const std::string &name, int type, proc_tokens* p, proc_type_vec* v);
 
-    proc* resolve_proc(const std::string& name);
+    proc_dat* resolve_proc(const std::string& name);
 
     void eval_proc(std::shared_ptr<token_group>& g);
 

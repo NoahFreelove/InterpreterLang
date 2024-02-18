@@ -36,7 +36,7 @@ void stack_frame::insert_proc(const std::string &name, int type, proc_tokens* p,
     procs->insert_proc(name,type,p,v);
 }
 
-proc* stack_frame::resolve_proc(const std::string& name) {
+proc_dat* stack_frame::resolve_proc(const std::string& name) {
     return procs->resolve_proc_name(name);
 }
 

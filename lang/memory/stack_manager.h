@@ -14,8 +14,8 @@ static data* resolve_variable(const char* identifier){
     return nullptr;
 }
 
-static proc* resolve_proc(const std::string &name) {
-    proc* found = nullptr;
+static proc_dat* resolve_proc(const std::string &name) {
+    proc_dat* found = nullptr;
     for (stack_frame* frame : *lang::interpreter::stack) {
         auto result = frame->resolve_proc(name);
         if(result) {

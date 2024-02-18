@@ -4,7 +4,7 @@
 #include "../evaluator/group_evaluator.h"
 #include "../tokenizer/token_grouper.h"
 
-proc * proc_manager::resolve_proc_name(const std::string &name) {
+proc_dat * proc_manager::resolve_proc_name(const std::string &name) {
     // return nullptr if not in procs
     if(procs->find(name) == procs->end()) {
         return nullptr;
@@ -179,6 +179,7 @@ data* push_return_variable(stack_frame* frame, int type) {
 
 void proc_manager::execute_proc(std::shared_ptr<token_group> &g) {
     //std::vector<std::shared_ptr<token_group>> args = g.
+
     auto* new_frame = new stack_frame();
 
     if(group_evaluator::is_group(*g->tokens[0]) ) {
@@ -186,7 +187,7 @@ void proc_manager::execute_proc(std::shared_ptr<token_group> &g) {
         return;
     }
     auto tok = (*std::get<std::shared_ptr<token>>(*g->tokens[0]));
-    proc* p = resolve_proc(tok.get_lexeme());
+    proc_dat* p = resolve_proc(tok.get_lexeme());
 
     auto* dat = push_return_variable(new_frame, p->second);
     g->type = p->second; // Return type
@@ -239,6 +240,8 @@ void proc_manager::execute_proc(std::shared_ptr<token_group> &g) {
     for (const auto& t : *p->first->first) {
         proc_toks.push(t);
     }
+    lang::interpreter::proc_num_ifs->push(0);
+    lang::interpreter::num_procs_active++;
     lang::interpreter::queue_stack.push(proc_toks);
     lang::interpreter::run();
 
@@ -293,6 +296,8 @@ void proc_manager::execute_proc(std::shared_ptr<token_group> &g) {
     else {
         std::cout <<"Invalid data" << std::endl;
     }
+
+
     lang::interpreter::queue_stack.push(right_brace);
     lang::interpreter::run();
 }

@@ -37,7 +37,8 @@ void lang::interpreter::init() {
 
     has_init = true;
     if_block_statuses = new std::stack<bool>();
-    if_results = new std::stack<bool>();
+    proc_num_ifs = new std::stack<int>();
+    //if_results = new std::stack<bool>();
 
     defined->push_back("IMPLICIT_DOUBLE_TO_FLOAT");
     defined->push_back("IMPLICIT_UPCAST");
@@ -322,6 +323,23 @@ void lang::interpreter::process_return(const token_vec &tokens, int offset) {
     if(!dat) {
         error("Not currently in a proc with a return variable, cannot return value!");
         return;
+    }
+    if(proc_num_ifs->empty()) {
+        error("Proc was not properly instantiated, cannot check if blocks used");
+    }
+    else {
+        int if_count = proc_num_ifs->top();
+        proc_num_ifs->pop();
+
+        for (int i = 0; i < if_count; ++i) {
+            if(if_block_statuses->empty()) {
+                error("Could not pop if blocks - proc num ifs too big");
+                break;
+            }
+            else {
+                if_block_statuses->pop();
+            }
+        }
     }
     bool implicit_upcast = is_defined("IMPLICIT_UPCAST");
     bool implicit_double_float = is_defined("IMPLICIT_DOUBLE_TO_FLOAT");
@@ -650,6 +668,29 @@ void lang::interpreter::run() {
                 copy.push_back(t);
             }
             queue.pop();
+
+            if(!if_block_statuses->empty()) {
+                if(token_vector[0]->get_name() == END_IF) {
+                    if(!proc_num_ifs->empty()) {
+                        if(proc_num_ifs->top() == 0) {
+                            error("No more ifs to pop in proc!");
+                            return;
+                        }
+
+                        int num = proc_num_ifs->top() - 1;
+                        proc_num_ifs->pop();
+                        proc_num_ifs->push(num);
+                    }
+
+                    if_block_statuses->pop();
+
+                    check_pop_stack(copy);
+                    continue;
+                }
+                if(if_block_statuses->top() == false)
+                    continue;
+            }
+
             if(in_proc_declaration) {
                 if(!token_vector.empty()) {
                     if(token_vector[0]->get_name() == END_PROC) {
@@ -681,15 +722,6 @@ void lang::interpreter::run() {
                 continue;
             }
 
-            if(!if_block_statuses->empty()) {
-                if(token_vector[0]->get_name() == END_IF) {
-                    if_block_statuses->pop();
-                    check_pop_stack(copy);
-                    continue;
-                }
-                if(if_block_statuses->top() == false)
-                    continue;
-            }
             if(token_vector[0]->get_name() == LEFT_BRACE) {
                 push_stackframe();
                 token_vector.erase(token_vector.begin());
@@ -747,8 +779,13 @@ void lang::interpreter::run() {
             process(token_vector);
             check_pop_stack(copy);
         }
-        if(queue_stack.empty())
+        if(num_procs_active > 0) {
+            num_procs_active--;
+        }
+        if(queue_stack.empty()) {
+            num_procs_active = 0;
             break;
+        }
     }
     if(!errors->empty()) {
         print_errs();
