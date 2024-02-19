@@ -79,8 +79,7 @@
 // Everything is heap, and global could work, but I don't like it.
 #define END_IF 1020
 #define END_PROC 1021
-#define END_ELSE 1022
-#define FINAL 1023
+#define FINAL 1022
 
 // TYPEWORDS
 #define INT_KEYW 1120
@@ -223,7 +222,7 @@ public:
         return name == IF || name == END_IF || name == ELSE || name == ELSE_IF;
     }
 
-    static const char* type_to_char(int i) {
+    static const std::string type_tostr(int i) {
         switch (i) {
             case DOUBLE: {
                 return "double";
@@ -240,6 +239,8 @@ public:
                 return "bool";
             case FALSE:
                 return "false";
+            case NOTHING_TYPE:
+                return "nothing";
             default:
                 return "";
         }

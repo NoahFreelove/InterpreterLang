@@ -116,6 +116,8 @@ int data::get_type_int() {
         return ULONG64;
     if (type == "bool")
         return BOOL_KEYW;
+    if(type == "nothing")
+        return NOTHING_TYPE;
     lang::interpreter::error("Unknown type: " + type);
     return 0;
 

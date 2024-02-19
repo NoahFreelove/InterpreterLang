@@ -80,8 +80,6 @@ std::string id_to_name(int id) {
             return "ELSE";
         case ELSE_IF:
             return "ELSE_IF";
-        case END_ELSE:
-            return "END_ELSE";
         case FOR:
             return "FOR";
         case WHILE:

@@ -188,8 +188,8 @@ void proc_manager::execute_proc(std::shared_ptr<token_group> &g) {
     }
     auto tok = (*std::get<std::shared_ptr<token>>(*g->tokens[0]));
     proc_dat* p = resolve_proc(tok.get_lexeme());
-
-    auto* dat = push_return_variable(new_frame, p->second);
+    int PROC_TYPE = p->second;
+    auto* dat = push_return_variable(new_frame, PROC_TYPE);
     g->type = p->second; // Return type
     if(g->type == NOTHING_TYPE) {
         g->type = NOTHING;
@@ -246,6 +246,8 @@ void proc_manager::execute_proc(std::shared_ptr<token_group> &g) {
     lang::interpreter::run();
 
     std::queue<std::vector<std::shared_ptr<token>>> right_brace;
+    // in the event they forgot.
+    right_brace.push({std::make_shared<token>(RETURN, "return",0)});
     right_brace.push({std::make_shared<token>(RIGHT_BRACE, "}",0)});
 
     if(dat) {

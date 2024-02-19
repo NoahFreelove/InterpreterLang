@@ -133,8 +133,6 @@ std::shared_ptr<token> lang::scanner::get_identifier(char c) {
     if(str == "elseif") {
         return std::make_shared<token>(ELSE_IF, cstr, line);
     }
-    if(str == "endelse")
-        return std::make_shared<token>(END_ELSE, cstr, line);
 
     if(str == "for") {
         return std::make_shared<token>(FOR, cstr, line);

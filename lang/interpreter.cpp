@@ -36,7 +36,6 @@ void lang::interpreter::init() {
     global_frame->set(const_char_convert("VERSION"), new data(new float(VERSION_MAJOR + (VERSION_MINOR*0.01f)), "float"));
 
     has_init = true;
-    if_block_statuses = new std::stack<bool>();
     proc_num_ifs = new std::stack<int>();
     //if_results = new std::stack<bool>();
 
@@ -44,7 +43,6 @@ void lang::interpreter::init() {
     defined->push_back("IMPLICIT_UPCAST");
     errors = new std::stack<std::string>();
     read_from_file("about.lang");
-
 }
 
 std::shared_ptr<token_group> lang::interpreter::evaluate_tokens(std::vector<std::shared_ptr<token>> tokens, int offset) {
@@ -325,19 +323,19 @@ void lang::interpreter::process_return(const token_vec &tokens, int offset) {
         return;
     }
     if(proc_num_ifs->empty()) {
-        error("Proc was not properly instantiated, cannot check if blocks used");
+        //error("Proc was not properly instantiated, cannot check if blocks used");
     }
     else {
         int if_count = proc_num_ifs->top();
         proc_num_ifs->pop();
 
         for (int i = 0; i < if_count; ++i) {
-            if(if_block_statuses->empty()) {
+            if(control_flow_runner::blockStack.empty()) {
                 error("Could not pop if blocks - proc num ifs too big");
                 break;
             }
             else {
-                if_block_statuses->pop();
+                control_flow_runner::blockStack.pop();
             }
         }
     }
@@ -357,8 +355,14 @@ void lang::interpreter::process_return(const token_vec &tokens, int offset) {
         error("Could not process return value");
         return;
     }
-    else if (group->type == NOTHING && target_type == NOTHING) {
+    else if (group->type == NOTHING_TYPE && target_type == NOTHING) {
         dat->set_nullptr();
+        return;
+    }
+    else if(group->type == NOTHING) {
+        // the default value for each datatype is already set
+        // so like if they forgot a return for type int, 0 would be implicity returned
+        // :) I dont like null vars!
         return;
     }
     if(target_type == group->type) {
@@ -438,7 +442,9 @@ bool lang::interpreter::set_literal(const std::vector<std::shared_ptr<token>> &t
             return false;
         }
 
-        if(d->get_type() != token::type_to_char(group->type)) {
+        //std::cout << " TYPE:" << token::type_tostr(group->type) <<std::endl;
+
+        if(d->get_type() != token::type_tostr(group->type)) {
             // The default value for literals with decimals is a double which can be inconvinent if you have a float
             // as in most cases the float value can use the double value.
             if(d->get_type() == "float" && group->type == DOUBLE && is_defined("IMPLICIT_DOUBLE_TO_FLOAT")) {
@@ -479,20 +485,20 @@ bool lang::interpreter::set_literal(const std::vector<std::shared_ptr<token>> &t
         }
 
         // token value is std::any, so we need to cast it to the correct type
-        if(d->get_type() == "int") {
+        if(d->get_type() == "int" && group->type == INT) {
             //std::cout << "cast" << std::endl;
             d->set_value_int(std::any_cast<int>(group->value));
         }
-        else if (d->get_type() == "float") {
+        else if (d->get_type() == "float" && group->type == FLOAT) {
             d->set_value_float(std::any_cast<float>(group->value));
         }
-        else if (d->get_type() == "double") {
+        else if (d->get_type() == "double" && group->type == DOUBLE) {
             d->set_value_double(std::any_cast<double>(group->value));
         }
-        else if (d->get_type() == "long") {
+        else if (d->get_type() == "long"&& group->type == LONG) {
             d->set_value_long(std::any_cast<long>(group->value));
         }
-        else if (d->get_type() == "string") {
+        else if (d->get_type() == "string"&& group->type == STRING) {
             // copy str
             //char* str = (char*)malloc(sizeof(char)*strlen(const_char_convert(std::any_cast<const char*>(tokens[2]->get_lexeme())))+1);
             d->set_value_string(std::any_cast<std::string>(group->value));
@@ -508,7 +514,7 @@ bool lang::interpreter::set_literal(const std::vector<std::shared_ptr<token>> &t
                 return true;
             }
         }
-        else if (d->get_type() == "bool") {
+        else if (d->get_type() == "bool"&& (group->type == TRUE || group->type == FALSE)) {
             if(group->type == TRUE) {
                 d->set_value_bool(true);
             }
@@ -668,28 +674,7 @@ void lang::interpreter::run() {
                 copy.push_back(t);
             }
             queue.pop();
-
-            if(!if_block_statuses->empty()) {
-                if(token_vector[0]->get_name() == END_IF) {
-                    if(!proc_num_ifs->empty()) {
-                        if(proc_num_ifs->top() == 0) {
-                            error("No more ifs to pop in proc!");
-                            return;
-                        }
-
-                        int num = proc_num_ifs->top() - 1;
-                        proc_num_ifs->pop();
-                        proc_num_ifs->push(num);
-                    }
-
-                    if_block_statuses->pop();
-
-                    check_pop_stack(copy);
-                    continue;
-                }
-                if(if_block_statuses->top() == false)
-                    continue;
-            }
+            //std::cout << "SIZE: " << control_flow_runner::blockStack.size() << std::endl;
 
             if(in_proc_declaration) {
                 if(!token_vector.empty()) {
@@ -708,17 +693,40 @@ void lang::interpreter::run() {
                 continue;
             }
 
+            if(!control_flow_runner::blockStack.empty()) {
+                if(token_vector[0]->get_name() == END_IF) {
+                    //std::cout << "ENDIF " <<std::endl;
+                    if(!proc_num_ifs->empty()) {
+                        if(proc_num_ifs->top() == 0) {
+                            error("No more ifs to pop in proc!");
+                            return;
+                        }
+
+                        int num = proc_num_ifs->top() - 1;
+                        proc_num_ifs->pop();
+                        proc_num_ifs->push(num);
+                    }
+
+                    control_flow_runner::handleEndIf();
+
+                    check_pop_stack(copy);
+                    continue;
+                }
+            }
+            if(token_vector[0]->is_control_flow()) {
+                control_flow_runner::process_control_flow(token_vector);
+                check_pop_stack(copy);
+            }
+
+            if(!control_flow_runner::shouldExecuteCurrentBlock())
+                continue;
+
             if(token_vector[0]->get_name() == RETURN) {
                 while (!queue.empty()) {
                     queue.pop();
                 }
-                if(token_vector.size() == 1) {
-                    error("Expected return value");
-                    continue;
-                }
-                else {
-                    process_return(token_vector, 1);
-                }
+                process_return(token_vector, 1);
+
                 continue;
             }
 
@@ -731,18 +739,13 @@ void lang::interpreter::run() {
                 check_pop_stack(copy);
                 continue;
             }
-            if(token_vector[0]->is_control_flow()) {
-                control_flow_runner::process_control_flow(token_vector);
-                check_pop_stack(copy);
-                continue;
-            }
             if(token_vector[0]->is_builtin()) {
                 run_builtins(token_vector);
                 check_pop_stack(copy);
                 continue;
             }
             if(token_vector[0]->get_name() == PROC_KEYW) {
-                if(if_block_statuses->empty()) {
+                if(control_flow_runner::blockStack.empty()) {
                     process_proc_declaration(token_vector);
                     continue;
                 }

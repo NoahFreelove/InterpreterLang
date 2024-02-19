@@ -18,7 +18,7 @@ namespace lang {
         inline static std::vector<const char*>* defined = new std::vector<const char*>;
         static bool is_defined(const char* c);
         inline static int VERSION_MAJOR = 0;
-        inline static int VERSION_MINOR = 1;
+        inline static int VERSION_MINOR = 2;
 
         inline static stack_frame* global_frame = new stack_frame();
         inline static std::vector<stack_frame*>* stack = nullptr;
@@ -26,7 +26,6 @@ namespace lang {
 
         inline static scanner* scan = nullptr;
         inline static bool has_init = false;
-        inline static std::stack<bool>* if_block_statuses = nullptr;
         inline static std::stack<int>* proc_num_ifs;
         inline static int num_procs_active = 0;
 
