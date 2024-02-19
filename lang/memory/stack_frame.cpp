@@ -2,7 +2,7 @@
 
 #include "../interpreter.h"
 #include "proc_manager.h"
-bool stack_frame::set(const char *identifier, data *val) {
+bool stack_frame::set(const std::string& identifier, data *val) {
     // if it already exists, delete old value
     if(exists(identifier)) {
         delete_var(identifier);
@@ -10,11 +10,11 @@ bool stack_frame::set(const char *identifier, data *val) {
     return memory->set(identifier, val);
 }
 
-bool stack_frame::exists(const char *identifier) {
+bool stack_frame::exists(const std::string& identifier) {
     return memory->exists(identifier);
 }
 
-bool stack_frame::assign(const char *identifier,const char *identifier2) {
+bool stack_frame::assign(const std::string& identifier,const std::string& identifier2) {
     data* val = memory->get(identifier2);
     if(!val) {
         lang::interpreter::error("Undefined variable with name: " + std::string(identifier2));
@@ -23,11 +23,11 @@ bool stack_frame::assign(const char *identifier,const char *identifier2) {
     return memory->assign(identifier, val);
 }
 
-void stack_frame::delete_var(const char *identifier) {
+void stack_frame::delete_var(const std::string& identifier) {
     memory->delete_var(identifier);
 }
 
-data * stack_frame::get_data(const char *identifier) {
+data * stack_frame::get_data(const std::string& identifier) {
     data* result = memory->get(identifier);
     return result;
 }

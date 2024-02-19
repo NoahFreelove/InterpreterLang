@@ -3,6 +3,7 @@
 #include "../memory/stack_manager.h"
 #include "../evaluator/group_evaluator.h"
 #include "../tokenizer/token_grouper.h"
+#include "../executors/control_flow_runner.h"
 
 proc_dat * proc_manager::resolve_proc_name(const std::string &name) {
     // return nullptr if not in procs
@@ -14,7 +15,33 @@ proc_dat * proc_manager::resolve_proc_name(const std::string &name) {
 
 void proc_manager::insert_proc(const std::string &name, int type, proc_tokens *p, proc_type_vec *v) {
     if(procs->find(name) != procs->end()) {
-        lang::interpreter::error("Attempted redefinition of proc");
+        if(!lang::interpreter::is_defined("PROC_OVERLOAD")) {
+            lang::interpreter::error("Overloading is not enabled, cannot define procedure with same name");
+            return;
+        }
+        bool is_identical = true;
+        proc_type_vec* other_types = (*procs)[name]->first->second;
+        if(other_types->size() != v->size()) {
+            is_identical = false;
+        }
+        else {
+            for (int i = 0; i < v->size(); i++) {
+                if((*v)[i].first->get_name() != (*other_types)[i].first->get_name()) {
+                    is_identical = false;
+                    break;
+                }
+            }
+        }
+
+        if(!lang::interpreter::is_defined("PROC_REDEFINITION") && is_identical) {
+            lang::interpreter::error("Redefinition of procedure " + name + " is not enabled");
+            return;
+        }
+        // replace the old proc
+        // Change this logic later to handle overloading because it just replaces the old proc
+        // TODO: This
+        auto* new_pair = new std::pair<proc_tokens*, proc_type_vec*>(p,v);
+        (*procs)[name] = new std::pair<std::pair<proc_tokens*, proc_type_vec*>*,int>(new_pair,type);
         return;
     }
     procs->insert(std::make_pair(name, new std::pair(new std::pair(p,v),type)));
@@ -240,6 +267,7 @@ void proc_manager::execute_proc(std::shared_ptr<token_group> &g) {
     for (const auto& t : *p->first->first) {
         proc_toks.push(t);
     }
+    proc_toks.push({std::make_shared<token>(RETURN, "return",0)});
     lang::interpreter::proc_num_ifs->push(0);
     lang::interpreter::num_procs_active++;
     lang::interpreter::queue_stack.push(proc_toks);
@@ -247,7 +275,6 @@ void proc_manager::execute_proc(std::shared_ptr<token_group> &g) {
 
     std::queue<std::vector<std::shared_ptr<token>>> right_brace;
     // in the event they forgot.
-    right_brace.push({std::make_shared<token>(RETURN, "return",0)});
     right_brace.push({std::make_shared<token>(RIGHT_BRACE, "}",0)});
 
     if(dat) {
@@ -321,4 +348,123 @@ void proc_manager::print_procs() {
     }
     if(procs->empty())
         std::cout << "none..." << std::endl;
+}
+
+void proc_manager::process_return(const lang::interpreter::token_vec &tokens, int offset) {
+    //std::cout << "Processing return" << std::endl;
+    data* dat = lang::interpreter::stack->back()->get_data("return");
+    if(!dat) {
+        lang::interpreter::error("Not currently in a proc with a return variable, cannot return value!");
+        return;
+    }
+    if(lang::interpreter::proc_num_ifs->empty()) {
+        lang::interpreter::error("Proc was not properly instantiated, cannot check if blocks used");
+    }
+    else {
+        int if_count = lang::interpreter::proc_num_ifs->top();
+        lang::interpreter::proc_num_ifs->pop();
+
+        for (int i = 0; i < if_count; ++i) {
+            if(control_flow_runner::blockStack.empty()) {
+                //lang::interpreter::error("Could not pop if blocks - proc num ifs too big");
+                break;
+            }
+            else {
+                control_flow_runner::blockStack.pop();
+            }
+        }
+    }
+    bool implicit_upcast = lang::interpreter::is_defined("IMPLICIT_UPCAST");
+    bool implicit_double_float = lang::interpreter::is_defined("IMPLICIT_DOUBLE_TO_FLOAT");
+    lang::interpreter::token_vec rest = lang::interpreter::token_vec();
+    rest.reserve(tokens.size()-offset);
+    for (int i = offset; i < tokens.size(); i++) {
+        rest.push_back(tokens[i]);
+    }
+    auto group = token_grouper::gen_group(rest);
+    group_evaluator::eval_group(group);
+
+    int target_type = dat->get_type_int();
+
+    if(group->type == ERROR || group->type == UNDETERMINED) {
+        lang::interpreter::error("Could not process return value");
+        return;
+    }
+    else if (group->type == NOTHING_TYPE && target_type == NOTHING) {
+        dat->set_nullptr();
+        return;
+    }
+    else if(group->type == NOTHING) {
+        // the default value for each datatype is already set
+        // so like if they forgot a return for type int, 0 would be implicity returned
+        // :) I dont like null vars!
+        return;
+    }
+    if(target_type == group->type) {
+        switch (target_type) {
+            case INT: {
+                dat->set_value_int(std::any_cast<int>(group->value));
+                return;
+            }
+            case FLOAT: {
+                dat->set_value_float(std::any_cast<float>(group->value));
+                return;
+            }
+            case DOUBLE: {
+                dat->set_value_double(std::any_cast<double>(group->value));
+                return;
+            }
+            case LONG: {
+                dat->set_value_long(std::any_cast<long>(group->value));
+                return;
+            }
+            case STRING: {
+                dat->set_value_string(std::any_cast<std::string>(group->value));
+                return;
+            }
+            case ULONG64: {
+                dat->set_value_ulonglong(std::any_cast<unsigned long long>(group->value));
+                return;
+            }
+
+            default: {
+                lang::interpreter::error("Return type not supported");
+                break;
+            }
+        }
+    }
+    if(target_type == BOOL_KEYW && (group->type == TRUE || group->type == FALSE)) {
+        dat->set_value_bool(group->type == TRUE);
+        return;
+    }
+    if(target_type == FLOAT && group->type == DOUBLE && implicit_double_float) {
+        dat->set_value_float(std::any_cast<double>(group->value));
+        return;
+    }
+    if(!implicit_upcast) {
+        lang::interpreter::error("Return type does not match procedure type (" + id_to_name(target_type) + " !=" + id_to_name(group->type) + ")");
+        return;
+    }
+    else if(target_type == FLOAT && group->type == INT) {
+        dat->set_value_float(std::any_cast<int>(group->value));
+    }
+    else if(target_type == FLOAT && group->type == LONG) {
+        dat->set_value_float(std::any_cast<long>(group->value));
+    }
+    else if(target_type == DOUBLE && group->type == INT) {
+        dat->set_value_double(std::any_cast<int>(group->value));
+    }
+    else if(target_type == DOUBLE && group->type == LONG) {
+        dat->set_value_double(std::any_cast<long>(group->value));
+    }
+    else if(target_type == DOUBLE && group->type == FLOAT) {
+        dat->set_value_double(std::any_cast<float>(group->value));
+    }
+    else if(target_type == LONG && group->type == INT) {
+        dat->set_value_long(std::any_cast<int>(group->value));
+    }
+    else {
+        lang::interpreter::error("Return upcast type not supported. Cannot upcast " + id_to_name(group->type) + " to " + id_to_name(target_type));
+    }
+
 }

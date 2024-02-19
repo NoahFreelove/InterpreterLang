@@ -71,8 +71,6 @@ namespace lang {
         static void process_proc_declaration(std::vector<std::shared_ptr<token>> &tokens);
         static std::vector<std::shared_ptr<token>> clone_tokens(const std::vector<std::shared_ptr<token>> &tokens);
         static void end_proc_declaration();
-        static void process_return(const token_vec & tokens, int offset);
-
 
         static bool set_literal(const std::vector<std::shared_ptr<token>> &tokens, data *d);
 

@@ -12,7 +12,7 @@
 #include "executors/built_in_runner.h"
 #include "executors/control_flow_runner.h"
 #include "memory/stack_manager.h"
-
+#include "executors/loop_executor.h"
 bool lang::interpreter::is_defined(const char *c) {
     for (const char* name : *defined) {
         if(strcmp(name, c) == 0) {
@@ -32,8 +32,8 @@ void lang::interpreter::init() {
     push_stackframe();
     global_frame = stack->front();
     std::filesystem::__cxx11::path cwd = std::filesystem::current_path();
-    global_frame->set(const_char_convert("WORKING_DIRECTORY"), new data(new std::string(cwd.string()), "string"));
-    global_frame->set(const_char_convert("VERSION"), new data(new float(VERSION_MAJOR + (VERSION_MINOR*0.01f)), "float"));
+    global_frame->set("WORKING_DIRECTORY", new data(new std::string(cwd.string()), "string"));
+    global_frame->set("VERSION", new data(new float(VERSION_MAJOR + (VERSION_MINOR*0.01f)), "float"));
 
     has_init = true;
     proc_num_ifs = new std::stack<int>();
@@ -41,6 +41,8 @@ void lang::interpreter::init() {
 
     defined->push_back("IMPLICIT_DOUBLE_TO_FLOAT");
     defined->push_back("IMPLICIT_UPCAST");
+    defined->push_back("PROC_OVERLOAD");
+    defined->push_back("PROC_REDEFINITION");
     errors = new std::stack<std::string>();
     read_from_file("about.lang");
 }
@@ -314,124 +316,6 @@ void lang::interpreter::end_proc_declaration() {
     proc_name = "";
     //std:: cout << "Name: " << copy << std::endl;
     //std::cout << "end proc" << std::endl;
-}
-
-void lang::interpreter::process_return(const token_vec &tokens, int offset) {
-    data* dat = stack->back()->get_data("return");
-    if(!dat) {
-        error("Not currently in a proc with a return variable, cannot return value!");
-        return;
-    }
-    if(proc_num_ifs->empty()) {
-        //error("Proc was not properly instantiated, cannot check if blocks used");
-    }
-    else {
-        int if_count = proc_num_ifs->top();
-        proc_num_ifs->pop();
-
-        for (int i = 0; i < if_count; ++i) {
-            if(control_flow_runner::blockStack.empty()) {
-                error("Could not pop if blocks - proc num ifs too big");
-                break;
-            }
-            else {
-                control_flow_runner::blockStack.pop();
-            }
-        }
-    }
-    bool implicit_upcast = is_defined("IMPLICIT_UPCAST");
-    bool implicit_double_float = is_defined("IMPLICIT_DOUBLE_TO_FLOAT");
-    token_vec rest = token_vec();
-    rest.reserve(tokens.size()-offset);
-    for (int i = offset; i < tokens.size(); i++) {
-        rest.push_back(tokens[i]);
-    }
-    auto group = token_grouper::gen_group(rest);
-    group_evaluator::eval_group(group);
-
-    int target_type = dat->get_type_int();
-
-    if(group->type == ERROR || group->type == UNDETERMINED) {
-        error("Could not process return value");
-        return;
-    }
-    else if (group->type == NOTHING_TYPE && target_type == NOTHING) {
-        dat->set_nullptr();
-        return;
-    }
-    else if(group->type == NOTHING) {
-        // the default value for each datatype is already set
-        // so like if they forgot a return for type int, 0 would be implicity returned
-        // :) I dont like null vars!
-        return;
-    }
-    if(target_type == group->type) {
-        switch (target_type) {
-            case INT: {
-                dat->set_value_int(std::any_cast<int>(group->value));
-                return;
-            }
-            case FLOAT: {
-                dat->set_value_float(std::any_cast<float>(group->value));
-                return;
-            }
-            case DOUBLE: {
-                dat->set_value_double(std::any_cast<double>(group->value));
-                return;
-            }
-            case LONG: {
-                dat->set_value_long(std::any_cast<long>(group->value));
-                return;
-            }
-            case STRING: {
-                dat->set_value_string(std::any_cast<std::string>(group->value));
-                return;
-            }
-            case ULONG64: {
-                dat->set_value_ulonglong(std::any_cast<unsigned long long>(group->value));
-                return;
-            }
-
-            default: {
-                error("Return type not supported");
-                break;
-            }
-        }
-    }
-    if(target_type == BOOL_KEYW && (group->type == TRUE || group->type == FALSE)) {
-        dat->set_value_bool(group->type == TRUE);
-        return;
-    }
-    if(target_type == FLOAT && group->type == DOUBLE && implicit_double_float) {
-        dat->set_value_float(std::any_cast<double>(group->value));
-        return;
-    }
-    if(!implicit_upcast) {
-        error("Return type does not match procedure type (" + id_to_name(target_type) + " !=" + id_to_name(group->type) + ")");
-        return;
-    }
-    else if(target_type == FLOAT && group->type == INT) {
-        dat->set_value_float(std::any_cast<int>(group->value));
-    }
-    else if(target_type == FLOAT && group->type == LONG) {
-        dat->set_value_float(std::any_cast<long>(group->value));
-    }
-    else if(target_type == DOUBLE && group->type == INT) {
-        dat->set_value_double(std::any_cast<int>(group->value));
-    }
-    else if(target_type == DOUBLE && group->type == LONG) {
-        dat->set_value_double(std::any_cast<long>(group->value));
-    }
-    else if(target_type == DOUBLE && group->type == FLOAT) {
-        dat->set_value_double(std::any_cast<float>(group->value));
-    }
-    else if(target_type == LONG && group->type == INT) {
-        dat->set_value_long(std::any_cast<int>(group->value));
-    }
-    else {
-        error("Return upcast type not supported. Cannot upcast " + id_to_name(group->type) + " to " + id_to_name(target_type));
-    }
-
 }
 
 bool lang::interpreter::set_literal(const std::vector<std::shared_ptr<token>> &tokens, data *d) {
@@ -716,6 +600,7 @@ void lang::interpreter::run() {
             if(token_vector[0]->is_control_flow()) {
                 control_flow_runner::process_control_flow(token_vector);
                 check_pop_stack(copy);
+                continue;
             }
 
             if(!control_flow_runner::shouldExecuteCurrentBlock())
@@ -725,7 +610,7 @@ void lang::interpreter::run() {
                 while (!queue.empty()) {
                     queue.pop();
                 }
-                process_return(token_vector, 1);
+                proc_manager::process_return(token_vector, 1);
 
                 continue;
             }

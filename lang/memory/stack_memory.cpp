@@ -1,6 +1,6 @@
 #include "stack_memory.h"
 
-bool stack_memory::set(const char *identifier, data *val) {
+bool stack_memory::set(const std::string& identifier, data *val) {
     std::string key(identifier);
     if (memory->find(key) != memory->end()) {
         // If the identifier is already in the memory, remap old one to name + "_old"
@@ -17,7 +17,7 @@ bool stack_memory::set(const char *identifier, data *val) {
 
 }
 
-bool stack_memory::assign(const char *identifier, data *val) {
+bool stack_memory::assign(const std::string& identifier, data *val) {
     std::string key(identifier);
     auto* new_dat = new data(val->get(), val->get_type(), true);
     if (memory->find(key) != memory->end()) {
@@ -33,7 +33,7 @@ bool stack_memory::assign(const char *identifier, data *val) {
     return true;
 }
 
-data * stack_memory::get(const char *identifier) {
+data * stack_memory::get(const std::string& identifier) {
     std::string key(identifier);
     // If the identifier is not found, return nullptr
     if (memory->find(key) == memory->end()) {
@@ -51,7 +51,7 @@ void stack_memory::print_stack_memory() {
     }
 }
 
-void stack_memory::delete_var(const char *identifier) {
+void stack_memory::delete_var(const std::string& identifier) {
     std::string key(identifier);
     if (memory->find(key) != memory->end()) {
         std::cout << "Deleted: " << key << "(type: " << memory->find(key)->second->get_type() << ")" <<std::endl;
@@ -60,6 +60,6 @@ void stack_memory::delete_var(const char *identifier) {
     }
 }
 
-bool stack_memory::exists(const char *identifier) {
+bool stack_memory::exists(const std::string& identifier) {
     return memory->find(std::string(identifier)) != memory->end();
 }

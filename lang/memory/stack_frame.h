@@ -23,13 +23,13 @@ public:
         procs->print_procs();
     }
 
-    bool set(const char* identifier, data* val);
-    bool exists(const char* identifier);
-    bool assign(const char* identifier, const char* identifier2);
+    bool set(const std::string& identifier, data* val);
+    bool exists(const std::string& identifier);
+    bool assign(const std::string& identifier, const std::string& identifier2);
 
-    void delete_var(const char* identifier);
+    void delete_var(const std::string& identifier);
 
-    data* get_data(const char* identifier);
+    data* get_data(const std::string& identifier);
 
     void insert_proc(const std::string &name, int type, proc_tokens* p, proc_type_vec* v);
 

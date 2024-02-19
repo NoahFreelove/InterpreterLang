@@ -104,6 +104,8 @@ std::string id_to_name(int id) {
             return "PROC";
         case END_PROC:
             return "END_PROC";
+        case END_LOOP:
+            return "END_LOOP";
         case FINAL:
             return "FINAL";
         case BYVAL:

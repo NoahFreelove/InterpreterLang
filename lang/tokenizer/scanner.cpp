@@ -167,6 +167,9 @@ std::shared_ptr<token> lang::scanner::get_identifier(char c) {
     if(str == "endproc") {
         return std::make_shared<token>(END_PROC, cstr, line);
     }
+    if(str == "endloop") {
+        return std::make_shared<token>(END_PROC, cstr, line);
+    }
     if(str == "final") {
         return std::make_shared<token>(FINAL, cstr, line);
     }

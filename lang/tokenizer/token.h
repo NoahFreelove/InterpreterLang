@@ -79,7 +79,8 @@
 // Everything is heap, and global could work, but I don't like it.
 #define END_IF 1020
 #define END_PROC 1021
-#define FINAL 1022
+#define END_LOOP 1022
+#define FINAL 1023
 
 // TYPEWORDS
 #define INT_KEYW 1120

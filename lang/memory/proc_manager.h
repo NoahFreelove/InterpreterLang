@@ -41,5 +41,7 @@ public:
     static void execute_proc(std::shared_ptr<token_group>& g);
 
     void print_procs();
+
+    static void process_return(const std::vector<std::shared_ptr<token>> &tokens, int offset);
 };
 #endif //PROC_MANAGER_H

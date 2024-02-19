@@ -56,7 +56,7 @@ public:
                 lang::interpreter::proc_num_ifs->pop();
                 lang::interpreter::proc_num_ifs->push(num);
             }
-            //std::cout << "If result: " << (group->type == TRUE) << std::endl;
+            std::cout << "If result: " << (group->type == TRUE) << std::endl;
             return group->type == TRUE;
         }
         else {
