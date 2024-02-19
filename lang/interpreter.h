@@ -39,23 +39,13 @@ namespace lang {
         inline static data* last_run_data = nullptr;
 
         inline static bool in_proc_declaration = false;
-        inline static proc_tokens* new_proc_tokens = nullptr;
-        inline static proc_type_vec* types = nullptr;
-        inline static long proc_stack_id = -1L;
-        inline static int proc_type = NOTHING;
-        inline static std::string proc_name;
+
 
         typedef std::vector<std::shared_ptr<token>> token_vec;
 
         inline static std::stack<std::queue<token_vec>> queue_stack = std::stack<std::queue<token_vec>>();
 
         static void init();
-
-        // deprecated
-        static char* const_char_convert(const char* input) {
-            char* name = (char*)malloc(sizeof(char)*strlen(input));
-            return strcpy(name, input);
-        }
 
         static stack_frame* top_stack() {
             return stack->back();
@@ -66,17 +56,7 @@ namespace lang {
 
         static int get_equal_index(const std::vector<std::shared_ptr<token>> &tokens);
         static std::vector<int> get_flags(const std::vector<std::shared_ptr<token>> &tokens);
-        static void process_variable_declaration(const std::vector<std::shared_ptr<token>> &tokens);
-
-        static void process_proc_declaration(std::vector<std::shared_ptr<token>> &tokens);
         static std::vector<std::shared_ptr<token>> clone_tokens(const std::vector<std::shared_ptr<token>> &tokens);
-        static void end_proc_declaration();
-
-        static bool set_literal(const std::vector<std::shared_ptr<token>> &tokens, data *d);
-
-        static void process_variable_update(const std::vector<std::shared_ptr<token>> &tokens);
-
-
         static void process(const std::vector<std::shared_ptr<token>>& tokens);
 
         static void check_pop_stack(std::vector<std::shared_ptr<token>>& tokens);

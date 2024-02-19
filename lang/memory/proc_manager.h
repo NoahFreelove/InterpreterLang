@@ -42,6 +42,14 @@ public:
 
     void print_procs();
 
+    inline static proc_tokens* new_proc_tokens = nullptr;
+    inline static proc_type_vec* types = nullptr;
+    inline static long proc_stack_id = -1L;
+    inline static int proc_type = NOTHING;
+    inline static std::string proc_name;
+
     static void process_return(const std::vector<std::shared_ptr<token>> &tokens, int offset);
+    static void process_proc_declaration(std::vector<std::shared_ptr<token>> &tokens);
+    static void end_proc_declaration();
 };
 #endif //PROC_MANAGER_H

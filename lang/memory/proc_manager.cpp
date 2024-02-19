@@ -468,3 +468,87 @@ void proc_manager::process_return(const lang::interpreter::token_vec &tokens, in
     }
 
 }
+
+void proc_manager::process_proc_declaration(std::vector<std::shared_ptr<token>> &tokens) {
+// proc name(typename var, typename, var2, etc.)
+    if(tokens.size() < 5) {
+        lang::interpreter::error("Cannot declare procedure`, required: proc <type_word> name(typename var, typename, var2, etc.)");
+        return;
+    }
+    if(!tokens[1]->is_typeword()) {
+        lang::interpreter::error("Cannot declare procedure, expected type word, recieved: " + id_to_name(tokens[1]->get_name()));
+        return;
+    }
+    if(tokens[2]->get_name() != IDENTIFIER) {
+        lang::interpreter::error("Cannot declare procedure, expected identifier name, recieved: " + id_to_name(tokens[1]->get_name()));
+        return;
+    }
+    auto name = std::make_shared<token>(tokens[1]->get_name(), tokens[1]->get_lexeme(), tokens[1]->get_line(), tokens[1]->get_value());
+    if(tokens[3]->get_name() != LEFT_PAREN) {
+        lang::interpreter::error("Expected '(', got '" + id_to_name(tokens[1]->get_name()) +'\'');
+        return;
+    }
+    types = new proc_type_vec();
+    for(int i = 4; i < tokens.size(); i++) {
+        if(tokens[i]->get_name() == RIGHT_PAREN) {
+            if(i != tokens.size()-1) {
+                lang::interpreter::error("Right parenthesis closed with tokens still remaining");
+                return;
+            }
+            break;
+        }
+        if(tokens[i]->is_typeword() && i+1 < tokens.size()) {
+            auto typeword = std::make_shared<token>(tokens[i]->get_name(), tokens[i]->get_lexeme(), tokens[i]->get_line(), tokens[i]->get_value());
+            if(tokens[i+1]->get_name() == IDENTIFIER) {
+                auto identifier = tokens[i+1];
+                i+=2;
+                if(i < tokens.size()) {
+                    if(tokens[i]->get_name() == RIGHT_PAREN || tokens[i]->get_name() == COMMA) {
+                        types->emplace_back(typeword, identifier);
+                    }
+                    else {
+                        lang::interpreter::error("Expected ',' or '). Got: " + id_to_name(tokens[i]->get_name()));
+                        return;
+                    }
+
+                }
+            }
+            else {
+                lang::interpreter::error("Expected identifier after typeword");
+                return;
+            }
+        }
+        else {
+            lang::interpreter::error("Unexpected end of procedure declaration.");
+            return;
+        }
+    }
+
+    new_proc_tokens = new proc_tokens;
+    lang::interpreter::in_proc_declaration = true;
+    proc_stack_id = lang::interpreter::stack->back()->get_id();
+    proc_name = tokens[2]->get_lexeme();
+    proc_type = tokens[1]->typeword_to_type();
+    //std::cout << "start proc" << std::endl;
+}
+
+void proc_manager::end_proc_declaration() {
+    if(lang::interpreter::top_stack()->get_id() != proc_stack_id) {
+        delete new_proc_tokens;
+        delete types;
+        new_proc_tokens = nullptr;
+        types = nullptr;
+        proc_name = "";
+        lang::interpreter::error("Cannot end a procedure in a different stack frame to which it was declared in!");
+    }
+    lang::interpreter::in_proc_declaration = false;
+
+    std::string copy = proc_name;
+
+    lang::interpreter::top_stack()->insert_proc(copy, proc_type, new_proc_tokens, types);
+    new_proc_tokens = nullptr;
+    types = nullptr;
+    proc_name = "";
+    //std:: cout << "Name: " << copy << std::endl;
+    //std::cout << "end proc" << std::endl;
+}

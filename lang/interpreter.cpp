@@ -12,6 +12,7 @@
 #include "executors/built_in_runner.h"
 #include "executors/control_flow_runner.h"
 #include "memory/stack_manager.h"
+#include "executors/var_setter.h"
 #include "executors/loop_executor.h"
 bool lang::interpreter::is_defined(const char *c) {
     for (const char* name : *defined) {
@@ -107,187 +108,6 @@ std::vector<int> lang::interpreter::get_flags(const std::vector<std::shared_ptr<
     }
     return flags;
 }
-
-void lang::interpreter::process_variable_declaration(const std::vector<std::shared_ptr<token>> &tokens) {
-    std::shared_ptr<token> type;
-    const char* name;
-
-    std::vector<int> flags = get_flags(tokens);
-    bool persistent = false;
-    bool is_final = false;
-    int set_index = get_equal_index(tokens);
-
-    if (tokens.size() >= 2) {
-        if(tokens[1]->get_name() != IDENTIFIER || !tokens[0]->is_typeword()) {
-            error("Invalid variable declaration");
-            return;
-        }
-        name = tokens[1]->get_lexeme();
-        type = tokens[0];
-    }
-    else {
-        error("Not enough tokens for variable declaration");
-        return;
-    }
-
-    // if the name ends with _old, it is invalid
-    if(strstr(name, "_old")) {
-        error("Invalid variable name, _old is reserved");
-        return;
-    }
-
-    for (auto flag: flags) {
-        if(flag == PERSISTENT)
-            persistent = true;
-        else if(flag == FINAL)
-            is_final = true;
-    }
-
-    stack_frame* frame;
-    if(persistent) {
-        frame = global_frame;
-    }
-    else {
-        frame = stack->back();
-    }
-    data* d = nullptr;
-    switch (type->get_name()) {
-        case INT_KEYW: {
-            int* val = new int;
-            *val = 0;
-            d = new data(val, "int");
-             frame->set(name, d);
-             break;
-            }
-        case FLOAT_KEYW: {
-            float *val = new float;
-            *val = 0.0f;
-            d = new data(val, "float");
-            frame->set(name, d);
-            break;
-        }
-        case DOUBLE_KEYW: {
-            double *val = new double;
-            *val = 0.0;
-            d = new data(val, "double");
-            frame->set(name, d);
-            break;
-        }
-        case LONG_KEYW: {
-            long *val = new long;
-            *val = 0L;
-            d = new data(val, "long");
-            frame->set(name, d);
-            break;
-        }
-        case STRING_KEYW: {
-            d = new data(new std::string(), "string");
-            frame->set(name, d);
-            break;
-        }
-        case CHAR_KEYW: {
-            char*val = new char;
-            *val = '\0';
-            d = new data(val, "char");
-            frame->set(name, d);
-            break;
-        }
-        case BOOL_KEYW: {
-            bool* val = new bool;
-            *val = false;
-            d = new data(val, "bool");
-            frame->set(name, d);
-            break;
-        }
-        case ULONG64_KEYW: {
-            auto* val = new unsigned long long;
-            *val = 0;
-            d = new data(val, "unsigned long long");
-            frame->set(name, d);
-            break;
-        }
-        default: {
-            error("Invalid type word");
-            return;
-        }
-    }
-    if(set_index > 1) {
-        std::vector concat_vec = {tokens[1]};
-        // add everything after type index
-        for(int i = set_index; i < tokens.size(); i++) {
-            concat_vec.push_back(tokens[i]);
-        }
-        process_variable_update(concat_vec);
-    }
-    if(d && is_final) {
-        d->set_final();
-    }
-        //std::cout << frame->get_data(name)->get() << std::endl;
-}
-
-void lang::interpreter::process_proc_declaration(std::vector<std::shared_ptr<token>> &tokens) {
-    // proc name(typename var, typename, var2, etc.)
-    if(tokens.size() < 5) {
-        error("Cannot declare procedure`, required: proc <type_word> name(typename var, typename, var2, etc.)");
-        return;
-    }
-    if(!tokens[1]->is_typeword()) {
-        error("Cannot declare procedure, expected type word, recieved: " + id_to_name(tokens[1]->get_name()));
-        return;
-    }
-    if(tokens[2]->get_name() != IDENTIFIER) {
-        error("Cannot declare procedure, expected identifier name, recieved: " + id_to_name(tokens[1]->get_name()));
-        return;
-    }
-    auto name = std::make_shared<token>(tokens[1]->get_name(), tokens[1]->get_lexeme(), tokens[1]->get_line(), tokens[1]->get_value());
-    if(tokens[3]->get_name() != LEFT_PAREN) {
-        error("Expected '(', got '" + id_to_name(tokens[1]->get_name()) +'\'');
-        return;
-    }
-    types = new proc_type_vec();
-    for(int i = 4; i < tokens.size(); i++) {
-        if(tokens[i]->get_name() == RIGHT_PAREN) {
-            if(i != tokens.size()-1) {
-                error("Right parenthesis closed with tokens still remaining");
-                return;
-            }
-            break;
-        }
-        if(tokens[i]->is_typeword() && i+1 < tokens.size()) {
-            auto typeword = std::make_shared<token>(tokens[i]->get_name(), tokens[i]->get_lexeme(), tokens[i]->get_line(), tokens[i]->get_value());
-            if(tokens[i+1]->get_name() == IDENTIFIER) {
-                auto identifier = tokens[i+1];
-                i+=2;
-                if(i < tokens.size()) {
-                    if(tokens[i]->get_name() == RIGHT_PAREN || tokens[i]->get_name() == COMMA) {
-                        types->emplace_back(typeword, identifier);
-                    }
-                    else {
-                        error("Expected ',' or '). Got: " + id_to_name(tokens[i]->get_name()));
-                        return;
-                    }
-
-                }
-            }
-            else {
-                error("Expected identifier after typeword");
-                return;
-            }
-        }
-        else {
-            error("Unexpected end of procedure declaration.");
-            return;
-        }
-    }
-
-    new_proc_tokens = new proc_tokens;
-    in_proc_declaration = true;
-    proc_stack_id = stack->back()->get_id();
-    proc_name = tokens[2]->get_lexeme();
-    proc_type = tokens[1]->typeword_to_type();
-    //std::cout << "start proc" << std::endl;
-}
-
 std::vector<std::shared_ptr<token>> lang::interpreter::clone_tokens(const std::vector<std::shared_ptr<token>> &tokens) {
     std::vector<std::shared_ptr<token>> cloned = std::vector<std::shared_ptr<token>>();
     for(const auto& t : tokens) {
@@ -295,176 +115,6 @@ std::vector<std::shared_ptr<token>> lang::interpreter::clone_tokens(const std::v
         cloned.push_back(new_token);
     }
     return cloned;
-}
-
-void lang::interpreter::end_proc_declaration() {
-    if(top_stack()->get_id() != proc_stack_id) {
-        delete new_proc_tokens;
-        delete types;
-        new_proc_tokens = nullptr;
-        types = nullptr;
-        proc_name = "";
-        error("Cannot end a procedure in a different stack frame to which it was declared in!");
-    }
-    in_proc_declaration = false;
-
-    std::string copy = proc_name;
-
-    top_stack()->insert_proc(copy, proc_type, new_proc_tokens, types);
-    new_proc_tokens = nullptr;
-    types = nullptr;
-    proc_name = "";
-    //std:: cout << "Name: " << copy << std::endl;
-    //std::cout << "end proc" << std::endl;
-}
-
-bool lang::interpreter::set_literal(const std::vector<std::shared_ptr<token>> &tokens, data *d) {
-    if(d) {
-        auto group = evaluate_tokens(tokens, 2);
-        if(group->type == ERROR) {
-            error("error evaluating group");
-            return false;
-        }
-
-        //std::cout << " TYPE:" << token::type_tostr(group->type) <<std::endl;
-
-        if(d->get_type() != token::type_tostr(group->type)) {
-            // The default value for literals with decimals is a double which can be inconvinent if you have a float
-            // as in most cases the float value can use the double value.
-            if(d->get_type() == "float" && group->type == DOUBLE && is_defined("IMPLICIT_DOUBLE_TO_FLOAT")) {
-                group->value = (float)std::any_cast<double>(group->value);
-                group->type = FLOAT;
-            }
-            else if (is_defined("IMPLICIT_UPCAST")) {
-                if(d->get_type() == "float" && (group->type == INT || group->type == LONG)) {
-                    if(group->type == INT) {
-                        group->value = (float)std::any_cast<int>(group->value);
-                    }
-                    else if (group->type == LONG) {
-                        group->value = (float)std::any_cast<long>(group->value);
-                    }
-                    group->type = FLOAT;
-                }
-                else if(d->get_type() == "double" && (group->type == INT || group->type == LONG || group->type == FLOAT)) {
-                    if(group->type == INT) {
-                        group->value = (double)std::any_cast<int>(group->value);
-                    }
-                    else if (group->type == LONG) {
-                        group->value = (double)std::any_cast<long>(group->value);
-                    }
-                    else if (group->type == FLOAT) {
-                        group->value = (double)std::any_cast<float>(group->value);
-                    }
-                    group->type = DOUBLE;
-                }
-                else if(d->get_type() == "long" && group->type == INT) {
-                    group->value = (long)std::any_cast<int>(group->value);
-                    group->type = LONG;
-                }
-            }
-            else {
-                error("incompatible types, cannot set");
-                return false;
-            }
-        }
-
-        // token value is std::any, so we need to cast it to the correct type
-        if(d->get_type() == "int" && group->type == INT) {
-            //std::cout << "cast" << std::endl;
-            d->set_value_int(std::any_cast<int>(group->value));
-        }
-        else if (d->get_type() == "float" && group->type == FLOAT) {
-            d->set_value_float(std::any_cast<float>(group->value));
-        }
-        else if (d->get_type() == "double" && group->type == DOUBLE) {
-            d->set_value_double(std::any_cast<double>(group->value));
-        }
-        else if (d->get_type() == "long"&& group->type == LONG) {
-            d->set_value_long(std::any_cast<long>(group->value));
-        }
-        else if (d->get_type() == "string"&& group->type == STRING) {
-            // copy str
-            //char* str = (char*)malloc(sizeof(char)*strlen(const_char_convert(std::any_cast<const char*>(tokens[2]->get_lexeme())))+1);
-            d->set_value_string(std::any_cast<std::string>(group->value));
-        }
-        else if (d->get_type() == "char") {
-            // value is going to be a string so we take the first character
-            auto val = std::any_cast<std::string>(tokens[2]->get_lexeme());
-            if(!val.empty()) {
-                d->set_value_char(val[0]);
-            }
-            else {
-                error("Invalid char value");
-                return true;
-            }
-        }
-        else if (d->get_type() == "bool"&& (group->type == TRUE || group->type == FALSE)) {
-            if(group->type == TRUE) {
-                d->set_value_bool(true);
-            }
-            else if(group->type == FALSE) {
-                d->set_value_bool(false);
-            }
-            else {
-                error("invalid bool type");
-            }
-
-
-        }
-        else if (d->get_type() == "unsigned long long") {
-            d->set_value_ulonglong(std::any_cast<unsigned long long>(tokens[2]->get_value()));
-        }
-        else {
-            error("Invalid type");
-            return true;
-        }
-    }
-    return false;
-}
-
-void lang::interpreter::process_variable_update(const std::vector<std::shared_ptr<token>> &tokens) {
-    if(tokens.size() < 3) {
-        error("Not enough tokens for variable update");
-        return;
-    }
-    if(tokens[0]->get_name() != IDENTIFIER || tokens[1]->get_name() != EQUAL) {
-        error("Invalid variable update");
-        return;
-    }
-    const char* name = tokens[0]->get_lexeme();
-    data* d = resolve_variable(name);
-
-    if(!d) {
-        char c[strlen("Undefined variable with name: ")+ strlen(tokens[0]->get_lexeme())+1];
-        strcpy(c, "Undefined variable with name: ");
-        strcat(c,tokens[0]->get_lexeme());
-        error(c);
-        return;
-    }
-    if(tokens[2]->is_literal() || tokens[2]->get_name() == CAST || tokens[2]->get_name() == ID || tokens[2]->get_name() == MINUS || tokens[2]->get_name() == LEFT_PAREN || tokens[2]->get_name() == RIGHT_PAREN) {
-        if (set_literal(tokens, d)) return;
-    }
-    else if(tokens[2]->get_name() == BYVAL && tokens.size() == 4) { // Doing byval has no effect but its technically valid
-        if (set_literal(tokens, d)) return;
-    }
-    else if(tokens[2]->get_name() == INPUT) {
-        auto str = new std::string();
-        std::cout << "> ";
-        std::getline(std::cin, *str);
-        auto t = scan->scan_line(str);
-        // set_literal expects first two tokens to be identifier =, so we prepend those
-        t.insert(t.begin(), tokens[0]);
-        t.insert(t.begin() + 1, tokens[1]);
-        if (set_literal(t, d)) {
-            delete str;
-            return;
-        }
-
-        delete str;
-    }
-    else if (tokens[2]->get_name() == ID_GRAB && tokens[3]->get_name() == IDENTIFIER) {
-        assign_variable(name, tokens[3]->get_lexeme());
-    }
 }
 
 void lang::interpreter::process(const std::vector<std::shared_ptr<token>>& tokens) {
@@ -563,11 +213,11 @@ void lang::interpreter::run() {
             if(in_proc_declaration) {
                 if(!token_vector.empty()) {
                     if(token_vector[0]->get_name() == END_PROC) {
-                        end_proc_declaration();
+                        proc_manager::end_proc_declaration();
                     }
                     else {
-                        if(new_proc_tokens) {
-                            new_proc_tokens->push_back(clone_tokens(token_vector));
+                        if(proc_manager::new_proc_tokens) {
+                            proc_manager::new_proc_tokens->push_back(clone_tokens(token_vector));
                         }
                         else {
                             error("Current procedure does not exist.");
@@ -631,7 +281,7 @@ void lang::interpreter::run() {
             }
             if(token_vector[0]->get_name() == PROC_KEYW) {
                 if(control_flow_runner::blockStack.empty()) {
-                    process_proc_declaration(token_vector);
+                    proc_manager::process_proc_declaration(token_vector);
                     continue;
                 }
                 else {
