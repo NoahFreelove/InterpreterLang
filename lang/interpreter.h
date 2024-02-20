@@ -1,15 +1,16 @@
 #ifndef INTERPRETER_H
 #define INTERPRETER_H
 #include <chrono>
-#include <iostream>
 #include <stack>
-#include <cstring>
 #include <queue>
 
 #include "tokenizer/scanner.h"
 #include "memory/memory.h"
 #include "tokenizer/token_group.h"
 #include "memory/proc_manager.h"
+#define GENERAL_INPUT 0
+#define PROC_INPUT 1
+#define LOOP_INPUT 2
 namespace lang {
     class scanner;
 
@@ -42,9 +43,16 @@ namespace lang {
 
 
         typedef std::vector<std::shared_ptr<token>> token_vec;
-
+    private:
         inline static std::stack<std::queue<token_vec>> queue_stack = std::stack<std::queue<token_vec>>();
-
+        inline static std::stack<int> queue_qualties = std::stack<int>();
+    public:
+        static void queue_lines(const std::queue<token_vec> &lines, int quality) {
+            //std::cout << "QUEUING WITH QUALITY: " << quality << std::endl;;
+            queue_stack.push(lines);
+            queue_qualties.push(quality);
+        }
+        inline static int current_quality = GENERAL_INPUT;
         static void init();
 
         static stack_frame* top_stack() {

@@ -5,6 +5,7 @@
 #include "../tokenizer/token_group.h"
 #include "../tokenizer/token.h"
 #include "type_arithmetic.h"
+#include <cstring>
 class arithmetic_evaluator {
 public:
     using token_element = std::variant<std::shared_ptr<token>, std::shared_ptr<token_group>>;
@@ -267,7 +268,7 @@ public:
                     std::string cons_str = cons->to_string();
                     tokens.erase(tokens.begin() + (ant_index+2), tokens.begin() + (ant_index+3));
                     const char* cpy = (const char*)malloc(cons_str.size() + 1);
-                    std::strcpy((char*)cpy, cons_str.c_str());
+                    strcpy((char*)cpy, cons_str.c_str());
                     std::shared_ptr<token> new_cons = std::make_shared<token>(STRING, cpy, 0, cons_str);
                     cons = new_cons;
                     tokens.insert(tokens.begin() + ant_index, std::make_shared<token_element>(cons));
@@ -278,7 +279,7 @@ public:
                     std::string ant_str = ant->to_string();
                     tokens.erase(tokens.begin() + (ant_index), tokens.begin() + (ant_index+1));
                     const char* cpy = (const char*)malloc(ant_str.size() + 1);
-                    std::strcpy((char*)cpy, ant_str.c_str());
+                    strcpy((char*)cpy, ant_str.c_str());
                     std::shared_ptr<token> new_ant = std::make_shared<token>(STRING, cpy, 0, ant_str);
                     ant = new_ant;
                     tokens.insert(tokens.begin() + ant_index,std::make_shared<token_element>(ant));

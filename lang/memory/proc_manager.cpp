@@ -307,7 +307,7 @@ void proc_manager::execute_proc(std::shared_ptr<token_group> &g) {
     proc_toks.push({std::make_shared<token>(RETURN, "return",0)});
     lang::interpreter::proc_num_ifs->push(0);
     lang::interpreter::num_procs_active++;
-    lang::interpreter::queue_stack.push(proc_toks);
+    lang::interpreter::queue_lines(proc_toks, PROC_INPUT);
     lang::interpreter::trigger_run();
 
     // After code was run, check for return value

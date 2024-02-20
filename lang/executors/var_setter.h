@@ -135,7 +135,10 @@ inline void process_variable_update(const std::vector<std::shared_ptr<token>> &t
         lang::interpreter::error(c);
         return;
     }
-    if(tokens[2]->is_literal() || tokens[2]->get_name() == CAST || tokens[2]->get_name() == ID || tokens[2]->get_name() == MINUS || tokens[2]->get_name() == LEFT_PAREN || tokens[2]->get_name() == RIGHT_PAREN) {
+    if(tokens[2]->is_literal() || tokens[2]->get_name() == CAST
+        || tokens[2]->get_name() == ID || tokens[2]->get_name() == MINUS
+        || tokens[2]->get_name() == LEFT_PAREN || tokens[2]->get_name() == RIGHT_PAREN ||
+        tokens[2]->get_name() == BANG) {
         if (set_literal(tokens, d)) return;
     }
     else if(tokens[2]->get_name() == BYVAL && tokens.size() == 4) { // Doing byval has no effect but its technically valid

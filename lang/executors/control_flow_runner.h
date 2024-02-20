@@ -23,6 +23,37 @@ public:
     static void handleIf(const std::vector<std::shared_ptr<token>>& tokens) {
         bool conditionResult = process_if(tokens);
         blockStack.push({conditionResult, conditionResult});
+        // right now if a loop calls an if it will be double counted
+        // potentially add a seperate queue stack for attributes (like an int)
+        // if the current stack runs the queue and its a proc
+        // run the following, same if its a loop.
+        // when the queue is popped the next attribute is checked
+        // if no attributes, dont run either of the below
+        if(lang::interpreter::current_quality == PROC_INPUT) {
+            if(!lang::interpreter::proc_num_ifs->empty()) {
+                int num = lang::interpreter::proc_num_ifs->top() + 1;
+                lang::interpreter::proc_num_ifs->pop();
+                lang::interpreter::proc_num_ifs->push(num);
+
+            }
+            else {
+                lang::interpreter::proc_num_ifs->push(1);
+            }
+            return;
+        }
+        else if(lang::interpreter::current_quality == LOOP_INPUT) {
+            if(loop_executor::current_loop_index != -1) {
+                loop_executor::active_loops[loop_executor::current_loop_index]->loop_ifs++;
+            }
+            else {
+                lang::interpreter::error("Loop index is invalid: " + loop_executor::current_loop_index);
+            }
+            return;
+        }
+        else if(lang::interpreter::current_quality == GENERAL_INPUT) {
+            return;
+        }
+        lang::interpreter::error("Unknown queue quality: " + lang::interpreter::current_quality);
     }
 
     static void handleElseIf(const std::vector<std::shared_ptr<token>>& tokens) {
@@ -54,30 +85,7 @@ public:
         //std::cout << id_to_name(group->type) << std::endl;
         if(group->type == TRUE || group->type == FALSE) {
             //std::cout << "If result: " << (group->type == TRUE) << std::endl;
-
-            if(group->type == TRUE) {
-                // TODO: edit this so it supports procs and loops together
-                // right now if a loop calls an if it will be double counted
-                // potentially add a seperate queue stack for attributes (like an int)
-                // if the current stack runs the queue and its a proc
-                // run the following, same if its a loop.
-                // when the queue is popped the next attribute is checked
-                // if no attributes, dont run either of the below
-                if(!lang::interpreter::proc_num_ifs->empty()) {
-                    int num = lang::interpreter::proc_num_ifs->top() + 1;
-                    lang::interpreter::proc_num_ifs->pop();
-                    lang::interpreter::proc_num_ifs->push(num);
-
-                }
-                else {
-                    lang::interpreter::proc_num_ifs->push(1);
-                }
-                if(loop_executor::current_loop_index != -1) {
-                    loop_executor::active_loops[loop_executor::current_loop_index]->loop_ifs++;
-                }
-                return true;
-            }
-            return false;
+            return group->type == TRUE;
         }
         else {
             lang::interpreter::error("cannot use non-truthy type with if statement");

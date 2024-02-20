@@ -191,7 +191,7 @@ void lang::interpreter::queue_input(std::string *input)  {
     if(!current_vector.empty()) {
         queue.push(current_vector);
     }
-    queue_stack.push(queue);
+    queue_lines(queue, GENERAL_INPUT);
 }
 
 void lang::interpreter::run() {
@@ -201,6 +201,8 @@ void lang::interpreter::run() {
     while (!queue_stack.top().empty()) {
         //std::cout << "SIZE OF ALL QUEUES: " << queue_stack.size() << std::endl;
         auto queue = queue_stack.top();
+        current_quality = queue_qualties.top();
+        queue_qualties.pop();
         queue_stack.pop();
 
         while (!queue.empty()) {
@@ -253,10 +255,10 @@ void lang::interpreter::run() {
                 if(copy[0]->get_name() == END_IF) {
                     //std::cout << "ENDIF " <<std::endl;
                     if(!proc_num_ifs->empty()) {
-                        if(proc_num_ifs->top() == 0) {
+                        if(proc_num_ifs->top() == 0 && current_quality == PROC_INPUT) {
                             // look at control_flow_runner's to-do to fix this
                             error("No more ifs to pop in proc!");
-                           //continue;
+                           continue;
                         }
 
                         int num = proc_num_ifs->top() - 1;
@@ -266,6 +268,11 @@ void lang::interpreter::run() {
                         if(loop_executor::current_loop_index > -1) {
                             loop_executor::active_loops[loop_executor::current_loop_index]->loop_ifs--;
                         }
+                    }
+                    if(proc_num_ifs->empty() && current_quality == PROC_INPUT) {
+                        std::cout << "Procnumifs empty, adding to stack and ignoring handleEndIf. " <<std::endl;
+                        proc_num_ifs->push(0);
+                        continue;
                     }
 
                     control_flow_runner::handleEndIf();
@@ -342,12 +349,12 @@ void lang::interpreter::run() {
                 continue;
             }
             if(copy[0]->get_name() == PROC_KEYW) {
-                if(control_flow_runner::blockStack.empty()) {
+                if(control_flow_runner::blockStack.empty() || loop_executor::in_loop()) {
                     proc_manager::process_proc_declaration(copy);
                     continue;
                 }
                 else {
-                    error("Cannot declare procedure in any kind of if-block");
+                    error("Cannot declare procedure in any kind of if-block or loop");
                     continue;
                 }
             }

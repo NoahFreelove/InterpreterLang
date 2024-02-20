@@ -94,7 +94,7 @@ public:
         while (condition_result && !trigger_break) {
             current_loop_index = l->index;
 
-            lang::interpreter::queue_stack.push(clone_loop(l));
+            lang::interpreter::queue_lines(clone_loop(l), LOOP_INPUT);
             lang::interpreter::trigger_run();
             condition_result = is_condition_true(l);
         }
@@ -105,7 +105,6 @@ public:
             delete active_loops[i];
         }
         active_loops.erase(active_loops.begin() + l->index, active_loops.end());
-
     }
 
     inline static void end_loop_declaration() {
