@@ -363,6 +363,7 @@ void lang::interpreter::error(const std::string& err) {
 }
 
 void lang::interpreter::print_errs() {
+    bool sizeis1 = errors->size() == 1;
     std::cerr << "Error";
     if(errors->size() == 1) {
          std::cerr << ": "<< std::endl;
@@ -371,7 +372,12 @@ void lang::interpreter::print_errs() {
          std::cerr << "s: "<< std::endl;
     }
     while (!errors->empty()) {
-        std::cerr << "-> " << errors->top() << std::endl;
+        if(errors->size() == 1 && !sizeis1) {
+            std::cerr << "The following error likely caused any errors above:" << std::endl;
+            std::cerr << "-> -> -> " << errors->top() << std::endl;
+        }
+        else
+            std::cerr << "-> " << errors->top() << std::endl;
         errors->pop();
     }
 }

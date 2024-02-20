@@ -81,6 +81,7 @@
 #define END_PROC 1021
 #define END_LOOP 1022
 #define FINAL 1023
+#define BREAK 1024
 
 // TYPEWORDS
 #define INT_KEYW 1120

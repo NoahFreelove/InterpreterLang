@@ -29,6 +29,13 @@ void stack_frame::delete_var(const std::string& identifier, bool force) {
 
 data * stack_frame::get_data(const std::string& identifier) {
     data* result = memory->get(identifier);
+    if(result) {
+        if(result->get_type() == "nothing" && identifier != "return") {
+            // remove the nothing value from the stack
+            delete_var(identifier);
+            return nullptr;
+        }
+    }
     return result;
 }
 

@@ -1,6 +1,7 @@
 #include "data.h"
 #include "../interpreter.h"
 #include "../tokenizer/token.h"
+#include "stack_frame.h"
 
 void data::set_value_int(int val) {
     if(is_final) {

@@ -101,10 +101,13 @@ void push_to_stack_frame(std::shared_ptr<token_group>& evaled_group, stack_frame
     }
 }
 
-void push_byref(const char* var_name, stack_frame* frame, const char* new_name, const char* proc_type) {
+void push_byref(const char* var_name, stack_frame* frame, const char* new_name, const char* proc_type, bool discard = false) {
     auto* var = resolve_variable(var_name);
     if(var) {
-        auto* ref_copy = new data(var);
+        auto* ref_copy = new data(var, !discard);
+        if(discard) {
+            var->mark_discarded();
+        }
         //std::cout << "ref_copy type: " << var->get_type() << " proc_type: " << proc_type << std::endl;
         if(ref_copy->get_type() != std::string(proc_type)) {
             lang::interpreter::error("Procedure tried to use variable of different type as variable input");
@@ -209,7 +212,7 @@ data* push_return_variable(stack_frame* frame, int type) {
         }
 
         case NOTHING_TYPE: {
-            return_var = new data(nullptr, "nothing");
+            return_var = new data(nullptr, "nothing", false);
             break;
         }
         default: {
@@ -271,11 +274,25 @@ void proc_manager::execute_proc(std::shared_ptr<token_group> &g) {
                 group_evaluator::eval_group(group_ref);
                 push_to_stack_frame(group_ref, new_frame, types[i].second->get_lexeme(), types[i].first->get_lexeme());
             }
+            i++;
+            continue;
         }
-        else {
-            group_evaluator::eval_group(arg);
-            push_to_stack_frame(arg, new_frame, types[i].second->get_lexeme(), types[i].first->get_lexeme());
+        if(arg->tokens.size() == 2) {
+            if(!group_evaluator::is_group(*arg->tokens[0]) && !group_evaluator::is_group(*arg->tokens[1])) {
+                auto t1 = std::get<std::shared_ptr<token>>(*arg->tokens[0]);
+                auto t2 = std::get<std::shared_ptr<token>>(*arg->tokens[1]);
+                if(t1->get_name() == DISCARD && t2->get_name() == IDENTIFIER) {
+                    push_byref(t2->get_lexeme(), new_frame,types[i].second->get_lexeme(),types[i].first->get_lexeme(), true);
+                    i++;
+                    continue;
+                }
+            }
+
+
         }
+
+        group_evaluator::eval_group(arg);
+        push_to_stack_frame(arg, new_frame, types[i].second->get_lexeme(), types[i].first->get_lexeme());
         /*std::cout << "is group: " << group_evaluator::is_group(*arg->tokens[0]) << std::endl;
         std::cout << "type should be: " << id_to_name(types[i].first->get_name()) << std::endl;*/
         i++;

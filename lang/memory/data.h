@@ -3,10 +3,10 @@
 #include <iostream>
 #include <ostream>
 #include <string>
-
 #include "../tokenizer/token_group.h"
 
 class data {
+private:
     void* value;
     std::string type;
     bool is_ptr = false;
@@ -20,7 +20,7 @@ public:
         this->is_final = is_final;
     }
 
-    explicit data(data* reference) {
+    explicit data(data* reference, bool mark_reference = true) {
         if(reference == nullptr) {
             std::cout << "Reference is null" << std::endl;
             this->type = "nothing";
@@ -32,7 +32,7 @@ public:
         this->value = reference->value;
         this->is_final = reference->is_final;
         this->is_ptr = reference->is_ptr;
-        this->is_reference = true;
+        this->is_reference = mark_reference;
     }
 
     void* get() {
@@ -158,6 +158,9 @@ public:
         else if (type == "unsigned long long") {
             return std::to_string(*static_cast<unsigned long long *>(value));
         }
+        else if(type == "nothing") {
+            return "nothing";
+        }
         return "Invalid type" + std::string(type);
     }
 
@@ -173,6 +176,7 @@ public:
         }
         if(is_reference) {
             //std::cout << "Not deleting data of type: " << type << " because it is a reference" << std::endl;
+
             return;
         }
         //std::cout << "Deleting data of type: " << type << std::endl;
@@ -210,6 +214,10 @@ public:
 
     void set_final() {
         this->is_final = true;
+    }
+    void mark_discarded() {
+        this->type = "nothing";
+        this->value = nullptr;
     }
 };
 #endif //DATA_H

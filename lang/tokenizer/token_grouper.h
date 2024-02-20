@@ -72,6 +72,10 @@ public:
                                 curr_arg.push_back(tokens[j]);
                             }
                             j++;
+                            if(j >= tokens.size()) {
+                                lang::interpreter::error("Expected ')' in procedure call");
+                                return std::make_shared<token_group>();
+                            }
                         }
                         if(!curr_arg.empty()) {
                             arguments.emplace_back(curr_arg);

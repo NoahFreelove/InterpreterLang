@@ -161,10 +161,10 @@ std::shared_ptr<token> lang::scanner::get_identifier(char c) {
     if(str == "return") {
         return std::make_shared<token>(RETURN, cstr, line);
     }
-    if(str == "proc") {
+    if(str == "proc" || str == "def" || str == "func" || str == "function" || str == "procedure" || str == "method") {
         return std::make_shared<token>(PROC_KEYW, cstr, line);
     }
-    if(str == "endproc") {
+    if(str == "endproc" || str == "enddef" || str == "endfunc" || str == "endfunction" || str == "endprocedure" || str == "endmethod") {
         return std::make_shared<token>(END_PROC, cstr, line);
     }
     if(str == "endloop") {
@@ -181,6 +181,9 @@ std::shared_ptr<token> lang::scanner::get_identifier(char c) {
     }
     if(str == "persistent") {
         return std::make_shared<token>(PERSISTENT, cstr, line);
+    }
+    if(str == "break") {
+        return std::make_shared<token>(BREAK, cstr, line);
     }
     if(str == "and") {
         return std::make_shared<token>(AND, cstr, line);

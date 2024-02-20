@@ -58,7 +58,7 @@ void stack_memory::delete_var(const std::string& identifier, bool force) {
         if(force) {
             d->prep_force_delete();
         }
-        std::cout << "Deleted: " << key << "(type: " << memory->find(key)->second->get_type() << ")" <<std::endl;
+        //std::cout << "Deleted: " << key << "(type: " << memory->find(key)->second->get_type() << ")" <<std::endl;
         delete memory->at(key);
         memory->erase(key);
     }
