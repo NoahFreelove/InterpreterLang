@@ -1,5 +1,6 @@
 #ifndef CONTROL_FLOW_RUNNER_H
 #define CONTROL_FLOW_RUNNER_H
+#include "loop_executor.h"
 
 // Define a structure for block status
 struct BlockStatus {
@@ -52,16 +53,31 @@ public:
         std::shared_ptr<token_group> group = lang::interpreter::evaluate_tokens(tokens, 1);
         //std::cout << id_to_name(group->type) << std::endl;
         if(group->type == TRUE || group->type == FALSE) {
-            if(!lang::interpreter::proc_num_ifs->empty()) {
-                int num = lang::interpreter::proc_num_ifs->top() + 1;
-                lang::interpreter::proc_num_ifs->pop();
-                lang::interpreter::proc_num_ifs->push(num);
-            }
-            else {
-                lang::interpreter::proc_num_ifs->push(1);
-            }
             //std::cout << "If result: " << (group->type == TRUE) << std::endl;
-            return group->type == TRUE;
+
+            if(group->type == TRUE) {
+                // TODO: edit this so it supports procs and loops together
+                // right now if a loop calls an if it will be double counted
+                // potentially add a seperate queue stack for attributes (like an int)
+                // if the current stack runs the queue and its a proc
+                // run the following, same if its a loop.
+                // when the queue is popped the next attribute is checked
+                // if no attributes, dont run either of the below
+                if(!lang::interpreter::proc_num_ifs->empty()) {
+                    int num = lang::interpreter::proc_num_ifs->top() + 1;
+                    lang::interpreter::proc_num_ifs->pop();
+                    lang::interpreter::proc_num_ifs->push(num);
+
+                }
+                else {
+                    lang::interpreter::proc_num_ifs->push(1);
+                }
+                if(loop_executor::current_loop_index != -1) {
+                    loop_executor::active_loops[loop_executor::current_loop_index]->loop_ifs++;
+                }
+                return true;
+            }
+            return false;
         }
         else {
             lang::interpreter::error("cannot use non-truthy type with if statement");

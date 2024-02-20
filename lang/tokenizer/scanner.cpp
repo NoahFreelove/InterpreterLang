@@ -168,7 +168,7 @@ std::shared_ptr<token> lang::scanner::get_identifier(char c) {
         return std::make_shared<token>(END_PROC, cstr, line);
     }
     if(str == "endloop") {
-        return std::make_shared<token>(END_PROC, cstr, line);
+        return std::make_shared<token>(END_LOOP, cstr, line);
     }
     if(str == "final") {
         return std::make_shared<token>(FINAL, cstr, line);
@@ -184,6 +184,9 @@ std::shared_ptr<token> lang::scanner::get_identifier(char c) {
     }
     if(str == "break") {
         return std::make_shared<token>(BREAK, cstr, line);
+    }
+    if(str == "continue") {
+        return std::make_shared<token>(CONTINUE, cstr, line);
     }
     if(str == "and") {
         return std::make_shared<token>(AND, cstr, line);

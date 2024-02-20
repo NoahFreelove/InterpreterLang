@@ -100,6 +100,8 @@ std::string id_to_name(int id) {
             return "RETURN";
         case BREAK:
             return "BREAK";
+        case CONTINUE:
+            return "CONTINUE";
         case PROC:
             return "PROC";
         case PROC_KEYW:

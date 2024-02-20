@@ -66,7 +66,7 @@ void lang::interpreter::input_loop() {
         scan = new scanner();
     }
     while (true) {
-        if(scan->in_multi_line() || scan->in_multi_comment() || scan->in_multi_string()) {
+        if(scan->in_multi_line() || scan->in_multi_comment() || scan->in_multi_string() || loop_executor::in_loop_declaration) {
             std::cout << "... ";
         }
         else if (in_proc_declaration) {
@@ -113,8 +113,9 @@ std::vector<int> lang::interpreter::get_flags(const std::vector<std::shared_ptr<
 }
 std::vector<std::shared_ptr<token>> lang::interpreter::clone_tokens(const std::vector<std::shared_ptr<token>> &tokens) {
     std::vector<std::shared_ptr<token>> cloned = std::vector<std::shared_ptr<token>>();
+    cloned.reserve(tokens.size());
     for(const auto& t : tokens) {
-        auto new_token = std::make_shared<token>(t->get_name(), t->get_lexeme(), t->get_line(), t->get_value());
+        auto new_token = std::make_shared<token>(t.get());
         cloned.push_back(new_token);
     }
     return cloned;
@@ -227,6 +228,22 @@ void lang::interpreter::run() {
                 }
                 continue;
             }
+            if(loop_executor::in_loop_declaration) {
+                if(!copy.empty()) {
+                    if(copy[0]->get_name() == END_LOOP) {
+                        loop_executor::end_loop_declaration();
+                    }
+                    else {
+                        if(loop_executor::current_loop) {
+                            loop_executor::current_loop->loop_lines->push_back(clone_tokens(copy));
+                            continue;
+                        }
+                        else {
+                            error("Current loop does not exist. Call end_loop to fix this.");
+                        }
+                    }
+                }
+            }
             //std::cout << id_to_name(copy[0]->get_name()) << std::endl;
             /*if(!proc_num_ifs->empty())
                 std::cout<< "numifs:" << proc_num_ifs->top() << std::endl;
@@ -237,6 +254,7 @@ void lang::interpreter::run() {
                     //std::cout << "ENDIF " <<std::endl;
                     if(!proc_num_ifs->empty()) {
                         if(proc_num_ifs->top() == 0) {
+                            // look at control_flow_runner's to-do to fix this
                             error("No more ifs to pop in proc!");
                            //continue;
                         }
@@ -244,6 +262,10 @@ void lang::interpreter::run() {
                         int num = proc_num_ifs->top() - 1;
                         proc_num_ifs->pop();
                         proc_num_ifs->push(num);
+
+                        if(loop_executor::current_loop_index > -1) {
+                            loop_executor::active_loops[loop_executor::current_loop_index]->loop_ifs--;
+                        }
                     }
 
                     control_flow_runner::handleEndIf();
@@ -252,17 +274,41 @@ void lang::interpreter::run() {
                     continue;
                 }
             }else if(copy[0]->get_name() == END_IF) {
-                std::cout << "Error: Unmatched 'end if' found" << std::endl;
+                error("Error: Unmatched 'end if' found");
             }
             if(copy[0]->is_control_flow()) {
                 control_flow_runner::process_control_flow(copy);
                 check_pop_stack(copy);
                 continue;
             }
-
             if(!control_flow_runner::shouldExecuteCurrentBlock()) {
                 //std::cout << "IN INVALID BLOCK" << std::endl;
                 continue;
+            }
+            if(loop_executor::in_loop()) {
+                if(copy.size() == 1) {
+                    if(copy[0]->get_name() == BREAK) {
+                        loop_executor::trigger_break = true;
+                        if(loop_executor::current_loop_index > -1) {
+                            auto* target = loop_executor::active_loops[loop_executor::current_loop_index];
+                            for (int i = 0; i < target->loop_ifs; ++i) {
+                                control_flow_runner::handleEndIf();
+                            }
+                            target->loop_ifs = 0;
+                        }
+                        break;
+                    }
+                    else if(copy[0]->get_name() == CONTINUE) {
+                        if(loop_executor::current_loop_index > -1) {
+                            auto* target = loop_executor::active_loops[loop_executor::current_loop_index];
+                            for (int i = 0; i < target->loop_ifs; ++i) {
+                                control_flow_runner::handleEndIf();
+                            }
+                            target->loop_ifs = 0;
+                        }
+                        break;
+                    }
+                }
             }
 
             if(copy[0]->get_name() == RETURN) {
@@ -304,6 +350,11 @@ void lang::interpreter::run() {
                     error("Cannot declare procedure in any kind of if-block");
                     continue;
                 }
+            }
+            if(copy[0]->get_name() == WHILE || copy[0]->get_name() == FOR) {
+                loop_executor::process_loop(copy);
+                check_pop_stack(copy);
+                continue;
             }
 
             if(copy.size() >=2) {

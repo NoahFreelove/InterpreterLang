@@ -82,6 +82,7 @@
 #define END_LOOP 1022
 #define FINAL 1023
 #define BREAK 1024
+#define CONTINUE 1025
 
 // TYPEWORDS
 #define INT_KEYW 1120
@@ -117,6 +118,7 @@ class token {
     int line;
 
 public:
+    token(token* t) : name(t->name), lexeme(t->lexeme), value(t->value), line(t->line) {}
     token(int name, const char *lexeme, int line, std::any value = nullptr)
         : name(name),
           lexeme(lexeme),

@@ -523,7 +523,7 @@ void proc_manager::process_proc_declaration(std::vector<std::shared_ptr<token>> 
         lang::interpreter::error("Cannot declare procedure, expected identifier name, recieved: " + id_to_name(tokens[1]->get_name()));
         return;
     }
-    auto name = std::make_shared<token>(tokens[1]->get_name(), tokens[1]->get_lexeme(), tokens[1]->get_line(), tokens[1]->get_value());
+    auto name = std::make_shared<token>(tokens[1].get());
     if(tokens[3]->get_name() != LEFT_PAREN) {
         lang::interpreter::error("Expected '(', got '" + id_to_name(tokens[1]->get_name()) +'\'');
         return;
@@ -538,7 +538,7 @@ void proc_manager::process_proc_declaration(std::vector<std::shared_ptr<token>> 
             break;
         }
         if(tokens[i]->is_typeword() && i+1 < tokens.size()) {
-            auto typeword = std::make_shared<token>(tokens[i]->get_name(), tokens[i]->get_lexeme(), tokens[i]->get_line(), tokens[i]->get_value());
+            auto typeword = std::make_shared<token>(tokens[i].get());
             if(tokens[i+1]->get_name() == IDENTIFIER) {
                 auto identifier = tokens[i+1];
                 i+=2;
