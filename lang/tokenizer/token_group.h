@@ -5,6 +5,7 @@
 #include <iostream>
 #include <memory>
 #include "id_to_name.h"
+#include "token.h"
 
 // These represent the evaluation type of the group
 #define UNDETERMINED 1

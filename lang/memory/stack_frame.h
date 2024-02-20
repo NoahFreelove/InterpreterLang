@@ -27,7 +27,7 @@ public:
     bool exists(const std::string& identifier);
     bool assign(const std::string& identifier, const std::string& identifier2);
 
-    void delete_var(const std::string& identifier);
+    void delete_var(const std::string &identifier, bool force = false);
 
     data* get_data(const std::string& identifier);
 

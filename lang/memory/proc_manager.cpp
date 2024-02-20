@@ -4,7 +4,7 @@
 #include "../evaluator/group_evaluator.h"
 #include "../tokenizer/token_grouper.h"
 #include "../executors/control_flow_runner.h"
-
+#include "../executors/var_setter.h"
 proc_dat * proc_manager::resolve_proc_name(const std::string &name) {
     // return nullptr if not in procs
     if(procs->find(name) == procs->end()) {
@@ -47,7 +47,8 @@ void proc_manager::insert_proc(const std::string &name, int type, proc_tokens *p
     procs->insert(std::make_pair(name, new std::pair(new std::pair(p,v),type)));
 }
 
-void push_to_stack_frame(const std::shared_ptr<token_group> &evaled_group, stack_frame* frame, const char* name) {
+void push_to_stack_frame(std::shared_ptr<token_group>& evaled_group, stack_frame* frame, const char* name, const char* proc_type) {
+    implicit_upcast(proc_type, evaled_group);
     switch (evaled_group->type) {
         case UNDETERMINED: {
             lang::interpreter::error("Procedure tried to use undertermined group as variable input");
@@ -99,10 +100,15 @@ void push_to_stack_frame(const std::shared_ptr<token_group> &evaled_group, stack
     }
 }
 
-void push_byref(const char* var_name, stack_frame* frame, const char* new_name) {
+void push_byref(const char* var_name, stack_frame* frame, const char* new_name, const char* proc_type) {
     auto* var = resolve_variable(var_name);
     if(var) {
-        if(!frame->set(new_name, var)) {
+        auto* ref_copy = new data(var);
+        if(ref_copy->get_type() != std::string(proc_type)) {
+            lang::interpreter::error("Procedure tried to use variable of different type as variable input");
+            return;
+        }
+        if(!frame->set(new_name, ref_copy)) {
             lang::interpreter::error("Failed to pass var by ref in procedure");
         }
     }else {
@@ -110,30 +116,39 @@ void push_byref(const char* var_name, stack_frame* frame, const char* new_name) 
                                  "which deos not exist in the current context!");
     }
 }
-void push_val_directly(const std::shared_ptr<token> &t, stack_frame* frame, const char* name) {
-    switch (t->get_name()) {
+void push_val_directly(const std::shared_ptr<token> &t, stack_frame* frame, const char* name, const char* proc_type) {
+    auto g = std::make_shared<token_group>();
+    g->value = t->get_value();
+    g->type = t->get_name();
+    implicit_upcast(proc_type, g);
+    /*std::cout << "GROUP TYPE: " << id_to_name(g->type) <<std::endl;
+    std::cout << "T TYPE: " << id_to_name(t->get_name()) <<std::endl;
+    std::cout << "PROC TYPE: " << proc_type <<std::endl;*/
+
+
+    switch (g->type) {
         case INT: {
-            data* var = new data(new int(std::any_cast<int>(t->get_value())), "int", false, false);
+            data* var = new data(new int(std::any_cast<int>(g->value)), "int", false, false);
             frame->set(name, var);
             break;
         }
         case FLOAT: {
-            data* var = new data(new float(std::any_cast<float>(t->get_value())), "float", false, false);
+            data* var = new data(new float(std::any_cast<float>(g->value)), "float", false, false);
             frame->set(name, var);
             break;
         }
         case DOUBLE: {
-            data* var = new data(new double(std::any_cast<double>(t->get_value())), "double", false, false);
+            data* var = new data(new double(std::any_cast<double>(g->value)), "double", false, false);
             frame->set(name, var);
             break;
         }
         case LONG: {
-            data* var = new data(new long(std::any_cast<long>(t->get_value())), "long", false, false);
+            data* var = new data(new long(std::any_cast<long>(g->value)), "long", false, false);
             frame->set(name, var);
             break;
         }
         case STRING: {
-            data* var = new data(new std::string(std::any_cast<std::string>(t->get_value())), "string", false, false);
+            data* var = new data(new std::string(std::any_cast<std::string>(g->value)), "string", false, false);
             frame->set(name, var);
             break;
         }
@@ -232,7 +247,7 @@ void proc_manager::execute_proc(std::shared_ptr<token_group> &g) {
     }
 
     int i = 0;
-    for (const auto& arg : args) {
+    for (auto& arg : args) {
         //std::cout << "arg found. num tokens: " << arg->tokens.size() << std::endl;
 
         if(arg->tokens.size() == 1) {
@@ -240,21 +255,21 @@ void proc_manager::execute_proc(std::shared_ptr<token_group> &g) {
                 token t = *std::get<std::shared_ptr<token>>(*arg->tokens[0]);
                 if(t.get_name() == IDENTIFIER) {
                     // dupe variable, pass byref
-                    push_byref(t.get_lexeme(), new_frame,types[i].second->get_lexeme());
+                    push_byref(t.get_lexeme(), new_frame,types[i].second->get_lexeme(),types[i].first->get_lexeme());
                 }
                 else {
-                    push_val_directly(std::get<std::shared_ptr<token>>(*arg->tokens[0]), new_frame, types[i].second->get_lexeme());
+                    push_val_directly(std::get<std::shared_ptr<token>>(*arg->tokens[0]), new_frame, types[i].second->get_lexeme(),types[i].first->get_lexeme());
                 }
             }
             else {
                 auto group_ref = std::get<std::shared_ptr<token_group>>(*arg->tokens[0]);
                 group_evaluator::eval_group(group_ref);
-                push_to_stack_frame(group_ref, new_frame, types[i].second->get_lexeme());
+                push_to_stack_frame(group_ref, new_frame, types[i].second->get_lexeme(), types[i].first->get_lexeme());
             }
         }
         else {
             group_evaluator::eval_group(arg);
-            push_to_stack_frame(arg, new_frame, types[i].second->get_lexeme());
+            push_to_stack_frame(arg, new_frame, types[i].second->get_lexeme(), types[i].first->get_lexeme());
         }
         /*std::cout << "is group: " << group_evaluator::is_group(*arg->tokens[0]) << std::endl;
         std::cout << "type should be: " << id_to_name(types[i].first->get_name()) << std::endl;*/

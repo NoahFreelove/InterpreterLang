@@ -1,5 +1,33 @@
 #ifndef VAR_SETTER_H
 #define VAR_SETTER_H
+
+inline void implicit_upcast(const std::string& type, std::shared_ptr<token_group>& group) {
+    if(type == "float" && (group->type == INT || group->type == LONG)) {
+        if(group->type == INT) {
+            group->value = (float)std::any_cast<int>(group->value);
+        }
+        else if (group->type == LONG) {
+            group->value = (float)std::any_cast<long>(group->value);
+        }
+        group->type = FLOAT;
+    }
+    else if(type == "double" && (group->type == INT || group->type == LONG || group->type == FLOAT)) {
+        if(group->type == INT) {
+            group->value = (double)std::any_cast<int>(group->value);
+        }
+        else if (group->type == LONG) {
+            group->value = (double)std::any_cast<long>(group->value);
+        }
+        else if (group->type == FLOAT) {
+            group->value = (double)std::any_cast<float>(group->value);
+        }
+        group->type = DOUBLE;
+    }
+    else if(type == "long" && group->type == INT) {
+        group->value = (long)std::any_cast<int>(group->value);
+        group->type = LONG;
+    }
+}
 inline bool set_literal(const std::vector<std::shared_ptr<token>> &tokens, data *d) {
     if(d) {
         auto group = lang::interpreter::evaluate_tokens(tokens, 2);
@@ -7,8 +35,6 @@ inline bool set_literal(const std::vector<std::shared_ptr<token>> &tokens, data 
             lang::interpreter::error("error evaluating group");
             return false;
         }
-
-        //std::cout << " TYPE:" << token::type_tostr(group->type) <<std::endl;
 
         if(d->get_type() != token::type_tostr(group->type)) {
             // The default value for literals with decimals is a double which can be inconvinent if you have a float
@@ -18,31 +44,7 @@ inline bool set_literal(const std::vector<std::shared_ptr<token>> &tokens, data 
                 group->type = FLOAT;
             }
             else if (lang::interpreter::is_defined("IMPLICIT_UPCAST")) {
-                if(d->get_type() == "float" && (group->type == INT || group->type == LONG)) {
-                    if(group->type == INT) {
-                        group->value = (float)std::any_cast<int>(group->value);
-                    }
-                    else if (group->type == LONG) {
-                        group->value = (float)std::any_cast<long>(group->value);
-                    }
-                    group->type = FLOAT;
-                }
-                else if(d->get_type() == "double" && (group->type == INT || group->type == LONG || group->type == FLOAT)) {
-                    if(group->type == INT) {
-                        group->value = (double)std::any_cast<int>(group->value);
-                    }
-                    else if (group->type == LONG) {
-                        group->value = (double)std::any_cast<long>(group->value);
-                    }
-                    else if (group->type == FLOAT) {
-                        group->value = (double)std::any_cast<float>(group->value);
-                    }
-                    group->type = DOUBLE;
-                }
-                else if(d->get_type() == "long" && group->type == INT) {
-                    group->value = (long)std::any_cast<int>(group->value);
-                    group->type = LONG;
-                }
+                implicit_upcast(d->get_type(), group);
             }
             else {
                 lang::interpreter::error("incompatible types, cannot set");
@@ -90,14 +92,16 @@ inline bool set_literal(const std::vector<std::shared_ptr<token>> &tokens, data 
             else {
                 lang::interpreter::error("invalid bool type");
             }
-
-
         }
         else if (d->get_type() == "unsigned long long") {
             d->set_value_ulonglong(std::any_cast<unsigned long long>(tokens[2]->get_value()));
         }
         else {
-            lang::interpreter::error("Invalid type");
+            std::string s = "Invalid type: ";
+            s += d->get_type();
+            s += " for group type: ";
+            s += id_to_name(group->type);
+            lang::interpreter::error(s);
             return true;
         }
     }

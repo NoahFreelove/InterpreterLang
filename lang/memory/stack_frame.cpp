@@ -23,8 +23,8 @@ bool stack_frame::assign(const std::string& identifier,const std::string& identi
     return memory->assign(identifier, val);
 }
 
-void stack_frame::delete_var(const std::string& identifier) {
-    memory->delete_var(identifier);
+void stack_frame::delete_var(const std::string& identifier, bool force) {
+    memory->delete_var(identifier, force);
 }
 
 data * stack_frame::get_data(const std::string& identifier) {

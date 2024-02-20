@@ -95,3 +95,27 @@ proc string lstring(long a)
     return cast a string
 endproc
 
+// --- BOOL ---
+proc bool bbool(bool a)
+    return cast a bool
+endproc
+
+proc bool fbool(float a)
+    return cast a bool
+endproc
+
+proc bool ibool(int a)
+    return cast a bool
+endproc
+
+proc bool dbool(double a)
+    return cast a bool
+endproc
+
+proc bool lbool(long a)
+    return cast a bool
+endproc
+
+proc bool sbool(string a)
+    return cast a bool
+endproc

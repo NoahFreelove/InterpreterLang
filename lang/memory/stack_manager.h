@@ -40,9 +40,9 @@ static void assign_variable(const char* identifier1, const  char* identifier2) {
     }
 }
 
-static void delete_variable(const char* identitifer) {
+static void delete_variable(const char* identitifer, bool force = false) {
     for (stack_frame* frame : *lang::interpreter::stack) {
-        frame->delete_var(identitifer);
+        frame->delete_var(identitifer, force);
     }
 }
 

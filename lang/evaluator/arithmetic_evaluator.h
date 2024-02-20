@@ -40,7 +40,7 @@ public:
             if(last_token != nullptr) {
                 //std::cout << "last: " << *last_token << std::endl;
             }
-            if(i == 0 && curr->is_arithmetic() && curr->is_add_sub()) {
+            if(i == 0 && curr->is_arithmetic() && !curr->is_add_sub()) {
                 lang::interpreter::error("operator with no antecedent");
                 return false;
             }
@@ -155,6 +155,7 @@ public:
         int highest_level_op = 0;
         // 0 - add/sub, 1 - mult/div, 2 - exponent
         while (has_ops) {
+            //g->print_group();
             has_ops = false;
             // find antecedent and consequent of any operators
             // Do one pass to find * or /. If they are found find the antecedent and concequent

@@ -3,13 +3,17 @@
 #include <iostream>
 #include <ostream>
 #include <string>
+
+#include "../tokenizer/token_group.h"
+
 class data {
     void* value;
-    const char* type;
+    std::string type;
     bool is_ptr = false;
     bool is_final = false;
+    bool is_reference = false;
 public:
-    data(void* value, const char* type, bool is_ptr = false, bool is_final = false) {
+    data(void* value, const std::string& type, bool is_ptr = false, bool is_final = false) {
         this->value = value;
         this->type = type;
         this->is_ptr = is_ptr;
@@ -17,17 +21,25 @@ public:
     }
 
     explicit data(data* reference) {
+        if(reference == nullptr) {
+            std::cout << "Reference is null" << std::endl;
+            this->type = "nothing";
+            this->value = nullptr;
+            return;
+        }
+        //std::cout << "Creating reference" << std::endl;
         this->type = reference->type;
         this->value = reference->value;
         this->is_final = reference->is_final;
         this->is_ptr = reference->is_ptr;
+        this->is_reference = true;
     }
 
     void* get() {
         return value;
     }
 
-    const char* get_type() {
+    const std::string get_type() {
         return type;
     }
 
@@ -122,7 +134,6 @@ public:
     void set_value_ulonglong(unsigned long long val);
 
     std::string to_string() {
-        std::string type = get_type_string();
         if (type == "int") {
             return std::to_string(get_int());
         }
@@ -154,13 +165,16 @@ public:
         return is_ptr;
     }
 
-
     ~data() {
+        //std::cout << "Deleting: " << type << std::endl;
         if(is_ptr) {
-            std::cout << "Not deleting data of type: " << type << " because it is a pointer" << std::endl;
+            //std::cout << "Not deleting data of type: " << type << " because it is a pointer" << std::endl;
             return;
         }
-        std::string type = get_type_string();
+        if(is_reference) {
+            //std::cout << "Not deleting data of type: " << type << " because it is a reference" << std::endl;
+            return;
+        }
         //std::cout << "Deleting data of type: " << type << std::endl;
         if (type == "int") {
             delete (int*)value;
@@ -186,6 +200,10 @@ public:
         else if (type == "unsigned long long") {
             delete (unsigned long long*)value;
         }
+    }
+    void prep_force_delete() {
+        is_reference = false;
+        is_ptr = false;
     }
 
     int get_type_int();

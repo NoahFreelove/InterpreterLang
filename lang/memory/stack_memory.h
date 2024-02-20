@@ -27,7 +27,7 @@ public:
         delete memory;
     }
 
-    void delete_var(const std::string& identifier);
+    void delete_var(const std::string& identifier, bool force = false);
 
     void delete_memory() {
         for (auto& [key, value] : *memory) {

@@ -14,6 +14,7 @@
 #include "memory/stack_manager.h"
 #include "executors/var_setter.h"
 #include "executors/loop_executor.h"
+
 bool lang::interpreter::is_defined(const char *c) {
     for (const char* name : *defined) {
         if(strcmp(name, c) == 0) {
@@ -46,6 +47,7 @@ void lang::interpreter::init() {
     defined->push_back("PROC_REDEFINITION");
     errors = new std::stack<std::string>();
     read_from_file("about.lang");
+    read_from_file("stdlib/math.lang");
 }
 
 std::shared_ptr<token_group> lang::interpreter::evaluate_tokens(std::vector<std::shared_ptr<token>> tokens, int offset) {

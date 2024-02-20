@@ -46,7 +46,7 @@ public:
             return a-b;
         }
         else if(op == MOD) {
-            return (int)a%(int)b;
+            return std::fmod(a, b);
         }
         else {
             return 0;
@@ -72,7 +72,7 @@ public:
             return a-b;
         }
         else if(op == MOD) {
-            return (int)a%(int)b;
+            return std::fmod(a, b);
         }
         else {
             return 0;
