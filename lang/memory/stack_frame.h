@@ -19,8 +19,8 @@ public:
         std::cout << "Dump for stackframe " << id << std::endl  << std::endl << "Variables:" << std::endl;
         memory->print_stack_memory();
 
-        std::cout << std::endl << "Methods:" << std::endl;
-        procs->print_procs();
+        /*std::cout << std::endl << "Methods:" << std::endl;
+        procs->print_procs();*/
     }
 
     bool set(const std::string& identifier, data* val);

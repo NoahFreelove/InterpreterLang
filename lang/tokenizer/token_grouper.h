@@ -34,7 +34,6 @@ public:
         for (int i = 0; i < tokens.size(); i++) {
             auto tk = tokens[i];
             int type = tk->get_name();
-
             if(type == IDENTIFIER && i+1 < tokens.size()) {
                 if(tokens[i+1]->get_name() == LEFT_PAREN) {
                     auto* proc = resolve_proc(tk->get_lexeme());
@@ -43,8 +42,16 @@ public:
                         std::vector<std::vector<std::shared_ptr<token>>> arguments;
                         auto curr_arg = std::vector<std::shared_ptr<token>>();
                         int j = i+2;
-                        int num_left_paren = 0;
+                        int num_left_paren = 1;
                         while (tokens[j]->get_name() != RIGHT_PAREN || num_left_paren != 0) {
+                            //std::cout << "TOKEN: " << *tokens[j] << std::endl;
+                            if(tokens[j]->get_name() == RIGHT_PAREN) {
+                                num_left_paren--;
+                                // std::cout << "NUM LEFT PAREN: " << num_left_paren << std::endl;
+                                if (num_left_paren == 0) {
+                                    break;
+                                }
+                            }
                             if(j >= tokens.size()) {
                                 lang::interpreter::error("Expected ')' in procedure call");
                                 return std::make_shared<token_group>();
@@ -62,8 +69,6 @@ public:
                             else {
                                 if(tokens[j]->get_name() == LEFT_PAREN)
                                     num_left_paren++;
-                                else if(tokens[j]->get_name() == RIGHT_PAREN)
-                                    num_left_paren--;
                                 curr_arg.push_back(tokens[j]);
                             }
                             j++;
@@ -176,7 +181,6 @@ public:
         std::cout << std::endl;*/
 
         auto g = recursive_group(tokens);
-        //g->print_group();
         return g;
     }
 };

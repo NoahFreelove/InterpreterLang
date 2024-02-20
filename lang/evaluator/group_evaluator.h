@@ -68,6 +68,8 @@ public:
                     else if(tk->get_name() == IDENTIFIER) {
                         // Replace token in group with value obtained from memory
                         data* d = resolve_variable(tk->get_lexeme());
+                        //std::cout << tk->get_lexeme() << " <- var" << std::endl;
+                        //lang::interpreter::stack->back()->dump_memory();
                         if (d) {
                             if(d->get_type_string() == "int") {
                                 g->tokens[i] = convert(INT, "INT", 0, d->get_int());
@@ -98,7 +100,7 @@ public:
                             }
                         }
                         else {
-                            lang::interpreter::error("Variable not found");
+                            lang::interpreter::error("Variable not found: " +  std::string(tk->get_lexeme()));
                             allgood = false;
                         }
                     }

@@ -3,84 +3,85 @@ double e persistent = 2.7182818284
 double inf persistent = 500f^500f
 
 proc float sqrt(float f)
-if f< 0
-return 0
-else
-return f^0.5
+    if f< 0
+        return 0
+    else
+        return f^0.5
 endproc
 
 proc float abs(float f)
-if f< 0
-return -f
-else
-return f
+    if f< 0
+        return -f
+    else
+        return f
 endproc
 
 proc float min(float a, float b)
-if a < b
-return a
-else
-return b
-endif
+    if a < b
+        return a
+    else
+        return b
+    endif
 endproc
 
 proc float max(float a, float b)
-if a > b
-return a
-else
-return b
-endif
+    if a > b
+        return a
+    else
+        return b
+    endif
 endproc
 
 proc float sin(float x)
-float fpi = cast (pi) float
-x = x%(2*fpi)
+    float fpi = cast (pi) float
+    x = x%(2*fpi)
 
-if x > fpi
-x -= (2*fpi)
-elseif x < (-fpi)
-x+= (2*fpi)
-endif
+    if x > fpi
+        x -= (2*fpi)
+    elseif x < (-fpi)
+        x+= (2*fpi)
+    endif
 
-float term1 = x;
-float term2 = -(x^3) / 6f
-float term3 = (x^5) / 120f
-float term4 = -(x^7) / 5040f
-float term5 = (x^9)/ 362880f;
-float term6 = -(x^11)/ 39916800f
-return term1 + term2 + term3 + term4 + term5 + term6
+    float term1 = x;
+    float term2 = -(x^3) / 6f
+    float term3 = (x^5) / 120f
+    float term4 = -(x^7) / 5040f
+    float term5 = (x^9)/ 362880f;
+    float term6 = -(x^11)/ 39916800f
+    return term1 + term2 + term3 + term4 + term5 + term6
 endproc
 
 proc float cos(float y)
-float fpi = cast (pi) float
-y = y%(2*fpi)
-if y > fpi
-y -= (2*fpi)
-elseif y < (-fpi)
-y+= (2*fpi)
-endif
+    float fpi = cast (pi) float
+    y = y%(2*fpi)
+    if y > fpi
+        y -= (2*fpi)
+    elseif y < (-fpi)
+        y+= (2*fpi)
+    endif
 
-float term1 = 1f
-float term2 = -(y^2) / 2f
-float term3 = (y^4) / 24f
-float term4 = -(y^6) / 720f
-float term5 = (y^8)/ 40320f;
-return term1 + term2 + term3 + term4 + term5
+    float term1 = 1f
+    float term2 = -(y^2) / 2f
+    float term3 = (y^4) / 24f
+    float term4 = -(y^6) / 720f
+    float term5 = (y^8)/ 40320f;
+    float term6 = -(y^10)/ 3628800f
+    return term1 + term2 + term3 + term4 + term5 + term6
 endproc
 
 proc float tan(float z)
-float s = sin(z)
-float c = cos(z)
-if c == 0
-return inf
-else
-return s/c
+    float s = sin(z)
+    float c = cos(z)
+    if c == 0
+        return inf
+    else
+        return s/c
 endproc
 
 proc float clamp(float x, float mi, float ma)
-if x < mi
-return mi
-else
-return min(x, ma)
-endif
+    if x < mi
+        return mi
+    else
+        return min(x, ma)
+    endif
 endproc

@@ -1,8 +1,8 @@
 #ifndef VAR_SETTER_H
 #define VAR_SETTER_H
 
-inline void implicit_upcast(const std::string& type, std::shared_ptr<token_group>& group) {
-    if(type == "float" && (group->type == INT || group->type == LONG)) {
+inline void implicit_upcast(const std::string& target_type, std::shared_ptr<token_group>& group) {
+    if(target_type == "float" && (group->type == INT || group->type == LONG)) {
         if(group->type == INT) {
             group->value = (float)std::any_cast<int>(group->value);
         }
@@ -10,8 +10,9 @@ inline void implicit_upcast(const std::string& type, std::shared_ptr<token_group
             group->value = (float)std::any_cast<long>(group->value);
         }
         group->type = FLOAT;
+        return;
     }
-    else if(type == "double" && (group->type == INT || group->type == LONG || group->type == FLOAT)) {
+    else if(target_type == "double" && (group->type == INT || group->type == LONG || group->type == FLOAT)) {
         if(group->type == INT) {
             group->value = (double)std::any_cast<int>(group->value);
         }
@@ -22,10 +23,17 @@ inline void implicit_upcast(const std::string& type, std::shared_ptr<token_group
             group->value = (double)std::any_cast<float>(group->value);
         }
         group->type = DOUBLE;
+        return;
     }
-    else if(type == "long" && group->type == INT) {
+    else if(target_type == "long" && group->type == INT) {
         group->value = (long)std::any_cast<int>(group->value);
         group->type = LONG;
+        return;
+    }
+    if(target_type == "float" && group->type == DOUBLE && lang::interpreter::is_defined("IMPLICIT_DOUBLE_TO_FLOAT")) {
+        group->value = (float)std::any_cast<double>(group->value);
+        group->type = FLOAT;
+        return;
     }
 }
 inline bool set_literal(const std::vector<std::shared_ptr<token>> &tokens, data *d) {

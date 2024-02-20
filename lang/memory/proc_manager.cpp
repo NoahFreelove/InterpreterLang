@@ -5,6 +5,7 @@
 #include "../tokenizer/token_grouper.h"
 #include "../executors/control_flow_runner.h"
 #include "../executors/var_setter.h"
+//#include "../executors/built_in_runner.h"
 proc_dat * proc_manager::resolve_proc_name(const std::string &name) {
     // return nullptr if not in procs
     if(procs->find(name) == procs->end()) {
@@ -104,6 +105,7 @@ void push_byref(const char* var_name, stack_frame* frame, const char* new_name, 
     auto* var = resolve_variable(var_name);
     if(var) {
         auto* ref_copy = new data(var);
+        //std::cout << "ref_copy type: " << var->get_type() << " proc_type: " << proc_type << std::endl;
         if(ref_copy->get_type() != std::string(proc_type)) {
             lang::interpreter::error("Procedure tried to use variable of different type as variable input");
             return;
@@ -221,16 +223,18 @@ data* push_return_variable(stack_frame* frame, int type) {
 
 void proc_manager::execute_proc(std::shared_ptr<token_group> &g) {
     //std::vector<std::shared_ptr<token_group>> args = g.
-
     auto* new_frame = new stack_frame();
 
     if(group_evaluator::is_group(*g->tokens[0]) ) {
         lang::interpreter::error("Cannot run proc on group?");
+        delete new_frame;
         return;
     }
     auto tok = (*std::get<std::shared_ptr<token>>(*g->tokens[0]));
+    //std::cout << "EXECUTING: " << tok.get_lexeme() << std::endl;
     proc_dat* p = resolve_proc(tok.get_lexeme());
     int PROC_TYPE = p->second;
+
     auto* dat = push_return_variable(new_frame, PROC_TYPE);
     g->type = p->second; // Return type
     if(g->type == NOTHING_TYPE) {
@@ -243,6 +247,7 @@ void proc_manager::execute_proc(std::shared_ptr<token_group> &g) {
     auto args = std::any_cast<std::vector<std::shared_ptr<token_group>>>(tok.get_value());
     if(args.size() != types.size()) {
         lang::interpreter::error("Number of args don't match procedure definition");
+        delete new_frame;
         return;
     }
 
@@ -286,12 +291,9 @@ void proc_manager::execute_proc(std::shared_ptr<token_group> &g) {
     lang::interpreter::proc_num_ifs->push(0);
     lang::interpreter::num_procs_active++;
     lang::interpreter::queue_stack.push(proc_toks);
-    lang::interpreter::run();
+    lang::interpreter::trigger_run();
 
-    std::queue<std::vector<std::shared_ptr<token>>> right_brace;
-    // in the event they forgot.
-    right_brace.push({std::make_shared<token>(RIGHT_BRACE, "}",0)});
-
+    // After code was run, check for return value
     if(dat) {
         // Convert dat return from ptr to value
         switch (g->type) {
@@ -338,12 +340,16 @@ void proc_manager::execute_proc(std::shared_ptr<token_group> &g) {
         }
     }
     else {
-        std::cout <<"Invalid data" << std::endl;
+        std::cout <<"Invalid return data" << std::endl;
     }
-
-
-    lang::interpreter::queue_stack.push(right_brace);
-    lang::interpreter::run();
+    /*for(stack_frame* frame : *lang::interpreter::stack) {
+        frame->dump_memory();
+        std::cout << std::endl;
+    }*/
+    //std::cout << "popping frame for proc: " << tok.get_lexeme() << std::endl;
+    pop_stackframe();
+    /*std::cout << "AFTER POP OF PROC:  " << tok.get_lexeme() << std::endl;
+    */
 }
 
 void proc_manager::print_procs() {
@@ -397,6 +403,7 @@ void proc_manager::process_return(const lang::interpreter::token_vec &tokens, in
         rest.push_back(tokens[i]);
     }
     auto group = token_grouper::gen_group(rest);
+
     group_evaluator::eval_group(group);
 
     int target_type = dat->get_type_int();
@@ -415,6 +422,7 @@ void proc_manager::process_return(const lang::interpreter::token_vec &tokens, in
         // :) I dont like null vars!
         return;
     }
+    //std::cout << "GROUP TYPE: " << id_to_name(group->type) << std::endl;
     if(target_type == group->type) {
         switch (target_type) {
             case INT: {

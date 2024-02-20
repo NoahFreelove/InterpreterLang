@@ -53,13 +53,14 @@ void lang::interpreter::init() {
 std::shared_ptr<token_group> lang::interpreter::evaluate_tokens(std::vector<std::shared_ptr<token>> tokens, int offset) {
     std::vector rest(tokens.begin() + offset, tokens.end());
     auto group = token_grouper::gen_group(rest);
+    //group->print_group();
     group_evaluator::eval_group(group);
     return group;
 }
 
 void lang::interpreter::input_loop() {
     init();
-    run();
+    trigger_run();
     auto* input = new std::string();
     if(scan == nullptr) {
         scan = new scanner();
@@ -80,7 +81,7 @@ void lang::interpreter::input_loop() {
         }
         start_timer();
         queue_input(input);
-        run();
+        trigger_run();
         end_timer();
     }
 }
@@ -194,16 +195,15 @@ void lang::interpreter::queue_input(std::string *input)  {
 
 void lang::interpreter::run() {
     init();
-    while (!errors->empty())
-        errors->pop();
     if(queue_stack.empty())
         return;
-
     while (!queue_stack.top().empty()) {
+        //std::cout << "SIZE OF ALL QUEUES: " << queue_stack.size() << std::endl;
         auto queue = queue_stack.top();
         queue_stack.pop();
 
         while (!queue.empty()) {
+            //std::cout << "command" << std::endl;
             token_vec token_vector = queue.front();
             token_vec copy = token_vec();
             for (auto& t : token_vector) {
@@ -211,15 +211,14 @@ void lang::interpreter::run() {
             }
             queue.pop();
             //std::cout << "SIZE: " << control_flow_runner::blockStack.size() << std::endl;
-
             if(in_proc_declaration) {
-                if(!token_vector.empty()) {
-                    if(token_vector[0]->get_name() == END_PROC) {
+                if(!copy.empty()) {
+                    if(copy[0]->get_name() == END_PROC) {
                         proc_manager::end_proc_declaration();
                     }
                     else {
                         if(proc_manager::new_proc_tokens) {
-                            proc_manager::new_proc_tokens->push_back(clone_tokens(token_vector));
+                            proc_manager::new_proc_tokens->push_back(clone_tokens(copy));
                         }
                         else {
                             error("Current procedure does not exist.");
@@ -228,14 +227,18 @@ void lang::interpreter::run() {
                 }
                 continue;
             }
+            //std::cout << id_to_name(copy[0]->get_name()) << std::endl;
+            /*if(!proc_num_ifs->empty())
+                std::cout<< "numifs:" << proc_num_ifs->top() << std::endl;
+                */
 
             if(!control_flow_runner::blockStack.empty()) {
-                if(token_vector[0]->get_name() == END_IF) {
+                if(copy[0]->get_name() == END_IF) {
                     //std::cout << "ENDIF " <<std::endl;
                     if(!proc_num_ifs->empty()) {
                         if(proc_num_ifs->top() == 0) {
                             error("No more ifs to pop in proc!");
-                            return;
+                           //continue;
                         }
 
                         int num = proc_num_ifs->top() - 1;
@@ -248,42 +251,53 @@ void lang::interpreter::run() {
                     check_pop_stack(copy);
                     continue;
                 }
+            }else if(copy[0]->get_name() == END_IF) {
+                std::cout << "Error: Unmatched 'end if' found" << std::endl;
             }
-            if(token_vector[0]->is_control_flow()) {
-                control_flow_runner::process_control_flow(token_vector);
+            if(copy[0]->is_control_flow()) {
+                control_flow_runner::process_control_flow(copy);
                 check_pop_stack(copy);
                 continue;
             }
 
-            if(!control_flow_runner::shouldExecuteCurrentBlock())
+            if(!control_flow_runner::shouldExecuteCurrentBlock()) {
+                //std::cout << "IN INVALID BLOCK" << std::endl;
                 continue;
+            }
 
-            if(token_vector[0]->get_name() == RETURN) {
-                while (!queue.empty()) {
+            if(copy[0]->get_name() == RETURN) {
+                /*while (!queue.empty()) {
                     queue.pop();
                 }
-                proc_manager::process_return(token_vector, 1);
+                */
 
-                continue;
+                proc_manager::process_return(copy, 1);
+                //std::cout << "SIZE: " <<  queue_stack.size() <<std::endl;
+                //queue_stack.pop();
+                if(num_procs_active > 0) {
+                    num_procs_active--;
+                }
+
+                return;
             }
 
-            if(token_vector[0]->get_name() == LEFT_BRACE) {
+            if(copy[0]->get_name() == LEFT_BRACE) {
                 push_stackframe();
-                token_vector.erase(token_vector.begin());
+                copy.erase(copy.begin());
             }
-            if (token_vector[0]->is_typeword()) {
-                process_variable_declaration(token_vector);
+            if (copy[0]->is_typeword()) {
+                process_variable_declaration(copy);
                 check_pop_stack(copy);
                 continue;
             }
-            if(token_vector[0]->is_builtin()) {
-                run_builtins(token_vector);
+            if(copy[0]->is_builtin()) {
+                run_builtins(copy);
                 check_pop_stack(copy);
                 continue;
             }
-            if(token_vector[0]->get_name() == PROC_KEYW) {
+            if(copy[0]->get_name() == PROC_KEYW) {
                 if(control_flow_runner::blockStack.empty()) {
-                    proc_manager::process_proc_declaration(token_vector);
+                    proc_manager::process_proc_declaration(copy);
                     continue;
                 }
                 else {
@@ -292,43 +306,36 @@ void lang::interpreter::run() {
                 }
             }
 
-            if(token_vector.size() >=2) {
-                if(token_vector[0]->get_name() == IDENTIFIER) {
-                    if(token_vector.size() >= 3) {
-                        if(token_vector[1]->is_arithmetic() && token_vector[2]->get_name() == EQUAL) {
-                            arithmetic_evaluator::convert_op_eq_to_op(token_vector);
+            if(copy.size() >=2) {
+                if(copy[0]->get_name() == IDENTIFIER) {
+                    if(copy.size() >= 3) {
+                        if(copy[1]->is_arithmetic() && copy[2]->get_name() == EQUAL) {
+                            arithmetic_evaluator::convert_op_eq_to_op(copy);
                         }
                     }
-                    if(token_vector.size() == 3) {
-                        if(token_vector[1]->get_name() == PLUS && token_vector[2]->get_name() == PLUS) {
-                            arithmetic_evaluator::convert_inc_to_op(token_vector);
+                    if(copy.size() == 3) {
+                        if(copy[1]->get_name() == PLUS && copy[2]->get_name() == PLUS) {
+                            arithmetic_evaluator::convert_inc_to_op(copy);
                         }
-                        else if(token_vector[1]->get_name() == MINUS && token_vector[2]->get_name() == MINUS) {
-                            arithmetic_evaluator::convert_dec_to_op(token_vector);
+                        else if(copy[1]->get_name() == MINUS && copy[2]->get_name() == MINUS) {
+                            arithmetic_evaluator::convert_dec_to_op(copy);
                         }
                     }
 
-                    if(token_vector[1]->get_name() == EQUAL) {
-                        process_variable_update(token_vector);
+                    if(copy[1]->get_name() == EQUAL) {
+                        process_variable_update(copy);
                         check_pop_stack(copy);
                         continue;
                     }
                 }
 
             }
-            process(token_vector);
+            process(copy);
             check_pop_stack(copy);
         }
-        if(num_procs_active > 0) {
-            num_procs_active--;
-        }
         if(queue_stack.empty()) {
-            num_procs_active = 0;
-            break;
+            return;
         }
-    }
-    if(!errors->empty()) {
-        print_errs();
     }
 }
 
@@ -346,7 +353,7 @@ void lang::interpreter::read_from_file(const char *path) {
     }
     while(std::getline(file, str)) {
         queue_input(&str);
-        run();
+        trigger_run();
     }
     file.close();
 }
@@ -392,4 +399,14 @@ void lang::interpreter::end_timer() {
 void lang::interpreter::print_time() {
     std::cout << "Last run time: " << time_taken << "s" << std::endl;
     std::cout << "Average time: " << avg_time << "s" << std::endl;
+}
+
+void lang::interpreter::trigger_run() {
+    run();
+    if(!errors->empty()) {
+        print_errs();
+        while (!errors->empty()) {
+            errors->pop();
+        }
+    }
 }

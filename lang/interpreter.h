@@ -62,7 +62,7 @@ namespace lang {
         static void check_pop_stack(std::vector<std::shared_ptr<token>>& tokens);
         static void queue_input(std::string * input);
 
-        static void run();
+
         static void read_from_file(const char* path);
         static void error(const std::string& err);
         static void print_errs();
@@ -70,7 +70,9 @@ namespace lang {
         static void start_timer();
         static void end_timer();
         static void print_time();
-
+        static void trigger_run();
+    private:
+        static void run();
     };
 }
 #endif //INTERPRETER_H

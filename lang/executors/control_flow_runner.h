@@ -50,11 +50,15 @@ public:
 public:
     static bool process_if(const std::vector<std::shared_ptr<token>>& tokens) {
         std::shared_ptr<token_group> group = lang::interpreter::evaluate_tokens(tokens, 1);
+        //std::cout << id_to_name(group->type) << std::endl;
         if(group->type == TRUE || group->type == FALSE) {
             if(!lang::interpreter::proc_num_ifs->empty()) {
                 int num = lang::interpreter::proc_num_ifs->top() + 1;
                 lang::interpreter::proc_num_ifs->pop();
                 lang::interpreter::proc_num_ifs->push(num);
+            }
+            else {
+                lang::interpreter::proc_num_ifs->push(1);
             }
             //std::cout << "If result: " << (group->type == TRUE) << std::endl;
             return group->type == TRUE;
