@@ -47,7 +47,8 @@ float term2 = -(x^3) / 6f
 float term3 = (x^5) / 120f
 float term4 = -(x^7) / 5040f
 float term5 = (x^9)/ 362880f;
-return term1 + term2 + term3 + term4 + term5
+float term6 = -(x^11)/ 39916800f
+return term1 + term2 + term3 + term4 + term5 + term6
 endproc
 
 proc float cos(float y)

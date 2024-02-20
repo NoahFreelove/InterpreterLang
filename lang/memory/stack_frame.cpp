@@ -41,5 +41,5 @@ proc_dat* stack_frame::resolve_proc(const std::string& name) {
 }
 
 void stack_frame::eval_proc(std::shared_ptr<token_group> &g) {
-    procs->execute_proc(g);
+    proc_manager::execute_proc(g);
 }

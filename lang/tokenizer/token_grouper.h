@@ -43,7 +43,8 @@ public:
                         std::vector<std::vector<std::shared_ptr<token>>> arguments;
                         auto curr_arg = std::vector<std::shared_ptr<token>>();
                         int j = i+2;
-                        while (tokens[j]->get_name() != RIGHT_PAREN) {
+                        int num_left_paren = 0;
+                        while (tokens[j]->get_name() != RIGHT_PAREN || num_left_paren != 0) {
                             if(j >= tokens.size()) {
                                 lang::interpreter::error("Expected ')' in procedure call");
                                 return std::make_shared<token_group>();
@@ -59,6 +60,10 @@ public:
                                 curr_arg.clear();
                             }
                             else {
+                                if(tokens[j]->get_name() == LEFT_PAREN)
+                                    num_left_paren++;
+                                else if(tokens[j]->get_name() == RIGHT_PAREN)
+                                    num_left_paren--;
                                 curr_arg.push_back(tokens[j]);
                             }
                             j++;
@@ -164,14 +169,15 @@ public:
     static std::shared_ptr<token_group> gen_group(std::vector<std::shared_ptr<token>> tokens) {
         generate_parens(tokens);
 
-        /*// print them out
-        for (auto tk : tokens) {
+        // print them out
+        /*for (const auto& tk : tokens) {
             std::cout << tk->get_lexeme() << " ";
         }
         std::cout << std::endl;*/
 
-        return recursive_group(tokens);
-
+        auto g = recursive_group(tokens);
+        //g->print_group();
+        return g;
     }
 };
 #endif //TOKEN_GROUPER_H

@@ -142,7 +142,6 @@ public:
     }
     static void eval_group(std::shared_ptr<token_group> g, int depth = 0) {
         bool result = recursive_replace(g);
-
         if(g->tokens.empty()) {
             g->type = NOTHING;
             g->value = nullptr;

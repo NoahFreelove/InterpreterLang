@@ -35,7 +35,7 @@ public:
 
     proc_dat* resolve_proc(const std::string& name);
 
-    void eval_proc(std::shared_ptr<token_group>& g);
+    static void eval_proc(std::shared_ptr<token_group>& g);
 
     long get_id() const {
         return id;
