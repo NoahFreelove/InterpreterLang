@@ -9,6 +9,10 @@ struct loop{
 
     int loop_ifs = 0;
 
+    bool is_do = false;
+
+    bool is_until = false;
+
     loop_data* loop_lines = nullptr;
 
     // while and for
@@ -38,6 +42,12 @@ public:
 
     static bool process_while(loop* l, const lang::interpreter::token_vec & tokens) {
         l->type = WHILE;
+        if(tokens[0]->get_name() == DO_WHILE || tokens[0]->get_name() == DO_UNTIl) {
+            l->is_do = true;
+        }
+        if(tokens[0]->get_name() == DO_UNTIl || tokens[0]->get_name() == UNTIL) {
+            l->is_until = true;
+        }
         auto vec_cpy = lang::interpreter::clone_tokens(tokens);
         vec_cpy.erase(vec_cpy.begin());
 
@@ -144,7 +154,7 @@ public:
 
     static void process_loop(const lang::interpreter::token_vec & tokens) {
         loop* l = new loop();
-        if(tokens[0]->get_name() == WHILE) {
+        if(tokens[0]->is_while_variation()) {
             if(!process_while(l, tokens)) {
                 delete l;
                 return;
@@ -167,14 +177,15 @@ public:
         loop_declaration_nest = 1;
     }
 
-
-
     static bool is_condition_true(loop* l) {
         auto group = token_grouper::recursive_clone_group(l->condition_test);
         group_evaluator::eval_group(group);
         int type = group->type;
         if(type == TRUE || type == FALSE) {
             //std::cout << "result of condition: " << (type == TRUE) << std::endl;
+            if(l->is_until) {
+                return type == FALSE;
+            }
             return type == TRUE;
         }
         lang::interpreter::error("Loop condition does not evaluate to a truthy value!");
@@ -204,7 +215,6 @@ public:
         bool condition_result = is_condition_true(l);
         while (condition_result && !trigger_break) {
             current_loop_index = l->index;
-
             auto q = clone_loop(l);
             q.push(lang::interpreter::clone_tokens(l->post_for_event));
 
@@ -217,7 +227,11 @@ public:
     }
 
     static void trigger_while_loop(loop* l) {
-        bool condition_result = is_condition_true(l);
+        bool condition_result;
+        if(l->is_do)
+            condition_result = true;
+        else
+            condition_result = is_condition_true(l);
 
         // TODO: Optimize this so lines which can be pre-evaluated are
         // so that this is less intensive.

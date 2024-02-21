@@ -188,6 +188,13 @@ std::shared_ptr<token> lang::scanner::get_identifier(char c) {
     if(str == "continue") {
         return std::make_shared<token>(CONTINUE, cstr, line);
     }
+    if(str == "dowhile")
+        return std::make_shared<token>(DO_WHILE, cstr, line);
+    if (str == "until")
+        return std::make_shared<token>(UNTIL, cstr, line);
+    if (str == "dountil")
+        return std::make_shared<token>(DO_UNTIl, cstr, line);
+
     if(str == "and") {
         return std::make_shared<token>(AND, cstr, line);
     }

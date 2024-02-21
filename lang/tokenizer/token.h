@@ -40,11 +40,11 @@
 #define OR 24
 #define XOR 25
 #define SLASHI 26
+// /i
 #define EXPONENT 27
 #define ID_GRAB 28
-#define MOD 29
 // &
-// /i
+#define MOD 29
 
 // LITERALS
 #define IDENTIFIER 101
@@ -83,6 +83,9 @@
 #define FINAL 1023
 #define BREAK 1024
 #define CONTINUE 1025
+#define DO_WHILE 1026
+#define UNTIL 1027
+#define DO_UNTIl 1028
 
 // TYPEWORDS
 #define INT_KEYW 1120
@@ -229,7 +232,11 @@ public:
         return name == IF || name == END_IF || name == ELSE || name == ELSE_IF;
     }
     bool is_loop() const {
-        return name == WHILE || name == FOR;
+        return name == FOR || is_while_variation();
+    }
+    bool is_while_variation() const {
+        return name == WHILE || name == DO_WHILE
+        || name == DO_UNTIl || name == UNTIL;
     }
 
     static const std::string type_tostr(int i) {

@@ -85,3 +85,14 @@ proc float clamp(float x, float mi, float ma)
         return min(x, ma)
     endif
 endproc
+
+proc long factorial(int num)
+if(num == 0)
+return 1
+endif
+int result = 1
+for(int i = 1, i<=num, i++)
+result *= i
+endloop
+return result
+endproc
