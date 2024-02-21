@@ -212,17 +212,27 @@ class truthy_evaluator {
                     }
                 }
                 else {
-                    if((ant->get_name() == STRING || cons->get_name() == STRING) && (op->get_name() == DEQUAL || op->get_name() == TEQUAL)) {
+                    if((ant->get_name() == STRING || cons->get_name() == STRING) && (op->get_name() == DEQUAL || op->get_name() == TEQUAL) || op->get_name() == BANG_EQUAL) {
                         std::string val1;
                         std::string val2;
                         if(ant->get_name() != STRING) {
                             val1 = std::to_string(get_double_value(ant->get_name(), ant->get_value()));
+                            // remove trailing zeros
+                            val1.erase(val1.find_last_not_of('0') + 1, std::string::npos);
+                            // if no decimal point, remove the period
+                            if(val1.find('.') != std::string::npos) {
+                                val1.erase(val1.find_last_not_of('.') + 1, std::string::npos);
+                            }
                         }
                         else {
                             val1 = std::any_cast<std::string>(ant->get_value());
                         }
                         if(cons->get_name() != STRING) {
                             val2 = std::to_string(get_double_value(cons->get_name(),cons->get_value()));
+                            val2.erase(val2.find_last_not_of('0') + 1, std::string::npos);
+                            if(val2.find('.') != std::string::npos) {
+                                val2.erase(val2.find_last_not_of('.') + 1, std::string::npos);
+                            }
                         }
                         else {
                             val2 = std::any_cast<std::string>(cons->get_value());
@@ -230,8 +240,14 @@ class truthy_evaluator {
                         if(op->get_name() == TEQUAL && (ant->get_name() != cons->get_name())) {
                             result = false;
                         }
-                        else
-                            result = (val1 == val2);
+                        else {
+                            if(op->get_name() == BANG_EQUAL) {
+                                result = (val1 != val2);
+                            }
+                            else {
+                                result = (val1 == val2);
+                            }
+                        }
                     }
                     else {
                         double a = get_double_value(ant->get_name(), ant->get_value());
