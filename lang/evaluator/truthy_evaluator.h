@@ -59,6 +59,10 @@ class truthy_evaluator {
         if(name == FALSE) {
             return 0;
         }
+        if(name == STRING) {
+            lang::interpreter::error("Cannot do operation with strings");
+            return 0;
+        }
         return 0;
     }
 
@@ -82,6 +86,9 @@ class truthy_evaluator {
                     }
                     if(tg->type == INT || tg->type == FLOAT || tg->type == DOUBLE || tg->type == LONG) {
                         g->tokens[i] = convert(tg->type, "NUMBER", 0, tg->value);
+                    }
+                    else if(tg->type == STRING) {
+                        g->tokens[i] = convert(tg->type, "STRING", 0, tg->value);
 
                     }
                 }
@@ -185,11 +192,11 @@ class truthy_evaluator {
             }
             if(cons != nullptr && op != nullptr) {
                 if(ant == nullptr) {
-                        ant = invalid_ant;
-                    }
-                    int type = INT;
-                    const char* type_str = "";
-                    std::any val;
+                    ant = invalid_ant;
+                }
+                int type = INT;
+                const char* type_str = "";
+                std::any val;
                 bool result = false;
                 if(op->is_first_order_logic()) {
                     bool a = (ant->get_name() == TRUE);
@@ -204,59 +211,80 @@ class truthy_evaluator {
                         result = a&&b;
                     }
                 }
-                else
-                    {
-                    double a = get_double_value(ant->get_name(), ant->get_value());
-                    double b = get_double_value(cons->get_name(), cons->get_value());
-                    //std::cout << "a: " << a << std::endl;
-                    //std::cout << "b: " << b << std::endl;
-
-
-                    if(op->get_name() == GT) {
-                        result = a>b;
-                    }
-                    else if(op->get_name() == LT) {
-                        result = a<b;
-                    }
-                    else if(op->get_name() == LTE) {
-                        result = a<=b;
-                    }
-                    else if(op->get_name() == GTE) {
-                        result = a>=b;
-                    }
-                    else if(op->get_name() == DEQUAL) {
-                        result = a==b;
-                    }
-                    else if(op->get_name() == BANG_EQUAL) {
-                        result = a!=b;
-                    }
-                    else if(op->get_name() == TEQUAL) {
-                        if(ant->get_name() != cons->get_name())
+                else {
+                    if((ant->get_name() == STRING || cons->get_name() == STRING) && (op->get_name() == DEQUAL || op->get_name() == TEQUAL)) {
+                        std::string val1;
+                        std::string val2;
+                        if(ant->get_name() != STRING) {
+                            val1 = std::to_string(get_double_value(ant->get_name(), ant->get_value()));
+                        }
+                        else {
+                            val1 = std::any_cast<std::string>(ant->get_value());
+                        }
+                        if(cons->get_name() != STRING) {
+                            val2 = std::to_string(get_double_value(cons->get_name(),cons->get_value()));
+                        }
+                        else {
+                            val2 = std::any_cast<std::string>(cons->get_value());
+                        }
+                        if(op->get_name() == TEQUAL && (ant->get_name() != cons->get_name())) {
                             result = false;
+                        }
                         else
+                            result = (val1 == val2);
+                    }
+                    else {
+                        double a = get_double_value(ant->get_name(), ant->get_value());
+                        double b = get_double_value(cons->get_name(), cons->get_value());
+                        //std::cout << "a: " << a << std::endl;
+                        //std::cout << "b: " << b << std::endl;
+
+                        if(op->get_name() == GT) {
+                            result = a>b;
+                        }
+                        else if(op->get_name() == LT) {
+                            result = a<b;
+                        }
+                        else if(op->get_name() == LTE) {
+                            result = a<=b;
+                        }
+                        else if(op->get_name() == GTE) {
+                            result = a>=b;
+                        }
+                        else if(op->get_name() == DEQUAL) {
                             result = a==b;
+                        }
+                        else if(op->get_name() == BANG_EQUAL) {
+                            result = a!=b;
+                        }
+                        else if(op->get_name() == TEQUAL) {
+                            if(ant->get_name() != cons->get_name())
+                                result = false;
+                            else
+                                result = a==b;
+                        }
                     }
                 }
 
-                    if(result) {
-                        type = TRUE;
-                        type_str = "TRUE";
-                    }
-                    else {
-                        type = FALSE;
-                        type_str = "FALSE";
-                    }
+                if(result) {
+                    type = TRUE;
+                    type_str = "TRUE";
+                }
+                else {
+                    type = FALSE;
+                    type_str = "FALSE";
+                }
 
-                    if(ant_index == -1) {
-                        tokens.erase(tokens.begin(), tokens.begin() + 2);
-                        tokens.insert(tokens.begin(), convert(type,type_str,0,result));
-                    }
-                    else {
-                        tokens.erase(tokens.begin() + (ant_index), tokens.begin() + (ant_index+3));
-                        tokens.insert(tokens.begin() + ant_index, convert(type,type_str,0,result));
-                    }
-                    g->type = type;
-                    g->value = result;
+                if(ant_index == -1) {
+                    tokens.erase(tokens.begin(), tokens.begin() + 2);
+                    tokens.insert(tokens.begin(), convert(type,type_str,0,result));
+                }
+                else {
+                    tokens.erase(tokens.begin() + (ant_index), tokens.begin() + (ant_index+3));
+                    tokens.insert(tokens.begin() + ant_index, convert(type,type_str,0,result));
+                }
+                g->type = type;
+                g->value = result;
             }
         }
 

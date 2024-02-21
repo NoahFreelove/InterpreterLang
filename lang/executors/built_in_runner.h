@@ -111,6 +111,27 @@ static void dump() {
     }
 }
 
+static void assert(std::vector<std::shared_ptr<token>> tokens) {
+    tokens.erase(tokens.begin());
+    auto group = token_grouper::gen_group(tokens);
+    std::string pre_group;
+    group->output_group(pre_group, 0);
+    group_evaluator::recursive_replace(group);
+    std::string printout;
+    group->output_group(printout, 0);
+
+    group_evaluator::eval_group(group);
+    if(group->type == TRUE || group->type == FALSE) {
+        if(group->type == FALSE) {
+            lang::interpreter::error("Assertion error - False: " + printout + "\nBefore grouping: " + pre_group);
+
+        }
+    }
+    else {
+        lang::interpreter::error("Assertion Error: Assertion not truthy");
+    }
+}
+
 static void run_builtins(const std::vector<std::shared_ptr<token>>& tokens) {
     if (tokens[0]->get_name() == PRINT) {
         print(tokens);
@@ -143,6 +164,9 @@ static void run_builtins(const std::vector<std::shared_ptr<token>>& tokens) {
     if(tokens[0]->get_name() == ID) {
         print(tokens,0);
         return;
+    }
+    if(tokens[0]->get_name() == ASSERT) {
+        assert(tokens);
     }
 }
 #endif //BUILT_IN_RUNNER_H

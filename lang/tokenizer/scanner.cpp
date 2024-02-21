@@ -243,6 +243,9 @@ std::shared_ptr<token> lang::scanner::get_identifier(char c) {
     if(str == "id") {
         return std::make_shared<token>(ID, cstr, line);
     }
+    if(str == "assert") {
+        return std::make_shared<token>(ASSERT, cstr, line);
+    }
     if(str == "int") {
         return std::make_shared<token>(INT_KEYW, cstr, line);
     }

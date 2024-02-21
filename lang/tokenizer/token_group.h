@@ -30,6 +30,41 @@ public:
         tokens.push_back(item);
     }
 
+    void output_group(std::string& curr_out, int depth = 0) {
+        if(depth == 0)
+            curr_out = "";
+
+        for (const std::shared_ptr<token_element>& element : tokens) {
+            std::visit(overloaded{
+                [&curr_out](const std::shared_ptr<token>& tk) {
+
+               if(tk->get_value().type() == typeid(int)) {
+                   curr_out += std::to_string(std::any_cast<int>(tk->get_value()));
+               } else if(tk->get_value().type() == typeid(float)) {
+                   curr_out += std::to_string(std::any_cast<float>(tk->get_value()));
+               } else if(tk->get_value().type() == typeid(double)) {
+                   curr_out += std::to_string(std::any_cast<double>(tk->get_value()));
+               }
+               else if(tk->get_value().type() == typeid(long)) {
+                   curr_out += std::to_string(std::any_cast<long>(tk->get_value()));
+               }
+               else if(tk->get_value().type() == typeid(unsigned long long)) {
+                curr_out += std::to_string(std::any_cast<unsigned long long>(tk->get_value()));
+               }
+               else {
+                   curr_out += id_to_name(tk->get_name());
+               }
+                },
+                [depth, &curr_out](const std::shared_ptr<token_group>& grp) {
+                    curr_out += "[";
+                    grp->output_group(curr_out, depth + 1);
+                    curr_out += "]";
+
+                }
+            }, *element);
+        }
+    }
+
     void print_group(int depth = 0) {
         for (const std::shared_ptr<token_element>& element : tokens) {
             std::visit(overloaded{

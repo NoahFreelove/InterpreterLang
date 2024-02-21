@@ -61,10 +61,11 @@ public:
                     lang::interpreter::error("two is_numeric side by side without an operator");
                     return false;
                 }
-                if(last_token->is_arithmetic() && curr->is_truthy()) {
+                // Now we convert truthy to 1 or 0
+                /*if(last_token->is_arithmetic() && curr->is_truthy()) {
                     lang::interpreter::error("arithmetic operator followed by truthy value");
                     return false;
-                }
+                }*/
                 if(last_token->is_arithmetic() && curr->is_builtin()) {
                     lang::interpreter::error("arithmetic operator followed by builtin function");
                     return false;
@@ -135,6 +136,9 @@ public:
                     }
                     if(tg->type == ULONG64) {
                         g->tokens[i] = convert(ULONG64, "ULONG64", 0, tg->value);
+                    }
+                    if(tg->type == TRUE || tg->type == FALSE){
+                        g->tokens[i] = convert(INT, "INT", 0, int(tg->type == TRUE));
                     }
                 }
             }
@@ -257,6 +261,14 @@ public:
                 if(ant == nullptr) {
                     ant = invalid_ant;
                 }
+
+                if(ant->get_name() == TRUE || ant->get_name() == FALSE) {
+                    ant = std::make_shared<token>(INT, "INT",0, int(ant->get_name() == TRUE));
+                }
+                if(cons->get_name() == TRUE || cons->get_name() == FALSE) {
+                    cons = std::make_shared<token>(INT, "INT",0, int(cons->get_name() == TRUE));
+                }
+
                 if((!cons->is_numeric() || !ant->is_numeric()) && (cons->get_name() != STRING && ant->get_name() != STRING)){
                     lang::interpreter::error("non-numeric/string value in arithmetic operation");
                     return;
