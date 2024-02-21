@@ -65,7 +65,7 @@ namespace lang {
         static int get_equal_index(const std::vector<std::shared_ptr<token>> &tokens);
         static std::vector<int> get_flags(const std::vector<std::shared_ptr<token>> &tokens);
         static std::vector<std::shared_ptr<token>> clone_tokens(const std::vector<std::shared_ptr<token>> &tokens);
-        static void process(const std::vector<std::shared_ptr<token>>& tokens);
+        static void process(std::vector<std::shared_ptr<token>>& tokens);
 
         static void check_pop_stack(std::vector<std::shared_ptr<token>>& tokens);
         static void queue_input(std::string * input);

@@ -121,7 +121,7 @@ std::vector<std::shared_ptr<token>> lang::interpreter::clone_tokens(const std::v
     return cloned;
 }
 
-void lang::interpreter::process(const std::vector<std::shared_ptr<token>>& tokens) {
+void lang::interpreter::process(std::vector<std::shared_ptr<token>>& tokens) {
     /*for (const std::shared_ptr<token> t : tokens) {
         std::cout << *t << std::endl;
     }
@@ -208,11 +208,16 @@ void lang::interpreter::run() {
         while (!queue.empty()) {
             //std::cout << "command" << std::endl;
             token_vec token_vector = queue.front();
+            if(token_vector.empty()) {
+                queue.pop();
+                continue;
+            }
             token_vec copy = token_vec();
             for (auto& t : token_vector) {
                 copy.push_back(t);
             }
             queue.pop();
+
             //std::cout << "SIZE: " << control_flow_runner::blockStack.size() << std::endl;
             if(in_proc_declaration) {
                 if(!copy.empty()) {
@@ -232,17 +237,24 @@ void lang::interpreter::run() {
             }
             if(loop_executor::in_loop_declaration) {
                 if(!copy.empty()) {
-                    if(copy[0]->get_name() == END_LOOP) {
+                    if(copy[0]->is_loop()) {
+                        loop_executor::loop_declaration_nest++;
+                    }
+
+                    if(copy[0]->get_name() == END_LOOP && loop_executor::loop_declaration_nest == 1) {
                         loop_executor::end_loop_declaration();
+                        continue;
+                    }
+                    if(copy[0]->get_name() == END_LOOP) {
+                        loop_executor::loop_declaration_nest--;
+                    }
+
+                    if(loop_executor::current_loop) {
+                        loop_executor::current_loop->loop_lines->push_back(clone_tokens(copy));
+                        continue;
                     }
                     else {
-                        if(loop_executor::current_loop) {
-                            loop_executor::current_loop->loop_lines->push_back(clone_tokens(copy));
-                            continue;
-                        }
-                        else {
-                            error("Current loop does not exist. Call end_loop to fix this.");
-                        }
+                        error("Current loop does not exist. Call end_loop to fix this.");
                     }
                 }
             }
@@ -358,7 +370,7 @@ void lang::interpreter::run() {
                     continue;
                 }
             }
-            if(copy[0]->get_name() == WHILE || copy[0]->get_name() == FOR) {
+            if(copy[0]->is_loop()) {
                 loop_executor::process_loop(copy);
                 check_pop_stack(copy);
                 continue;

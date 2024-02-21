@@ -11,7 +11,7 @@ public:
     template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
     template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
 
-    static std::shared_ptr<token_group> recursive_group(std::vector<std::shared_ptr<token>> tokens) {
+    static std::shared_ptr<token_group> recursive_group(std::vector<std::shared_ptr<token>>& tokens) {
         // brackets in the form of ( and ) are used to group tokens
         // so (1+2 + 3*(4+5)) would be grouped as
         // (1,+,2,+,3,*),(4,+,5)

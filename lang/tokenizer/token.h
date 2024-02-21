@@ -129,6 +129,9 @@ public:
     [[nodiscard]] int get_name() const {
         return name;
     }
+    [[nodiscard]] int is_identifier() const {
+        return name == IDENTIFIER;
+    }
 
     [[nodiscard]] const char * get_lexeme() const {
         return lexeme;
@@ -224,6 +227,9 @@ public:
 
     bool is_control_flow() const {
         return name == IF || name == END_IF || name == ELSE || name == ELSE_IF;
+    }
+    bool is_loop() const {
+        return name == WHILE || name == FOR;
     }
 
     static const std::string type_tostr(int i) {
