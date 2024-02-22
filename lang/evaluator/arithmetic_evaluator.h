@@ -111,6 +111,14 @@ public:
         //std::cout << "recursive eval" << std::endl;
         //std::cout << g->tokens.size() << std::endl;
 
+        if(depth >= lang::interpreter::max_depth) {
+            auto out = std::string("Max arithmetic depth reached: " + depth);
+            out += " consider making your arithmetic simpler, or an internal language error occured.";
+            lang::interpreter::error(out);
+            g->type = ERROR;
+            return;
+        }
+
         std::vector<std::shared_ptr<token_element>>& tokens = g->tokens;
         bool groups_found = true;
         while (groups_found) {
@@ -139,6 +147,10 @@ public:
                     }
                     if(tg->type == TRUE || tg->type == FALSE){
                         g->tokens[i] = convert(INT, "INT", 0, int(tg->type == TRUE));
+                    }
+                    if(tg->type == ERROR || tg->type == NOTHING) {
+                        groups_found = false;
+                        continue;
                     }
                 }
             }

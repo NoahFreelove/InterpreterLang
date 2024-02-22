@@ -357,7 +357,7 @@ void lang::interpreter::run() {
             }
             if(copy[0]->is_builtin()) {
                 run_builtins(copy);
-                check_pop_stack(copy);
+                //check_pop_stack(copy);
                 continue;
             }
             if(copy[0]->get_name() == PROC_KEYW) {

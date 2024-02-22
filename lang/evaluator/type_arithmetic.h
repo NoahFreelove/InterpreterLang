@@ -10,6 +10,8 @@ public:
             return a * b;
         }
         else if(op == SLASH || op == SLASHI) {
+            if(b == 0)
+                return (int)INFINITY;
             return a / b;
         }
         else if(op == PLUS) {
@@ -20,6 +22,8 @@ public:
             return a-b;
         }
         else if(op == MOD) {
+            if(b == 0)
+                return 0;
             return a%b;
         }
         else {
@@ -34,9 +38,13 @@ public:
             return a * b;
         }
         else if(op == SLASH) {
+            if(b == 0)
+                return INFINITY;
             return a / b;
         }
         else if (op == SLASHI) {
+            if(b == 0)
+                return INFINITY;
             return (int)(a/b);
         }
         else if(op == PLUS) {
@@ -46,6 +54,8 @@ public:
             return a-b;
         }
         else if(op == MOD) {
+            if(b == 0)
+                return 0;
             return std::fmod(a, b);
         }
         else {
@@ -60,9 +70,13 @@ public:
             return a * b;
         }
         else if(op == SLASH) {
+            if(b == 0)
+                return INFINITY;
             return a / b;
         }
         else if (op == SLASHI) {
+            if(b == 0)
+                return INFINITY;
             return (int)(a/b);
         }
         else if(op == PLUS) {
@@ -72,6 +86,8 @@ public:
             return a-b;
         }
         else if(op == MOD) {
+            if(b == 0)
+                return 0;
             return std::fmod(a, b);
         }
         else {
@@ -86,6 +102,8 @@ public:
             return a * b;
         }
         else if(op == SLASH || op == SLASHI) {
+            if(b == 0)
+                return (long)INFINITY;
             return a / b;
         }
         else if(op == PLUS) {
@@ -95,6 +113,8 @@ public:
             return a-b;
         }
         else if(op == MOD) {
+            if(b == 0)
+                return 0;
             return a%b;
         }
         else {

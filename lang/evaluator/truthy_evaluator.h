@@ -66,7 +66,16 @@ class truthy_evaluator {
         return 0;
     }
 
-    static void recursive_evaluation(std::shared_ptr<token_group>& g) {
+    static void recursive_evaluation(std::shared_ptr<token_group>& g, int depth = 0) {
+
+        if(depth >= lang::interpreter::max_depth) {
+            auto out = std::string("Max truthy depth reached: " + depth);
+            out += " consider making your expression simpler, or an internal language error occured.";
+            lang::interpreter::error(out);
+            g->type = ERROR;
+            return;
+        }
+
         std::vector<std::shared_ptr<token_element>>& tokens = g->tokens;
         bool groups_found = true;
         while (groups_found) {
@@ -76,7 +85,7 @@ class truthy_evaluator {
                     groups_found = true;
                     auto tg = std::get<std::shared_ptr<token_group>>(*tokens[i]);
                     if(tg->type == UNDETERMINED) {
-                        recursive_evaluation(tg);
+                        recursive_evaluation(tg, depth +1);
                     }
                     else if(tg->type == TRUE) {
                         g->tokens[i] = convert(TRUE, "TRUE", 0, true);

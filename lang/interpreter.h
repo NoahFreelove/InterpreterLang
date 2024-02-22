@@ -16,6 +16,7 @@ namespace lang {
 
     class interpreter {
     public:
+        inline static const int max_depth = 100;
         inline static std::vector<const char*>* defined = new std::vector<const char*>;
         static bool is_defined(const char* c);
         inline static int VERSION_MAJOR = 0;

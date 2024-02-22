@@ -143,6 +143,15 @@ public:
         }
     }
     static void eval_group(std::shared_ptr<token_group> g, int depth = 0) {
+
+        if(depth >= lang::interpreter::max_depth) {
+            auto out = std::string("Max group evaluation depth reached: " + depth);
+            out += " consider making your expression simpler, or an internal language error occured.";
+            lang::interpreter::error(out);
+            g->type = ERROR;
+            return;
+        }
+
         bool result = recursive_replace(g);
         if(g->tokens.empty()) {
             g->type = NOTHING;
@@ -154,7 +163,7 @@ public:
             if(!is_group(*g->tokens[0])) {
                 auto tk = std::get<std::shared_ptr<token>>(*g->tokens[0]);
                 if(tk->get_name() == PROC) {
-                    lang::interpreter::top_stack()->eval_proc(g);
+                    stack_frame::eval_proc(g);
                     *g->tokens.erase(g->tokens.begin());
                     return;
                 }
@@ -194,7 +203,7 @@ public:
                         if(is_group(*g->tokens[i+1])) {
                             auto to_cast_group = std::get<std::shared_ptr<token_group>>(*g->tokens[i+1]);
                             if(to_cast_group->type == UNDETERMINED) {
-                                eval_group(to_cast_group);
+                                eval_group(to_cast_group, depth+1);
                             }
                             if(to_cast_group->type == NOTHING || to_cast_group->type == ERROR || to_cast_group->type == UNDETERMINED) {
                                 lang::interpreter::error("Cannot cast nothing or an error to any value");
