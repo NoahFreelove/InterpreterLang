@@ -97,6 +97,104 @@ public:
         return highest;
     }
 
+    static void try_string_evaluations(std::shared_ptr<token>& ant, std::shared_ptr<token>& op, std::shared_ptr<token>& cons,
+        std::vector<std::shared_ptr<token_element>>& tokens, int ant_index, const std::shared_ptr<token_group>& g) {
+
+        bool one_numeric = false;
+        if(ant->is_numeric() || cons->is_numeric())
+            one_numeric = true;
+
+        if(op->get_name() == SLASH || op->get_name() == SLASHI || op->get_name() == MINUS) {
+            g->type = ERROR;
+            lang::interpreter::error("Cannot perform the following opreation on a string: " + id_to_name(op->get_name()));
+        }
+
+        if(!one_numeric && op->get_name() != PLUS) {
+            g->type = ERROR;
+            lang::interpreter::error("Two strings cannot perform any operations besides addition.");
+        }
+
+        if(ant->get_name() == STRING && op->get_name() == PLUS && cons->is_numeric()) {
+            std::shared_ptr<token> old = cons;
+            std::string cons_str = cons->to_string();
+            tokens.erase(tokens.begin() + (ant_index+2), tokens.begin() + (ant_index+3));
+            const char* cpy = (const char*)malloc(cons_str.size() + 1);
+            strcpy((char*)cpy, cons_str.c_str());
+            std::shared_ptr<token> new_cons = std::make_shared<token>(STRING, cpy, 0, cons_str);
+            cons = new_cons;
+            tokens.insert(tokens.begin() + ant_index, std::make_shared<token_element>(cons));
+
+        }
+        else if(cons->get_name() == STRING && op->get_name() == PLUS && ant->is_numeric()) {
+            std::shared_ptr<token> old = ant;
+            std::string ant_str = ant->to_string();
+            tokens.erase(tokens.begin() + (ant_index), tokens.begin() + (ant_index+1));
+            const char* cpy = (const char*)malloc(ant_str.size() + 1);
+            strcpy((char*)cpy, ant_str.c_str());
+            std::shared_ptr<token> new_ant = std::make_shared<token>(STRING, cpy, 0, ant_str);
+            ant = new_ant;
+            tokens.insert(tokens.begin() + ant_index,std::make_shared<token_element>(ant));
+        }
+
+        if(one_numeric && op->get_name() == STAR) {
+            std::string str;
+            int num = 0;
+            if(ant->get_name() == STRING) {
+                if(cons->get_name() != INT) {
+                    g->type = ERROR;
+                    lang::interpreter::error("Cannot multiply string by non-integer value.");
+                    return;
+                }
+                str = std::any_cast<std::string>(ant->get_value());
+                num = std::any_cast<int>(cons->get_value());
+            }
+            else {
+                if(ant->get_name() != INT) {
+                    g->type = ERROR;
+                    lang::interpreter::error("Cannot multiply string by non-integer value.");
+                    return;
+                }
+                str = std::any_cast<std::string>(cons->get_value());
+                num = std::any_cast<int>(ant->get_value());
+            }
+
+            if(num < 0) {
+                g->type = ERROR;
+                lang::interpreter::error("Cannot multiply string by negative integer value.");
+                return;
+            }
+
+            std::string out;
+            for (int i = 0; i < num; ++i) {
+                out += str;
+            }
+
+            tokens.erase(tokens.begin() + (ant_index), tokens.begin() + (ant_index+3));
+            const char* cpy = (const char*)malloc(out.size() + 1);
+            std::strcpy((char*)cpy, out.c_str());
+            tokens.insert(tokens.begin() + ant_index, convert(STRING, cpy, 0, out));
+            g->type = STRING;
+            g->value = out;
+            return;
+        }
+
+        if(ant->get_name() == STRING && cons->get_name() == STRING && op->get_name() == PLUS) {
+            std::string val = std::any_cast<std::string>(ant->get_value()) + std::any_cast<std::string>(cons->get_value());
+            if(ant_index == -1) {
+                return;
+            }
+            else {
+                tokens.erase(tokens.begin() + (ant_index), tokens.begin() + (ant_index+3));
+                const char* cpy = (const char*)malloc(val.size() + 1);
+                std::strcpy((char*)cpy, val.c_str());
+                tokens.insert(tokens.begin() + ant_index, convert(STRING, cpy, 0, val));
+                g->type = STRING;
+                g->value = val;
+            }
+            return;
+        }
+    }
+
     static void recursive_evaluation(const std::shared_ptr<token_group>& g, int depth = 0) {
         // Following BEDMAS rules, recursively evaluate expressions which are in the form of a group
         // At this point everything should be a primitive, so if a group is found, it should be evaluated
@@ -147,6 +245,9 @@ public:
                     }
                     if(tg->type == TRUE || tg->type == FALSE){
                         g->tokens[i] = convert(INT, "INT", 0, int(tg->type == TRUE));
+                    }
+                    if(tg->type == STRING) {
+                        g->tokens[i] = convert(STRING, std::any_cast<std::string>(tg->value).c_str(), 0, tg->value);
                     }
                     if(tg->type == ERROR || tg->type == NOTHING) {
                         groups_found = false;
@@ -287,44 +388,12 @@ public:
                 }
                 //std::cout << "all valid" << std::endl;
                 // if ant or cons is a string and op is add, cast the non-string to a string and add them together
-                if(ant->get_name() == STRING && op->get_name() == PLUS && cons->is_numeric()) {
-                    std::shared_ptr<token> old = cons;
-                    std::string cons_str = cons->to_string();
-                    tokens.erase(tokens.begin() + (ant_index+2), tokens.begin() + (ant_index+3));
-                    const char* cpy = (const char*)malloc(cons_str.size() + 1);
-                    strcpy((char*)cpy, cons_str.c_str());
-                    std::shared_ptr<token> new_cons = std::make_shared<token>(STRING, cpy, 0, cons_str);
-                    cons = new_cons;
-                    tokens.insert(tokens.begin() + ant_index, std::make_shared<token_element>(cons));
+                if(ant->get_name() == STRING || cons->get_name() == STRING)
+                    try_string_evaluations(ant, op, cons, tokens, ant_index, g);
 
-                }
-                else if(cons->get_name() == STRING && op->get_name() == PLUS && ant->is_numeric()) {
-                    std::shared_ptr<token> old = ant;
-                    std::string ant_str = ant->to_string();
-                    tokens.erase(tokens.begin() + (ant_index), tokens.begin() + (ant_index+1));
-                    const char* cpy = (const char*)malloc(ant_str.size() + 1);
-                    strcpy((char*)cpy, ant_str.c_str());
-                    std::shared_ptr<token> new_ant = std::make_shared<token>(STRING, cpy, 0, ant_str);
-                    ant = new_ant;
-                    tokens.insert(tokens.begin() + ant_index,std::make_shared<token_element>(ant));
-                }
-
-                if(ant->get_name() == STRING && cons->get_name() == STRING && op->get_name() == PLUS) {
-                    std::string val = std::any_cast<std::string>(ant->get_value()) + std::any_cast<std::string>(cons->get_value());
-                    if(ant_index == -1) {
-                        continue;
-                    }
-                    else {
-                        tokens.erase(tokens.begin() + (ant_index), tokens.begin() + (ant_index+3));
-                        const char* cpy = (const char*)malloc(val.size() + 1);
-                        std::strcpy((char*)cpy, val.c_str());
-                        tokens.insert(tokens.begin() + ant_index, convert(STRING, cpy, 0, val));
-                        g->type = STRING;
-                        g->value = val;
-                    }
-                }
                 if(!ant->is_numeric() || !cons->is_numeric())
                     return;
+
                 int type = INT;
                 const char* type_str = "";
                 std::any val;
