@@ -35,7 +35,7 @@ void lang::interpreter::init() {
     global_frame = stack->front();
     std::filesystem::__cxx11::path cwd = std::filesystem::current_path();
     global_frame->set("WORKING_DIRECTORY", new data(new std::string(cwd.string()), "string"));
-    global_frame->set("VERSION", new data(new float(VERSION_MAJOR + (VERSION_MINOR*0.01f)), "float"));
+    global_frame->set("VERSION", new data(new float(VERSION_MAJOR + (VERSION_MINOR*0.01f)), "float", false, true));
 
     has_init = true;
     proc_num_ifs = new std::stack<int>();
