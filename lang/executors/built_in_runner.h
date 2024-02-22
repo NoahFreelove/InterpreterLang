@@ -3,6 +3,7 @@
 #include "../tokenizer/token.h"
 #include "../interpreter.h"
 #include "../memory/stack_manager.h"
+#include "../memory/type_registry.h"
 void define(const std::vector<std::shared_ptr<token>> &tokens) {
     if (tokens.size() == 2) {
         lang::interpreter::defined->push_back(tokens[1]->get_lexeme());
@@ -133,40 +134,66 @@ static void assert(std::vector<std::shared_ptr<token>> tokens) {
 }
 
 static void run_builtins(const std::vector<std::shared_ptr<token>>& tokens) {
-    if (tokens[0]->get_name() == PRINT) {
-        print(tokens);
-        return;
-    }
-    if (tokens[0]->get_name() == DUMP) {
-        dump();
-        return;
-    }
-    if (tokens[0]->get_name() == DEFINE) {
-        define(tokens);
-        return;
-    }
-    if (tokens[0]->get_name() == UNDEFINE) {
-        undefine(tokens);
-        return;
-    }
-    if (tokens[0]->get_name() == ISDEFINED) {
-        is_defined(tokens);
-        return;
-    }
-    if (tokens[0]->get_name() == DELETE) {
-        delete_var(tokens);
-        return;
-    }
-    if(tokens[0]->get_name() == IMPORT) {
-        process_import(tokens);
-        return;
-    }
-    if(tokens[0]->get_name() == ID) {
-        print(tokens,0);
-        return;
-    }
-    if(tokens[0]->get_name() == ASSERT) {
-        assert(tokens);
+    switch (tokens[0]->get_name()) {
+        case PRINT: {
+            print(tokens);
+            break;
+        }
+        case DUMP: {
+            dump();
+            break;
+        }
+        case DEFINE: {
+            define(tokens);
+            break;
+        }
+        case UNDEFINE: {
+            undefine(tokens);
+            break;
+        }
+        case ISDEFINED: {
+            is_defined(tokens);
+            break;
+        }
+        case DELETE: {
+            delete_var(tokens);
+            break;
+        }
+        case IMPORT: {
+            process_import(tokens);
+            break;
+        }
+        case ID: {
+            print(tokens,0);
+            break;
+        }
+        case ASSERT: {
+            assert(tokens);
+            break;
+        }
+        case EXIT: {
+            lang::interpreter::exit();
+            break;
+        }
+        case TYPEOF: {
+            if(tokens.size() == 2) {
+                if(tokens[1]->get_name() == IDENTIFIER) {
+                    auto* dat = resolve_variable(tokens[1]->get_lexeme());
+                    if(dat) {
+                        std::cout << type_registry::get_typename(dat->get_type_int()) << std::endl;
+                    }
+                    else {
+                        lang::interpreter::error("Cannot resolve type, variable not found.");
+                    }
+                }else {
+                    std::cout << type_registry::get_typename(tokens[1]->get_name()) << std::endl;
+                }
+            }
+            break;
+        }
+        default: {
+            lang::interpreter::error("unknown built-in function: " + id_to_name(tokens[0]->get_name()));
+        }
     }
 }
 #endif //BUILT_IN_RUNNER_H

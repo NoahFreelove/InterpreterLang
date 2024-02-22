@@ -219,6 +219,9 @@ std::shared_ptr<token> lang::scanner::get_identifier(char c) {
     if(str == "input") {
         return std::make_shared<token>(INPUT, cstr, line);
     }
+    if(str == "rawinput") {
+        return std::make_shared<token>(RAWINPUT, cstr, line);
+    }
     if(str == "typeof") {
         return std::make_shared<token>(TYPEOF, cstr, line);
     }

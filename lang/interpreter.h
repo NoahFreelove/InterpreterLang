@@ -19,6 +19,9 @@ namespace lang {
         inline static const int max_depth = 100;
         inline static std::vector<const char*>* defined = new std::vector<const char*>;
         static bool is_defined(const char* c);
+
+        static void exit(int code = 0);
+
         inline static int VERSION_MAJOR = 0;
         inline static int VERSION_MINOR = 2;
 

@@ -4,7 +4,7 @@
 #include <ostream>
 #include <string>
 #include "../tokenizer/token_group.h"
-
+#include "type_registry.h"
 class data {
 private:
     void* value;
@@ -12,12 +12,14 @@ private:
     bool is_ptr = false;
     bool is_final = false;
     bool is_reference = false;
+    int type_int = -1;
 public:
     data(void* value, const std::string& type, bool is_ptr = false, bool is_final = false) {
         this->value = value;
         this->type = type;
         this->is_ptr = is_ptr;
         this->is_final = is_final;
+        this->type_int = type_registry::reverse_lookup(type);
     }
 
     explicit data(data* reference, bool mark_reference = true) {

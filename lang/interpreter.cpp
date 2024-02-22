@@ -7,11 +7,14 @@
 #include <bits/fs_path.h>
 
 #include "evaluator/group_evaluator.h"
-#include "memory/stack_frame.h"
 #include "tokenizer/tokens.h"
+
+#include "memory/stack_manager.h"
+#include "memory/stack_frame.h"
+#include "memory/type_registry.h"
+
 #include "executors/built_in_runner.h"
 #include "executors/control_flow_runner.h"
-#include "memory/stack_manager.h"
 #include "executors/var_setter.h"
 #include "executors/loop_executor.h"
 
@@ -22,6 +25,10 @@ bool lang::interpreter::is_defined(const char *c) {
         }
     }
     return false;
+}
+
+void lang::interpreter::exit(int code) {
+    std::exit(code);
 }
 
 void lang::interpreter::init() {
@@ -48,6 +55,17 @@ void lang::interpreter::init() {
     errors = new std::stack<std::string>();
     read_from_file("about.lang");
     read_from_file("stdlib/math.lang");
+
+    type_registry::add_type(INT, "int");
+    type_registry::add_type(FLOAT, "float");
+    type_registry::add_type(DOUBLE, "double");
+    type_registry::add_type(LONG, "long");
+    type_registry::add_type(STRING, "string");
+    type_registry::add_type(ULONG64, "ulong64");
+    type_registry::add_type(BOOL_KEYW, "bool");
+    type_registry::add_type(NOTHING_TYPE, "nothing");
+    type_registry::add_type(TRUE, "true");
+    type_registry::add_type(FALSE, "false");
 }
 
 std::shared_ptr<token_group> lang::interpreter::evaluate_tokens(std::vector<std::shared_ptr<token>> tokens, int offset) {

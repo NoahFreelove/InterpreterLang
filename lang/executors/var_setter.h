@@ -144,7 +144,7 @@ inline void process_variable_update(const std::vector<std::shared_ptr<token>> &t
     else if(tokens[2]->get_name() == BYVAL && tokens.size() == 4) { // Doing byval has no effect but its technically valid
         if (set_literal(tokens, d)) return;
     }
-    else if(tokens[2]->get_name() == INPUT) {
+    else if(tokens[2]->get_name() == RAWINPUT) {
         auto str = new std::string();
         std::cout << "> ";
         std::getline(std::cin, *str);
@@ -158,6 +158,18 @@ inline void process_variable_update(const std::vector<std::shared_ptr<token>> &t
         }
 
         delete str;
+    }
+    else if(tokens[2]->get_name() == INPUT) {
+        auto str = std::string();
+        std::cout << "> ";
+        std::getline(std::cin, str);
+        auto t = std::vector<std::shared_ptr<token>>();
+        // set_literal expects first two tokens to be identifier =, so we prepend those
+        t.insert(t.begin(), tokens[0]);
+        t.insert(t.begin() + 1, tokens[1]);
+        t.insert(t.begin() + 2, std::make_shared<token>(STRING, str.c_str(), tokens[0]->get_line(), str));
+        set_literal(t, d);
+
     }
     else if (tokens[2]->get_name() == ID_GRAB && tokens[3]->get_name() == IDENTIFIER) {
         assign_variable(name, tokens[3]->get_lexeme());

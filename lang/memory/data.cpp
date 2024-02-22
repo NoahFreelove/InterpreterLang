@@ -104,22 +104,5 @@ void data::set_value_ulonglong(unsigned long long val) {
 }
 
 int data::get_type_int() {
-    std::string type = get_type_string();
-    if(type == "int")
-        return INT;
-    else if(type == "long")
-        return LONG;
-    if (type == "float")
-        return FLOAT;
-    if (type == "double")
-        return DOUBLE;
-    if (type == "unsigned long long")
-        return ULONG64;
-    if (type == "bool")
-        return BOOL_KEYW;
-    if(type == "nothing")
-        return NOTHING_TYPE;
-    lang::interpreter::error("Unknown type: " + type);
-    return 0;
-
+    return type_int;
 }

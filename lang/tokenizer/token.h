@@ -46,7 +46,7 @@
 // &
 #define MOD 29
 
-// LITERALS
+// TYPES / LITERALS
 #define IDENTIFIER 101
 #define STRING 102
 #define FLOAT 104
@@ -59,6 +59,7 @@
 #define PROC 111
 #define NOTHING_TYPE (-2)
 #define TYPE 113
+#define USER_DEFINED 114
 
 // KEYWORDS
 #define IF 1001
@@ -99,6 +100,7 @@
 #define NOTHING_KEYW 1128
 #define TYPE_KEYW 1129
 
+
 // builtin funcs
 #define PRINT 10001
 #define DUMP 10002
@@ -112,8 +114,13 @@
 #define IMPORT 10010
 #define ID 10011
 #define ASSERT 10012
+#define RAWINPUT 10013
+#define EXIT 10014
 
 #define CAST 11001 // DO NOT MARK THIS AS A BUILT-IN FUNC, IT WILL BREAK THE CAST SYSTEM
+
+// USER DEFINED TYPES PAST THIS
+
 
 class token {
     int name;
@@ -166,7 +173,7 @@ public:
     }
 
     bool is_keyword() const {
-        return name >= IF && name <= PERSISTENT;
+        return (name >= IF && name <= PERSISTENT);
     }
 
     bool is_builtin() const {
