@@ -23,6 +23,10 @@ bool stack_frame::assign(const std::string& identifier,const std::string& identi
     return memory->assign(identifier, val);
 }
 
+bool stack_frame::assign(data* a,data* b) {
+    return memory->assign(a, b);
+}
+
 void stack_frame::delete_var(const std::string& identifier, bool force) {
     memory->delete_var(identifier, force);
 }

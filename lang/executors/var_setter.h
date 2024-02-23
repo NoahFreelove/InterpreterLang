@@ -116,18 +116,7 @@ inline bool set_literal(const std::vector<std::shared_ptr<token>> &tokens, data 
     return false;
 }
 
-inline void process_variable_update(const std::vector<std::shared_ptr<token>> &tokens) {
-    if(tokens.size() < 3) {
-        lang::interpreter::error("Not enough tokens for variable update");
-        return;
-    }
-    if(tokens[0]->get_name() != IDENTIFIER || tokens[1]->get_name() != EQUAL) {
-        lang::interpreter::error("Invalid variable update");
-        return;
-    }
-    const char* name = tokens[0]->get_lexeme();
-    data* d = resolve_variable(name);
-
+inline void set_var(data* d, std::vector<std::shared_ptr<token>> tokens, const char* name) {
     if(!d) {
         char c[strlen("Undefined variable with name: ")+ strlen(tokens[0]->get_lexeme())+1];
         strcpy(c, "Undefined variable with name: ");
@@ -140,7 +129,7 @@ inline void process_variable_update(const std::vector<std::shared_ptr<token>> &t
         || tokens[2]->get_name() == LEFT_PAREN || tokens[2]->get_name() == RIGHT_PAREN ||
         tokens[2]->get_name() == BANG) {
         if (set_literal(tokens, d)) return;
-    }
+        }
     else if(tokens[2]->get_name() == BYVAL && tokens.size() == 4) { // Doing byval has no effect but its technically valid
         if (set_literal(tokens, d)) return;
     }
@@ -176,25 +165,85 @@ inline void process_variable_update(const std::vector<std::shared_ptr<token>> &t
     }
 }
 
+inline void process_variable_update(const std::vector<std::shared_ptr<token>> &tokens) {
+    if(tokens.size() < 3) {
+        lang::interpreter::error("Not enough tokens for variable update");
+        return;
+    }
+    if(tokens[0]->get_name() != IDENTIFIER || tokens[1]->get_name() != EQUAL) {
+        lang::interpreter::error("Invalid variable update");
+        return;
+    }
+    const char* name = tokens[0]->get_lexeme();
+    data* d = resolve_variable(name);
+    set_var(d, tokens, name);
+
+
+}
+
 inline void process_variable_declaration(const std::vector<std::shared_ptr<token>> &tokens) {
     std::shared_ptr<token> type;
-    const char* name;
+    const char* name = nullptr;
 
-    std::vector<int> flags = lang::interpreter::get_flags(tokens);
+    std::vector<int> flags;
     bool persistent = false;
     bool is_final = false;
     int set_index = lang::interpreter::get_equal_index(tokens);
+    if(!tokens[0]->is_typeword()) {
+        lang::interpreter::error("Cannot declare variable without typeword.");
+        return;
+    }
+    type = tokens[0];
+    bool is_array = false;
+    int array_size = 0;
 
     if (tokens.size() >= 2) {
-        if(tokens[1]->get_name() != IDENTIFIER || !tokens[0]->is_typeword()) {
+        if(tokens.size() == 5) {
+            if(tokens[1]->get_name() == LEFT_BRACKET && (tokens[2]->get_name() == INT || tokens[2]->get_name() == IDENTIFIER)
+                && tokens[3]->get_name() == RIGHT_BRACKET && tokens[4]->get_name() == IDENTIFIER) {
+                name = tokens[4]->get_lexeme();
+                is_array = true;
+                if(tokens[2]->get_name() == INT) {
+                    array_size = std::any_cast<int>(tokens[2]->get_value());
+                }
+                else {
+                    data* d = resolve_variable(tokens[2]->get_lexeme());
+                    if(d) {
+                        if(d->get_type_int() == INT) {
+                            array_size = d->get_int();
+                        }
+                        else {
+                            lang::interpreter::error("Found variable but cannot subscript array with non-int");
+                            return;
+                        }
+                    }
+                    else {
+                        lang::interpreter::error("Could not find variable to subscript array");
+                    }
+                }
+                flags = lang::interpreter::get_flags(tokens, 5);
+            }
+            else if(tokens[1]->get_name()== IDENTIFIER) {
+                name = tokens[1]->get_lexeme();
+                flags = lang::interpreter::get_flags(tokens, 2);
+            }
+        }
+        else if(tokens[1]->get_name() != IDENTIFIER || !tokens[0]->is_typeword()) {
             lang::interpreter::error("Invalid variable declaration");
             return;
         }
-        name = tokens[1]->get_lexeme();
-        type = tokens[0];
+        else {
+            name = tokens[1]->get_lexeme();
+            flags = lang::interpreter::get_flags(tokens, 2);
+        }
     }
     else {
         lang::interpreter::error("Not enough tokens for variable declaration");
+        return;
+    }
+
+    if(name == nullptr) {
+        lang::interpreter::error("Internal error, variable name null");
         return;
     }
 
@@ -218,67 +267,14 @@ inline void process_variable_declaration(const std::vector<std::shared_ptr<token
     else {
         frame = lang::interpreter::stack->back();
     }
-    data* d = nullptr;
-    switch (type->get_name()) {
-        case INT_KEYW: {
-            int* val = new int;
-            *val = 0;
-            d = new data(val, "int");
-             frame->set(name, d);
-             break;
-            }
-        case FLOAT_KEYW: {
-            float *val = new float;
-            *val = 0.0f;
-            d = new data(val, "float");
-            frame->set(name, d);
-            break;
-        }
-        case DOUBLE_KEYW: {
-            double *val = new double;
-            *val = 0.0;
-            d = new data(val, "double");
-            frame->set(name, d);
-            break;
-        }
-        case LONG_KEYW: {
-            long *val = new long;
-            *val = 0L;
-            d = new data(val, "long");
-            frame->set(name, d);
-            break;
-        }
-        case STRING_KEYW: {
-            d = new data(new std::string(), "string");
-            frame->set(name, d);
-            break;
-        }
-        case CHAR_KEYW: {
-            char*val = new char;
-            *val = '\0';
-            d = new data(val, "char");
-            frame->set(name, d);
-            break;
-        }
-        case BOOL_KEYW: {
-            bool* val = new bool;
-            *val = false;
-            d = new data(val, "bool");
-            frame->set(name, d);
-            break;
-        }
-        case ULONG64_KEYW: {
-            auto* val = new unsigned long long;
-            *val = 0;
-            d = new data(val, "unsigned long long");
-            frame->set(name, d);
-            break;
-        }
-        default: {
-            lang::interpreter::error("Invalid type word");
-            return;
-        }
+
+    data* d = data::create_default_from_type(type->type_tostr(type->get_name()), is_array, array_size);
+    if(!d) {
+        lang::interpreter::error("Invalid type word");
+        return;
     }
+    frame->set(name, d);
+
     if(set_index > 1) {
         std::vector concat_vec = {tokens[1]};
         // add everything after type index

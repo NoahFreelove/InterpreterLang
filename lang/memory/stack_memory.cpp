@@ -33,6 +33,17 @@ bool stack_memory::assign(const std::string& identifier, data *val) {
     return true;
 }
 
+bool stack_memory::assign(data *a, data *b) {
+    for (auto& [key, value] : *memory) {
+        if (value->get() == a->get()) {
+            value = b;
+            return true;
+        }
+    }
+    return false;
+}
+
+
 data * stack_memory::get(const std::string& identifier) {
     std::string key(identifier);
     // If the identifier is not found, return nullptr

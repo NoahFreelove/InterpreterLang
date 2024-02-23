@@ -1,6 +1,7 @@
 #ifndef TOKEN_H
 #define TOKEN_H
 #include <any>
+#include <iostream>
 #include <utility>
 #include <ostream>
 
@@ -60,6 +61,8 @@
 #define NOTHING_TYPE (-2)
 #define TYPE 113
 #define USER_DEFINED 114
+// Data represents a pointer to data and should be resolved in the recursive replace method
+#define DATA 115
 
 // KEYWORDS
 #define IF 1001
@@ -130,7 +133,7 @@ class token {
 
 public:
     token(token* t) : name(t->name), lexeme(t->lexeme), value(t->value), line(t->line) {}
-    token(int name, const char *lexeme, int line, std::any value = nullptr)
+    token(int name, const char *lexeme, int line, std::any value = nullptr, bool array = false)
         : name(name),
           lexeme(lexeme),
           value(std::move(value)),
@@ -252,6 +255,30 @@ public:
             case DOUBLE: {
                 return "double";
             }
+            case DOUBLE_KEYW: {
+                return "double";
+            }
+            case FLOAT_KEYW: {
+                return "float";
+            }
+            case INT_KEYW: {
+                return "int";
+            }
+            case LONG_KEYW: {
+                return "long";
+            }
+            case STRING_KEYW: {
+                return "string";
+            }
+            case ULONG64_KEYW: {
+                return "ulong64";
+            }
+            case BOOL_KEYW: {
+                return "bool";
+            }
+            case NOTHING_KEYW: {
+                return "nothing";
+            }
             case FLOAT:
                 return "float";
             case INT:
@@ -263,11 +290,15 @@ public:
             case TRUE:
                 return "bool";
             case FALSE:
-                return "false";
+                return "bool";
+            case ULONG64:
+                return "ulong64";
+            case CHAR_KEYW:
+                return "char";
             case NOTHING_TYPE:
                 return "nothing";
             default:
-                return "";
+                return std::to_string(i);
         }
     }
 

@@ -26,6 +26,7 @@ public:
     bool set(const std::string& identifier, data* val);
     bool exists(const std::string& identifier);
     bool assign(const std::string& identifier, const std::string& identifier2);
+    bool assign(data* a, data* b);
 
     void delete_var(const std::string &identifier, bool force = false);
 

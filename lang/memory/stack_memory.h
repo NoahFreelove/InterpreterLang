@@ -17,7 +17,7 @@ public:
     // use when assigning an identifier to another identifier
     // marks the data as a pointer so its not deleted which would lead to double free
     bool assign(const std::string& identifier, data* val);
-
+    bool assign(data* a, data* b);
     data* get(const std::string& identifier);
 
     void print_stack_memory();

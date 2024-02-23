@@ -112,10 +112,10 @@ int lang::interpreter::get_equal_index(const std::vector<std::shared_ptr<token>>
     return -1;
 }
 
-std::vector<int> lang::interpreter::get_flags(const std::vector<std::shared_ptr<token>> &tokens) {
+std::vector<int> lang::interpreter::get_flags(const std::vector<std::shared_ptr<token>> &tokens, int offset) {
     std::vector<int> flags;
     // Tokens 0 and 1 are type and identifier
-    for (int i = 2; i < tokens.size(); ++i) {
+    for (int i = offset; i < tokens.size(); ++i) {
         if(tokens[i]->get_name() == EQUAL) {
             return flags;
         }

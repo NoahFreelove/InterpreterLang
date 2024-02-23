@@ -5,6 +5,7 @@
 #include <string>
 #include "../tokenizer/token_group.h"
 #include "type_registry.h"
+
 class data {
 private:
     void* value;
@@ -13,14 +14,14 @@ private:
     bool is_final = false;
     bool is_reference = false;
     int type_int = -1;
+
+    bool is_arr = false;
+    std::vector<data*>* array_elements= nullptr;
+
 public:
-    data(void* value, const std::string& type, bool is_ptr = false, bool is_final = false) {
-        this->value = value;
-        this->type = type;
-        this->is_ptr = is_ptr;
-        this->is_final = is_final;
-        this->type_int = type_registry::reverse_lookup(type);
-    }
+    static data* create_default_from_type(const std::string& type, bool is_array = false, int size = 0);
+
+    data(void* value, const std::string& type, bool is_ptr = false, bool is_final = false, bool is_array = false, int initial_size = 0);
 
     explicit data(data* reference, bool mark_reference = true) {
         if(reference == nullptr) {
@@ -35,6 +36,8 @@ public:
         this->is_final = reference->is_final;
         this->is_ptr = reference->is_ptr;
         this->is_reference = mark_reference;
+        this->array_elements = reference->array_elements;
+        this->is_arr = reference->is_arr;
     }
 
     void* get() {
@@ -136,6 +139,9 @@ public:
     void set_value_ulonglong(unsigned long long val);
 
     std::string to_string() {
+        if(is_array()) {
+            return type + " array with " + std::to_string(array_elements->size()) + " elements";
+        }
         if (type == "int") {
             return std::to_string(get_int());
         }
@@ -206,6 +212,14 @@ public:
         else if (type == "unsigned long long") {
             delete (unsigned long long*)value;
         }
+        if(array_elements) {
+            for (auto& elm: *array_elements) {
+                delete elm;
+            }
+            array_elements->clear();
+            delete array_elements;
+            array_elements = nullptr;
+        }
     }
     void prep_force_delete() {
         is_reference = false;
@@ -221,5 +235,13 @@ public:
         this->type = "nothing";
         this->value = nullptr;
     }
+
+    bool is_array() const {
+        return is_arr;
+    }
+
+    data* get_array_element(int index);
+
+
 };
 #endif //DATA_H

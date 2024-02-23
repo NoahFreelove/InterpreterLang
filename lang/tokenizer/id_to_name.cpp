@@ -18,6 +18,8 @@ std::string id_to_name(int id) {
             return "RIGHT_BRACKET";
         case COMMA:
             return "COMMA";
+        case DATA:
+            return "DATA";
         case DOT:
             return "DOT";
         case MINUS:

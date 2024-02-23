@@ -22,6 +22,72 @@ public:
         return strcpy(name, input.c_str());
     }
 
+    static data * array_check(int i, const char* dat_name, const std::shared_ptr<token_group>& g, bool& allgood) {
+        data* base = resolve_variable(dat_name);
+        if(!base) {
+            lang::interpreter::error("Could not subscript array token. Array variable not found.");
+            return nullptr;
+        }
+
+        std::vector<std::shared_ptr<token_element>> array_access;
+        int j = i+1;
+        bool found_open = false;
+        bool found_close = false;
+        if(j < g->tokens.size() && !is_group(*g->tokens[j])) {
+            found_open = (std::get<std::shared_ptr<token>>(*g->tokens[j])->get_name() == LEFT_BRACKET);
+        }
+        j++;
+        while(j < g->tokens.size()) {
+            if(!is_group(*g->tokens[j])) {
+                if(std::get<std::shared_ptr<token>>(*g->tokens[j])->get_name() == RIGHT_BRACKET) {
+                    found_close = true;
+                    break;
+                }
+            }
+
+            array_access.push_back(g->tokens[j]);
+            j++;
+        }
+        if(!found_open) {
+            lang::interpreter::error("Array access must be followed by [");
+            allgood = false;
+            return nullptr;
+        }
+        if(!found_close) {
+            lang::interpreter::error("Array access must be closed with ]");
+            allgood = false;
+            return nullptr;
+        }
+        // erase tokens i to j
+        g->tokens.erase(g->tokens.begin() + i, g->tokens.begin() + j+1);
+
+        auto group = std::make_shared<token_group>();
+        group->tokens = array_access;
+        eval_group(group);
+        int index = 0;
+        //std::cout << "TYPE: " << id_to_name(group->type) << std::endl;
+        if(group->type != INT) {
+            if(group->type == DOUBLE) {
+                index = (int)(std::any_cast<double>(group->value));
+            }
+            else {
+                lang::interpreter::error("Array subscript must contain an integer");
+                return nullptr;
+            }
+        }
+        else
+            index = std::any_cast<int>(group->value);
+
+        data* d = base->get_array_element(index);
+        if(!d) {
+            lang::interpreter::error("Array index out of bounds");
+            return nullptr;
+        }
+
+        g->tokens.insert(g->tokens.begin() + i, convert(DATA, "data", 0, d));
+        return d;
+    }
+
     static bool recursive_replace(const std::shared_ptr<token_group>& g) {
         bool allgood = true;
         for (int i = 0; i < g->tokens.size(); ++i) {
@@ -66,8 +132,53 @@ public:
 
                     }
                     else if(tk->get_name() == IDENTIFIER) {
+
                         // Replace token in group with value obtained from memory
-                        data* d = resolve_variable(tk->get_lexeme());
+                        data* d = nullptr;
+
+                        if(i+1 < g->tokens.size()) {
+                            if(!is_group(*g->tokens[i+1])) {
+                                if (std::get<std::shared_ptr<token>>(*g->tokens[i+1])->get_name() == LEFT_BRACKET) {
+                                    if(tk->get_name() == DATA) {
+                                        d = std::any_cast<data*>(tk->get_value());
+                                    }
+                                    else {
+                                        d = resolve_variable(tk->get_lexeme());
+                                    }
+                                }
+                                else {
+                                    d = resolve_variable(tk->get_lexeme());
+                                }
+                            }
+                            else {
+                                d = resolve_variable(tk->get_lexeme());
+                            }
+                        }
+                        else {
+                            d = resolve_variable(tk->get_lexeme());
+                        }
+
+                        if(!d) {
+                            allgood = false;
+                            lang::interpreter::error("Could not resolve variable" + std::string(tk->get_lexeme()));
+                            return;
+                        }
+
+                        if(d->is_array()) {
+                            d = array_check(i, tk->get_lexeme(), g, allgood);
+                            if(!d) {
+                                allgood = false;
+                                lang::interpreter::error("Array access failed");
+                                return;
+                            }
+                            if(d->is_array()) {
+                                i--;
+                                // the old array[] tokens are removed, and the new tokens are inserted so we want
+                                // to continue from where we started.
+                                return;
+                            }
+
+                        }
                         //std::cout << tk->get_lexeme() << " <- var" << std::endl;
                         //lang::interpreter::stack->back()->dump_memory();
                         if (d) {

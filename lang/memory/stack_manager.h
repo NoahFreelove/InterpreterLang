@@ -40,6 +40,13 @@ static void assign_variable(const char* identifier1, const  char* identifier2) {
     }
 }
 
+static void assign_variable(data* a, data* b) {
+    for (stack_frame* frame : *lang::interpreter::stack) {
+        if(frame->assign(a,b))
+            break;
+    }
+}
+
 static void delete_variable(const char* identitifer, bool force = false) {
     for (stack_frame* frame : *lang::interpreter::stack) {
         frame->delete_var(identitifer, force);
