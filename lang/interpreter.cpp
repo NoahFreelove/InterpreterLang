@@ -148,11 +148,28 @@ bool lang::interpreter::check_array_mutation(const token_vec &input) {
         std::cout << *t << std::endl;
     }*/
 
+    if(copy.empty())
+        return false;
+
     data* dat = recursive_array_simplification(before_eq);
     if(!dat) {
-
         error("Array simplification failed");
         return false;
+    }
+
+    std::shared_ptr<token> arithmetic;
+    int equal_index = 0;
+
+    bool is_arithmetic = copy[0]->is_arithmetic();
+
+    if(is_arithmetic) {
+        arithmetic = copy[0];
+        equal_index = 1;
+    }
+    else {
+        copy.erase(copy.begin());
+        set_literal(copy, dat, 0);
+        return true;
     }
 
 

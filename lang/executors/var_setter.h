@@ -54,9 +54,9 @@ inline void implicit_upcast(const std::string& target_type, std::shared_ptr<toke
         return;
     }
 }
-inline bool set_literal(const std::vector<std::shared_ptr<token>> &tokens, data *d) {
+inline bool set_literal(const std::vector<std::shared_ptr<token>> &tokens, data *d, int offset = 2) {
     if(d) {
-        auto group = lang::interpreter::evaluate_tokens(tokens, 2);
+        auto group = lang::interpreter::evaluate_tokens(tokens, offset);
         if(group->type == ERROR) {
             lang::interpreter::error("error evaluating group");
             return false;
