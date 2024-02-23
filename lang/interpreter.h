@@ -64,10 +64,13 @@ namespace lang {
         }
 
         static std::shared_ptr<token_group> evaluate_tokens(std::vector<std::shared_ptr<token>> tokens, int offset);
+
+        static data* recursive_array_simplification(token_vec& vec);
+        static bool check_array_mutation(const token_vec &copy);
+
         static void input_loop();
 
         static int get_equal_index(const std::vector<std::shared_ptr<token>> &tokens);
-        static std::vector<int> get_flags(const std::vector<std::shared_ptr<token>> &tokens, int offset = 2);
         static std::vector<std::shared_ptr<token>> clone_tokens(const std::vector<std::shared_ptr<token>> &tokens);
         static void process(std::vector<std::shared_ptr<token>>& tokens);
 

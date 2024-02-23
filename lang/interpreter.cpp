@@ -76,6 +76,89 @@ std::shared_ptr<token_group> lang::interpreter::evaluate_tokens(std::vector<std:
     return group;
 }
 
+using token_element = std::variant<std::shared_ptr<token>, std::shared_ptr<token_group>>;
+template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
+template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
+
+data * lang::interpreter::recursive_array_simplification(token_vec &vec) {
+    auto group = std::make_shared<token_group>();
+    for (auto& tok : vec) {
+        group->tokens.push_back(std::make_shared<token_element>(tok));
+    }
+    group_evaluator::recursive_replace(group, false);
+    if(group->tokens.size() == 1) {
+        if(!group_evaluator::is_group(*group->tokens[0])) {
+            auto t = *std::get<std::shared_ptr<token>>(*group->tokens[0]);
+            if(t.get_name() == DATA) {
+                return std::any_cast<data*>(t.get_value());
+            }
+        }
+        else {
+            error("Array simplification did not evaluate properly");
+        }
+    }else {
+        error("Array simplification did not evaluate properly, size: " + group->tokens.size());
+
+    }
+    return nullptr;
+}
+
+bool lang::interpreter::check_array_mutation(const token_vec &input) {
+    token_vec copy = token_vec(input);
+    token_vec before_eq;
+    int i = 0;
+    bool found_eq = false;
+    bool in_bracket = false;
+    for (; i+1 < input.size(); ++i) {
+        if(input[i+1]->get_name() == EQUAL) {
+            found_eq = true;
+            if(!input[i]->is_arithmetic()) {
+                before_eq.push_back(input[i]);
+            }
+            else {
+                i--;
+            }
+            break;
+        }
+        if(input[i]->get_name() == LEFT_BRACKET) {
+            if(in_bracket) {
+                error("Cannot nested subscript");
+                return false;
+            }
+            in_bracket = true;
+        }
+        else if(input[i]->get_name() == RIGHT_BRACKET) {
+            if(!in_bracket) {
+                error("Cannot close unopened subscript");
+                return false;
+            }
+            in_bracket = false;
+        }
+        
+        before_eq.push_back(input[i]);
+    }
+
+
+    if(!found_eq)
+        return false;
+
+    copy.erase(copy.begin(), copy.begin()+i+1);
+
+    /*for (auto& t : before_eq) {
+        std::cout << *t << std::endl;
+    }*/
+
+    data* dat = recursive_array_simplification(before_eq);
+    if(!dat) {
+
+        error("Array simplification failed");
+        return false;
+    }
+
+
+    return true;
+}
+
 void lang::interpreter::input_loop() {
     init();
     trigger_run();
@@ -110,24 +193,6 @@ int lang::interpreter::get_equal_index(const std::vector<std::shared_ptr<token>>
             return i;
     }
     return -1;
-}
-
-std::vector<int> lang::interpreter::get_flags(const std::vector<std::shared_ptr<token>> &tokens, int offset) {
-    std::vector<int> flags;
-    // Tokens 0 and 1 are type and identifier
-    for (int i = offset; i < tokens.size(); ++i) {
-        if(tokens[i]->get_name() == EQUAL) {
-            return flags;
-        }
-        if(tokens[i]->get_name() == PERSISTENT || tokens[i]->get_name() == FINAL) {
-            flags.push_back(tokens[i]->get_name());
-        }
-        else {
-            error("illegal flag: " + id_to_name( tokens[i]->get_name()));
-            return flags;
-        }
-    }
-    return flags;
 }
 std::vector<std::shared_ptr<token>> lang::interpreter::clone_tokens(const std::vector<std::shared_ptr<token>> &tokens) {
     std::vector<std::shared_ptr<token>> cloned = std::vector<std::shared_ptr<token>>();
@@ -414,6 +479,12 @@ void lang::interpreter::run() {
                         process_variable_update(copy);
                         check_pop_stack(copy);
                         continue;
+                    }
+                    if(copy[1]->get_name() == LEFT_BRACKET) {
+                        if(check_array_mutation(copy)) {
+                            check_pop_stack(copy);
+                            continue;
+                        }
                     }
                 }
 

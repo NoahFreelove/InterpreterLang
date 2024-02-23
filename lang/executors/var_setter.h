@@ -1,6 +1,24 @@
 #ifndef VAR_SETTER_H
 #define VAR_SETTER_H
 
+inline std::vector<int> get_flags(const std::vector<std::shared_ptr<token>> &tokens, int offset = 2) {
+    std::vector<int> flags;
+    // Tokens 0 and 1 are type and identifier
+    for (int i = offset; i < tokens.size(); ++i) {
+        if(tokens[i]->get_name() == EQUAL) {
+            return flags;
+        }
+        if(tokens[i]->get_name() == PERSISTENT || tokens[i]->get_name() == FINAL) {
+            flags.push_back(tokens[i]->get_name());
+        }
+        else {
+            lang::interpreter::error("illegal flag: " + id_to_name( tokens[i]->get_name()));
+            return flags;
+        }
+    }
+    return flags;
+}
+
 inline void implicit_upcast(const std::string& target_type, std::shared_ptr<token_group>& group) {
     if(target_type == "float" && (group->type == INT || group->type == LONG)) {
         if(group->type == INT) {
@@ -221,11 +239,11 @@ inline void process_variable_declaration(const std::vector<std::shared_ptr<token
                         lang::interpreter::error("Could not find variable to subscript array");
                     }
                 }
-                flags = lang::interpreter::get_flags(tokens, 5);
+                flags = get_flags(tokens, 5);
             }
             else if(tokens[1]->get_name()== IDENTIFIER) {
                 name = tokens[1]->get_lexeme();
-                flags = lang::interpreter::get_flags(tokens, 2);
+                flags = get_flags(tokens, 2);
             }
         }
         else if(tokens[1]->get_name() != IDENTIFIER || !tokens[0]->is_typeword()) {
@@ -234,7 +252,7 @@ inline void process_variable_declaration(const std::vector<std::shared_ptr<token
         }
         else {
             name = tokens[1]->get_lexeme();
-            flags = lang::interpreter::get_flags(tokens, 2);
+            flags = get_flags(tokens, 2);
         }
     }
     else {

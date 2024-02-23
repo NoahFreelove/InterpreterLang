@@ -22,7 +22,18 @@ public:
         return strcpy(name, input.c_str());
     }
 
-    static data * array_check(int i, const char* dat_name, const std::shared_ptr<token_group>& g, bool& allgood) {
+    static void flatten(std::vector<std::shared_ptr<token>>& output, const std::shared_ptr<token_group>& g) {
+        for (auto& tok : g->tokens) {
+            if(is_group(*tok)) {
+                flatten(output, std::get<std::shared_ptr<token_group>>(*tok));
+            }
+            else {
+                output.push_back(std::get<std::shared_ptr<token>>(*tok));
+            }
+        }
+    }
+
+    static data * array_simplification(int i, const char* dat_name, const std::shared_ptr<token_group>& g, bool& allgood) {
         data* base = resolve_variable(dat_name);
         if(!base) {
             lang::interpreter::error("Could not subscript array token. Array variable not found.");
@@ -61,8 +72,11 @@ public:
         // erase tokens i to j
         g->tokens.erase(g->tokens.begin() + i, g->tokens.begin() + j+1);
 
-        auto group = std::make_shared<token_group>();
-        group->tokens = array_access;
+        auto tmp = std::make_shared<token_group>();
+        tmp->tokens = array_access;
+        std::vector<std::shared_ptr<token>> output;
+        flatten(output, tmp);
+        auto group = token_grouper::gen_group(output);
         eval_group(group);
         int index = 0;
         //std::cout << "TYPE: " << id_to_name(group->type) << std::endl;
@@ -88,13 +102,13 @@ public:
         return d;
     }
 
-    static bool recursive_replace(const std::shared_ptr<token_group>& g) {
+    static bool recursive_replace(const std::shared_ptr<token_group>& g, bool simplify_array_dat = true) {
         bool allgood = true;
         for (int i = 0; i < g->tokens.size(); ++i) {
             if(!allgood)
                 break;
             std::visit(overloaded{
-                [g, &i, &allgood](const std::shared_ptr<token>& tk) {
+                [g, &i, &allgood, &simplify_array_dat](const std::shared_ptr<token>& tk) {
                     // Usage of ID:  id "some_string", converts to IDENTIFIER: some_string
                     if(tk->get_name() == ID && i+1 < g->tokens.size()) {
                         std::string name;
@@ -132,7 +146,6 @@ public:
 
                     }
                     else if(tk->get_name() == IDENTIFIER) {
-
                         // Replace token in group with value obtained from memory
                         data* d = nullptr;
 
@@ -160,12 +173,12 @@ public:
 
                         if(!d) {
                             allgood = false;
-                            lang::interpreter::error("Could not resolve variable" + std::string(tk->get_lexeme()));
+                            lang::interpreter::error("Could not resolve variable " + std::string(tk->get_lexeme()));
                             return;
                         }
 
                         if(d->is_array()) {
-                            d = array_check(i, tk->get_lexeme(), g, allgood);
+                            d = array_simplification(i, tk->get_lexeme(), g, allgood);
                             if(!d) {
                                 allgood = false;
                                 lang::interpreter::error("Array access failed");
@@ -175,6 +188,11 @@ public:
                                 i--;
                                 // the old array[] tokens are removed, and the new tokens are inserted so we want
                                 // to continue from where we started.
+                                return;
+                            }
+                            if(!simplify_array_dat) {
+                                g->value = d;
+                                g->type = DATA;
                                 return;
                             }
 
@@ -216,8 +234,8 @@ public:
                         }
                     }
                 },
-                [&allgood](std::shared_ptr<token_group> grp) {
-                    if(!recursive_replace(grp)) {
+                [&allgood, &simplify_array_dat](std::shared_ptr<token_group> grp) {
+                    if(!recursive_replace(grp, simplify_array_dat)) {
                         allgood = false;
                     }
                 }
