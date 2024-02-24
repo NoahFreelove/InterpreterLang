@@ -23,7 +23,7 @@ namespace lang {
         static void exit(int code = 0);
 
         inline static int VERSION_MAJOR = 0;
-        inline static int VERSION_MINOR = 2;
+        inline static int VERSION_MINOR = 3;
 
         inline static stack_frame* global_frame = new stack_frame();
         inline static std::vector<stack_frame*>* stack = nullptr;
