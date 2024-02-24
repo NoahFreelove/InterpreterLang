@@ -80,11 +80,8 @@ using token_element = std::variant<std::shared_ptr<token>, std::shared_ptr<token
 template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
 template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
 
-data * lang::interpreter::recursive_array_simplification(token_vec &vec) {
-    auto group = std::make_shared<token_group>();
-    for (auto& tok : vec) {
-        group->tokens.push_back(std::make_shared<token_element>(tok));
-    }
+data * lang::interpreter::recursive_array_simplification(std::shared_ptr<token_group>& group) {
+
     group_evaluator::recursive_replace(group, false);
     if(group->tokens.size() == 1) {
         if(!group_evaluator::is_group(*group->tokens[0])) {
@@ -97,7 +94,8 @@ data * lang::interpreter::recursive_array_simplification(token_vec &vec) {
             error("Array simplification did not evaluate properly");
         }
     }else {
-        error("Array simplification did not evaluate properly, size: " + group->tokens.size());
+        //group->print_group();
+        recursive_array_simplification(group);
 
     }
     return nullptr;
@@ -151,7 +149,11 @@ bool lang::interpreter::check_array_mutation(const token_vec &input) {
     if(copy.empty())
         return false;
 
-    data* dat = recursive_array_simplification(before_eq);
+    auto group = std::make_shared<token_group>();
+    for (auto& tok : before_eq) {
+        group->tokens.push_back(std::make_shared<token_element>(tok));
+    }
+    data* dat = recursive_array_simplification(group);
     if(!dat) {
         error("Array simplification failed");
         return false;

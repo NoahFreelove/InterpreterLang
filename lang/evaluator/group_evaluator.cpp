@@ -3,8 +3,12 @@
 #include "truthy_evaluator.h"
 
 data * group_evaluator::array_simplification(int i, const char *dat_name, const std::shared_ptr<token_group> &g,
-    bool &allgood) {
-        data* base = resolve_variable(dat_name);
+    bool &allgood, data* preset) {
+        data* base = nullptr;
+        if(preset)
+            base = preset;
+        else
+            base = resolve_variable(dat_name);
         if(!base) {
             lang::interpreter::error("Could not subscript array token. Array variable not found.");
             return nullptr;
@@ -40,7 +44,9 @@ data * group_evaluator::array_simplification(int i, const char *dat_name, const 
             return nullptr;
         }
         // erase tokens i to j
+        //std::cout << "before erase" << std::endl;
         g->tokens.erase(g->tokens.begin() + i, g->tokens.begin() + j+1);
+        //std::cout << "after erase" << std::endl;
 
         auto tmp = std::make_shared<token_group>();
         tmp->tokens = array_access;
@@ -69,6 +75,7 @@ data * group_evaluator::array_simplification(int i, const char *dat_name, const 
         }
 
         g->tokens.insert(g->tokens.begin() + i, convert(DATA, "data", 0, d));
+        //std::cout << "after add" << std::endl;
         return d;
     }
 

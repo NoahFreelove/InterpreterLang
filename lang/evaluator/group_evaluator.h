@@ -32,7 +32,7 @@ public:
         }
     }
 
-    static data * array_simplification(int i, const char* dat_name, const std::shared_ptr<token_group>& g, bool& allgood);
+    static data * array_simplification(int i, const char* dat_name, const std::shared_ptr<token_group>& g, bool& allgood, data* preset = nullptr);
 
     static bool recursive_replace(const std::shared_ptr<token_group>& g, bool simplify_array_dat = true) {
         bool allgood = true;
@@ -40,7 +40,7 @@ public:
             if(!allgood)
                 break;
             std::visit(overloaded{
-                [g, &i, &allgood, &simplify_array_dat](const std::shared_ptr<token>& tk) {
+                [&g, &i, &allgood, &simplify_array_dat](const std::shared_ptr<token>& tk) {
                     // Usage of ID:  id "some_string", converts to IDENTIFIER: some_string
                     if(tk->get_name() == ID && i+1 < g->tokens.size()) {
                         std::string name;
@@ -77,7 +77,7 @@ public:
                         }
 
                     }
-                    else if(tk->get_name() == IDENTIFIER) {
+                    else if(tk->get_name() == IDENTIFIER || tk->get_name() == DATA) {
                         // Replace token in group with value obtained from memory
                         data* d = nullptr;
 
@@ -110,7 +110,11 @@ public:
                         }
 
                         if(d->is_array()) {
-                            d = array_simplification(i, tk->get_lexeme(), g, allgood);
+                            if(tk->get_name() == DATA)
+                                d = array_simplification(i, tk->get_lexeme(), g, allgood, d);
+                            else
+                                d = array_simplification(i, tk->get_lexeme(), g, allgood);
+
                             if(!d) {
                                 allgood = false;
                                 lang::interpreter::error("Array access failed");

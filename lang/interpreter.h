@@ -65,7 +65,7 @@ namespace lang {
 
         static std::shared_ptr<token_group> evaluate_tokens(std::vector<std::shared_ptr<token>> tokens, int offset);
 
-        static data* recursive_array_simplification(token_vec& vec);
+        static data* recursive_array_simplification(std::shared_ptr<token_group>& group);
         static bool check_array_mutation(const token_vec &copy);
 
         static void input_loop();

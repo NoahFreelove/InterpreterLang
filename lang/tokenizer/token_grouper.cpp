@@ -125,6 +125,7 @@ std::shared_ptr<token_group> token_grouper::recursive_group(std::vector<std::sha
 
                         std::vector<std::shared_ptr<token_group>> grouped_args;
                         grouped_args.reserve(arguments.size());
+
                         for(auto& vec : arguments) {
                             auto g = recursive_group(vec);
                             grouped_args.push_back(g);
@@ -133,8 +134,8 @@ std::shared_ptr<token_group> token_grouper::recursive_group(std::vector<std::sha
                                 std::cout << "ARG: " << *tok << std::endl;
                             }
                             std::cout << "END ARGS: " << std::endl;*/
-
                         }
+
                         //std::cout << "PROC NAME: " << tk->get_lexeme() << std::endl;
                         auto proc_ptr = std::make_shared<token>(PROC, tk->get_lexeme(), 0, grouped_args);
                         tokens[i] = proc_ptr;

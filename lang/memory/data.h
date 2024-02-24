@@ -2,6 +2,7 @@
 #define DATA_H
 #include <iostream>
 #include <ostream>
+#include <queue>
 #include <string>
 #include "../tokenizer/token_group.h"
 #include "type_registry.h"
@@ -20,6 +21,11 @@ private:
 
 public:
     static data* create_default_from_type(const std::string& type, bool is_array = false, int size = 0);
+
+    static data * create_default_from_type(int type, std::vector<data *> &allocated);
+
+    static data* create_recursive_dimensional_array(std::queue<int> sizes, int type);
+    data(void* value, const std::string& type, const std::vector<data*>& pre_allocated);
 
     data(void* value, const std::string& type, bool is_ptr = false, bool is_final = false, bool is_array = false, int initial_size = 0);
 
@@ -241,6 +247,8 @@ public:
     }
 
     data* get_array_element(int index);
+
+    static std::string get_type_as_string(int t);
 
 
 };

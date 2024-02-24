@@ -1,6 +1,11 @@
 #ifndef VAR_SETTER_H
 #define VAR_SETTER_H
-
+#include <vector>
+#include <memory>
+#include "../tokenizer/token.h"
+#include "../tokenizer/token_group.h"
+#include "../tokenizer/token_grouper.h"
+#include "../evaluator/group_evaluator.h"
 inline std::vector<int> get_flags(const std::vector<std::shared_ptr<token>> &tokens, int offset = 2) {
     std::vector<int> flags;
     // Tokens 0 and 1 are type and identifier
@@ -233,9 +238,11 @@ inline void process_variable_update(const std::vector<std::shared_ptr<token>> &t
     const char* name = tokens[0]->get_lexeme();
     data* d = resolve_variable(name);
     set_var(d, tokens, name);
-
-
 }
+
+data * create_array_of_dim(const std::vector<std::vector<std::shared_ptr<token>>> & dimension_data, int type);
+
+int keyw_to_name(int keyw);
 
 inline void process_variable_declaration(const std::vector<std::shared_ptr<token>> &tokens) {
     std::shared_ptr<token> type;
@@ -251,43 +258,81 @@ inline void process_variable_declaration(const std::vector<std::shared_ptr<token
     }
     type = tokens[0];
     bool is_array = false;
-    int array_size = 0;
 
     // TODO: add dimensional array declarations
     // (should already be supported just need to figure this part out)
-    std::vector<int> dimensions;
+    std::vector<std::vector<std::shared_ptr<token>>> dimensions;
 
     if (tokens.size() >= 2) {
-        if(tokens.size() == 5) {
-            if(tokens[1]->get_name() == LEFT_BRACKET && (tokens[2]->get_name() == INT || tokens[2]->get_name() == IDENTIFIER)
-                && tokens[3]->get_name() == RIGHT_BRACKET && tokens[4]->get_name() == IDENTIFIER) {
-                name = tokens[4]->get_lexeme();
-                is_array = true;
-                if(tokens[2]->get_name() == INT) {
-                    array_size = std::any_cast<int>(tokens[2]->get_value());
+        if(tokens[1]->get_name() == LEFT_BRACKET) {
+            std::vector<std::shared_ptr<token>> grp;
+            bool in_dim = false;
+            int i = 1;
+            for (; i < tokens.size(); ++i) {
+                if(tokens[i]->get_name() == LEFT_BRACKET) {
+                    if(in_dim) {
+                        lang::interpreter::error("Invalid array dimension - already in dimension");
+                        return;
+                    }
+                    in_dim = true;
+                    grp.clear();
                 }
-                else {
-                    data* d = resolve_variable(tokens[2]->get_lexeme());
-                    if(d) {
-                        if(d->get_type_int() == INT) {
-                            array_size = d->get_int();
+                else if(tokens[i]->get_name() == RIGHT_BRACKET) {
+                    if(!in_dim) {
+                        lang::interpreter::error("Invalid array dimension - not in dimension");
+                        return;
+                    }
+                    if(grp.empty()) {
+                        lang::interpreter::error("Invalid array dimension - empty dimension size");
+                        return;
+                    }
+                    dimensions.emplace_back(grp);
+                    in_dim = false;
+                    if(i+1 < tokens.size()) {
+                        if(tokens[i+1]->get_name() == LEFT_BRACKET)
+                            continue;
+                        else if(tokens[i+1]->get_name() == IDENTIFIER) {
+                            break;
                         }
                         else {
-                            lang::interpreter::error("Found variable but cannot subscript array with non-int");
+                            lang::interpreter::error("Invalid array dimension - expected another dimension or identifier for array name");
                             return;
                         }
                     }
-                    else {
-                        lang::interpreter::error("Could not find variable to subscript array");
-                    }
                 }
-                flags = get_flags(tokens, 5);
+                else {
+                    grp.push_back(tokens[i]);
+                }
             }
-            else if(tokens[1]->get_name()== IDENTIFIER) {
-                name = tokens[1]->get_lexeme();
-                flags = get_flags(tokens, 2);
+            if(in_dim) {
+                lang::interpreter::error("Invalid array dimension - expected ]");
+                return;
             }
+            std::shared_ptr<token> id;
+            if(i+1 >= tokens.size()) {
+                lang::interpreter::error("Invalid array declaration - expected identifier for array name, found end of tokens");
+                return;
+            }
+            else if(tokens[i+1]->get_name() != IDENTIFIER) {
+                lang::interpreter::error("Invalid array declaration - expected identifier for array name, found " + id_to_name(tokens[i+1]->get_name()));
+                return;
+            }
+            id = tokens[i+1];
+
+            auto frame = lang::interpreter::stack->back();
+            data* dat = create_array_of_dim(dimensions, keyw_to_name(type->get_name()));
+            if(dat)
+                frame->set(std::string(id->get_lexeme()), dat);
+            else {
+                lang::interpreter::error("Error in array dimension parsing");
+            }
+            return;
         }
+        else if(tokens[1]->get_name()== IDENTIFIER) {
+            name = tokens[1]->get_lexeme();
+            flags = get_flags(tokens, 2);
+        }
+
         else if(tokens[1]->get_name() != IDENTIFIER || !tokens[0]->is_typeword()) {
             lang::interpreter::error("Invalid variable declaration");
             return;
@@ -328,7 +373,7 @@ inline void process_variable_declaration(const std::vector<std::shared_ptr<token
         frame = lang::interpreter::stack->back();
     }
 
-    data* d = data::create_default_from_type(type->type_tostr(type->get_name()), is_array, array_size);
+    data* d = data::create_default_from_type(type->type_tostr(type->get_name()));
     if(!d) {
         lang::interpreter::error("Invalid type word");
         return;
