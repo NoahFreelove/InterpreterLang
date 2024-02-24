@@ -47,6 +47,9 @@
 // &
 #define MOD 29
 
+#define FORWARD 30
+// >>
+
 // TYPES / LITERALS
 #define IDENTIFIER 101
 #define STRING 102

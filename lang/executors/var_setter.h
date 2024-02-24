@@ -54,6 +54,46 @@ inline void implicit_upcast(const std::string& target_type, std::shared_ptr<toke
         return;
     }
 }
+
+inline std::shared_ptr<token> token_representation_from_data(data* dat) {
+    switch (dat->get_type_int()) {
+        case INT: {
+            return std::make_shared<token>(INT, "int", 0, dat->get_int());
+        }
+        case FLOAT: {
+            return std::make_shared<token>(FLOAT, "float", 0, dat->get_float());
+        }
+        case DOUBLE: {
+            return std::make_shared<token>(DOUBLE, "double", 0, dat->get_double());
+        }
+        case LONG: {
+            return std::make_shared<token>(LONG, "long", 0, dat->get_long());
+        }
+        case STRING: {
+            return std::make_shared<token>(STRING, "string", 0, dat->get_string());
+        }
+        case CHAR_KEYW: {
+            return std::make_shared<token>(CHAR_KEYW, "char", 0, dat->get_char());
+        }
+        case TRUE: {
+            return std::make_shared<token>(TRUE, "true", 0, dat->get_bool());
+        }
+        case FALSE: {
+            return std::make_shared<token>(FALSE, "false", 0, dat->get_bool());
+        }
+
+        case BOOL_KEYW: {
+            return std::make_shared<token>(BOOL_KEYW, "bool", 0, dat->get_bool());
+        }
+        case ULONG64: {
+            return std::make_shared<token>(ULONG64, "ulong64", 0, dat->get_ulonglong());
+        }
+        default: {
+            return std::make_shared<token>(NOTHING, "nothing", 0, nullptr);
+        }
+    }
+}
+
 inline bool set_literal(const std::vector<std::shared_ptr<token>> &tokens, data *d, int offset = 2) {
     if(d) {
         auto group = lang::interpreter::evaluate_tokens(tokens, offset);
@@ -156,10 +196,8 @@ inline void set_var(data* d, std::vector<std::shared_ptr<token>> tokens, const c
         std::cout << "> ";
         std::getline(std::cin, *str);
         auto t = lang::interpreter::scan->scan_line(str);
-        // set_literal expects first two tokens to be identifier =, so we prepend those
-        t.insert(t.begin(), tokens[0]);
-        t.insert(t.begin() + 1, tokens[1]);
-        if (set_literal(t, d)) {
+
+        if (set_literal(t, d,0)) {
             delete str;
             return;
         }
@@ -214,6 +252,10 @@ inline void process_variable_declaration(const std::vector<std::shared_ptr<token
     type = tokens[0];
     bool is_array = false;
     int array_size = 0;
+
+    // TODO: add dimensional array declarations
+    // (should already be supported just need to figure this part out)
+    std::vector<int> dimensions;
 
     if (tokens.size() >= 2) {
         if(tokens.size() == 5) {

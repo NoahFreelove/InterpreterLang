@@ -56,6 +56,8 @@ std::string id_to_name(int id) {
             return "SLASHI";
         case MOD:
             return "MOD";
+        case FORWARD:
+            return "FORWARD";
         case IDENTIFIER:
             return "IDENTIFIER";
         case STRING:

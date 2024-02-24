@@ -1,7 +1,7 @@
 #ifndef ARITHMETIC_EVALUATOR_H
 #define ARITHMETIC_EVALUATOR_H
 #include <complex>
-
+#include "../interpreter.h"
 #include "../tokenizer/token_group.h"
 #include "../tokenizer/token.h"
 #include "type_arithmetic.h"
@@ -57,7 +57,7 @@ public:
                         return false;
                     }
                 }
-                if(last_token->is_numeric() && curr->is_numeric()) {
+                if(last_token->is_numeric() && curr->is_numeric() && (last_token != curr)) {
                     lang::interpreter::error("two is_numeric side by side without an operator");
                     return false;
                 }

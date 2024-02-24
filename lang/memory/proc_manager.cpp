@@ -125,6 +125,9 @@ void push_val_directly(const std::shared_ptr<token> &t, stack_frame* frame, cons
     auto g = std::make_shared<token_group>();
     g->value = t->get_value();
     g->type = t->get_name();
+    if(g->type == PROC) {
+        proc_manager::execute_proc(g);
+    }
     implicit_upcast(proc_type, g);
     /*std::cout << "GROUP TYPE: " << id_to_name(g->type) <<std::endl;
     std::cout << "T TYPE: " << id_to_name(t->get_name()) <<std::endl;
@@ -228,7 +231,11 @@ void proc_manager::execute_proc(std::shared_ptr<token_group> &g) {
     //std::vector<std::shared_ptr<token_group>> args = g.
     auto* new_frame = new stack_frame();
 
-    if(group_evaluator::is_group(*g->tokens[0]) ) {
+    if(g->tokens.empty()) {
+        lang::interpreter::error("Cannot run proc on empty input");
+        return;
+    }
+    else if(group_evaluator::is_group(*g->tokens[0]) ) {
         lang::interpreter::error("Cannot run proc on group?");
         delete new_frame;
         return;
@@ -261,15 +268,24 @@ void proc_manager::execute_proc(std::shared_ptr<token_group> &g) {
         if(arg->tokens.size() == 1) {
             if(!group_evaluator::is_group(*arg->tokens[0])) {
                 token t = *std::get<std::shared_ptr<token>>(*arg->tokens[0]);
+                /*std::cout << ":)))" << id_to_name(t.get_name()) << std::endl;
+                std::cout << ":((( running proc" << t.get_lexeme() << std::endl;*/
                 if(t.get_name() == IDENTIFIER) {
                     // dupe variable, pass byref
                     push_byref(t.get_lexeme(), new_frame,types[i].second->get_lexeme(),types[i].first->get_lexeme());
+                }
+                else if(t.get_name() == PROC) {
+                    auto artificial_group = std::make_shared<token_group>();
+                    artificial_group->tokens.push_back(arg->tokens[0]);
+                    execute_proc(artificial_group);
+                    push_val_directly(std::make_shared<token>(artificial_group->type, "artificial_token", 0, artificial_group->value), new_frame, types[i].second->get_lexeme(),types[i].first->get_lexeme());
                 }
                 else {
                     push_val_directly(std::get<std::shared_ptr<token>>(*arg->tokens[0]), new_frame, types[i].second->get_lexeme(),types[i].first->get_lexeme());
                 }
             }
             else {
+                //std::cout << "GROUP TOKEN " << std::endl;
                 auto group_ref = std::get<std::shared_ptr<token_group>>(*arg->tokens[0]);
                 group_evaluator::eval_group(group_ref);
                 push_to_stack_frame(group_ref, new_frame, types[i].second->get_lexeme(), types[i].first->get_lexeme());
@@ -287,8 +303,6 @@ void proc_manager::execute_proc(std::shared_ptr<token_group> &g) {
                     continue;
                 }
             }
-
-
         }
 
         group_evaluator::eval_group(arg);

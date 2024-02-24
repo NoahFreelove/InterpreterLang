@@ -183,6 +183,12 @@ class truthy_evaluator {
                     // do and and or first because they have higher precedence over ==, > ops
                     if(t->get_name() == AND || t->get_name() == OR || t->get_name() == XOR) {
                         ant_index = i - 1;
+                        if(ant_index == -1) {
+                            g->type == ERROR;
+                            g->value = nullptr;
+                            lang::interpreter::error("Unknown invalid truthy operation");
+                            return;
+                        }
                         ant = std::get<std::shared_ptr<token>>(*tokens[ant_index]);
                         cons = std::get<std::shared_ptr<token>>(*tokens[i + 1]);
                         op = t;
@@ -191,6 +197,12 @@ class truthy_evaluator {
                     }
                     else if(get_highest_level_op(g) == 1) {
                         ant_index = i - 1;
+                        if(ant_index == -1) {
+                            g->type == ERROR;
+                            g->value = nullptr;
+                            lang::interpreter::error("Unknown invalid truthy operation");
+                            return;
+                        }
                         ant = std::get<std::shared_ptr<token>>(*tokens[ant_index]);
                         cons = std::get<std::shared_ptr<token>>(*tokens[i + 1]);
                         op = t;

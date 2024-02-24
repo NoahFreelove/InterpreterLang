@@ -388,6 +388,10 @@ std::shared_ptr<token> lang::scanner::parse_token() {
                         skip();
                         return std::make_shared<token>(GTE, ">=", line, nullptr);
                     }
+                    else if(peek() == '>') {
+                        skip();
+                        return std::make_shared<token>(FORWARD, ">>", line, nullptr);
+                    }
                     return std::make_shared<token>(GT, ">", line, nullptr);
                 }
                 case '<': {

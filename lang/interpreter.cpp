@@ -157,20 +157,19 @@ bool lang::interpreter::check_array_mutation(const token_vec &input) {
         return false;
     }
 
-    std::shared_ptr<token> arithmetic;
-    int equal_index = 0;
-
     bool is_arithmetic = copy[0]->is_arithmetic();
 
     if(is_arithmetic) {
-        arithmetic = copy[0];
-        equal_index = 1;
+        copy.erase(copy.begin() + 1);
+        auto t = token_representation_from_data(dat);
+        copy.insert(copy.begin(), t);
     }
     else {
         copy.erase(copy.begin());
-        set_literal(copy, dat, 0);
-        return true;
     }
+
+    set_literal(copy, dat, 0);
+
 
 
     return true;
@@ -227,12 +226,14 @@ void lang::interpreter::process(std::vector<std::shared_ptr<token>>& tokens) {
     }
     return;*/
     std::shared_ptr<token_group> group = token_grouper::gen_group(tokens);
-    //group->print_group();
+
+    std::vector<std::shared_ptr<token>> output;
+    group_evaluator::flatten(output, group);
+
     group_evaluator::eval_group(group);
     if(group->type == ERROR) {
         error("Could not process input");
     }
-    //group->print_group();
     if(group->value.has_value()) {
         if(group->type == INT) {
             std::cout << std::any_cast<int>(group->value) << std::endl;
