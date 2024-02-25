@@ -98,6 +98,8 @@ std::string id_to_name(int id) {
             return "UNTIL";
         case LOOP:
             return "LOOP";
+        case FOREACH:
+            return "FOREACH";
         case STRUCT:
             return "STRUCT";
         case CLASS:

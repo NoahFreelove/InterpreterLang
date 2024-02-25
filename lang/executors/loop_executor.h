@@ -5,6 +5,7 @@
 typedef proc_tokens loop_data;
 struct loop{
     int type = 0;
+    // index isnt the loop index but the index that this loop is in the nested loop hierarchy
     int index = -1;
 
     int loop_ifs = 0;
@@ -23,6 +24,13 @@ struct loop{
     // for exclusive
     std::shared_ptr<token> iterator_variable = nullptr;
     std::vector<std::shared_ptr<token>> post_for_event;
+
+    // foreach
+    data* array_ptr;
+    std::string foreach_var_name;
+    data* index_var;
+    int foreach_size = 0;
+    int foreach_index;
 
     loop() {
         loop_lines = new loop_data();
@@ -156,6 +164,107 @@ public:
         return true;
     }
 
+    static bool process_foreach(loop * l, const lang::interpreter::token_vec & tokens) {
+        l->type = FOREACH;
+        auto vec_cpy = lang::interpreter::clone_tokens(tokens);
+        vec_cpy.erase(vec_cpy.begin());
+        if(vec_cpy.empty()) {
+            lang::interpreter::error("Cannot create a foreach loop with just 'for'!");
+            return false;
+        }
+        std::vector<std::shared_ptr<token>> var_part;
+        std::string array_name;
+        std::string index_var_name;
+
+        // each part is comma seperated: for int i = 0, i<5, i++
+        // parenthesis are required
+        if(vec_cpy[0]->get_name() != LEFT_PAREN || vec_cpy[vec_cpy.size()-1]->get_name() != RIGHT_PAREN) {
+            lang::interpreter::error("For loop iterator must be contained in parenthesis");
+            return false;
+        }
+        // erase first and last paren
+        vec_cpy.erase(vec_cpy.begin());
+        vec_cpy.pop_back();
+
+        int typeword;
+        if(!vec_cpy[0]->is_typeword()) {
+            lang::interpreter::error("Foreach loop must have a type word");
+            return false;
+        }
+        else {
+            typeword = vec_cpy[0]->get_name();
+        }
+        vec_cpy.erase(vec_cpy.begin());
+
+        std::string var_name;
+        if(vec_cpy[0]->is_identifier()) {
+            var_name = std::string(vec_cpy[0]->get_lexeme());
+        }
+        else {
+            lang::interpreter::error("Foreach loop must have a variable name");
+            return false;
+        }
+        vec_cpy.erase(vec_cpy.begin());
+
+        if(vec_cpy[0]->get_name() == COMMA && vec_cpy.size()>1) {
+            if(vec_cpy[1]->get_name() == IDENTIFIER) {
+                index_var_name = std::string(vec_cpy[1]->get_lexeme());
+                vec_cpy.erase(vec_cpy.begin(), vec_cpy.begin()+2);
+            }
+            else {
+                lang::interpreter::error("Expected index variable name after comma");
+                return false;
+            }
+        }
+
+        if(vec_cpy[0]->get_name() != COLON) {
+            lang::interpreter::error("Foreach loop must have a colon to denote start of array");
+            return false;
+        }
+        vec_cpy.erase(vec_cpy.begin());
+
+        if(vec_cpy[0]->get_name() != IDENTIFIER) {
+            lang::interpreter::error("Foreach loop must have an array name");
+            return false;
+        }
+        array_name = std::string(vec_cpy[0]->get_lexeme());
+        vec_cpy.erase(vec_cpy.begin());
+        if(!vec_cpy.empty()) {
+            lang::interpreter::error("Unexpected tokens in foreach loop declaration");
+            return false;
+        }
+
+
+        data* arr = resolve_variable(array_name.c_str());
+        if(!arr) {
+            lang::interpreter::error("Undefined array in foreach loop");
+            return false;
+        }
+        else if(!arr->is_array()) {
+            lang::interpreter::error("Foreach loop must have an array");
+            return false;
+        }
+        if(token::typeword_to_type(typeword) != arr->get_type_int()) {
+
+            lang::interpreter::error("Type mismatch in foreach loop");
+            return false;
+        }
+        l->array_ptr = arr;
+        l->foreach_var_name = var_name;
+        l->foreach_size = arr->get_arr_size();
+        if(index_var_name != "") {
+            data* index_var = new data(new int(0),"int");
+            l->index_var = index_var;
+            lang::interpreter::top_stack()->set(index_var_name, index_var);
+        }
+
+        if(l->foreach_size == -1) {
+            lang::interpreter::error("Cannot determine size of array in foreach loop");
+            return false;
+        }
+        return true;
+    }
+
     static void process_loop(const lang::interpreter::token_vec & tokens) {
         loop* l = new loop();
         if(tokens[0]->is_while_variation()) {
@@ -166,6 +275,12 @@ public:
         }
         else if(tokens[0]->get_name() == FOR) {
             if(!process_for(l, tokens)) {
+                delete l;
+                return;
+            }
+        }
+        else if (tokens[0]->get_name() == FOREACH) {
+            if(!process_foreach(l,tokens)) {
                 delete l;
                 return;
             }
@@ -233,6 +348,29 @@ public:
         end_loop(l);
     }
 
+    static void trigger_foreach_loop(loop* l) {
+        int len = l->foreach_size;
+        for (int i = 0; i < len; i++) {
+            current_loop_index = l->index;
+            // update iterator variable
+            data* newdat = new data(l->array_ptr->get_array_element(i), true);
+            lang::interpreter::top_stack()->set(l->foreach_var_name, newdat);
+            l->foreach_index = i;
+            if(l->index_var) {
+                l->index_var->set_value_int(i);
+            }
+
+            auto q = clone_loop(l);
+            q.push(lang::interpreter::clone_tokens(l->post_for_event));
+
+            lang::interpreter::queue_lines(q, LOOP_INPUT);
+            lang::interpreter::trigger_run();
+
+            lang::interpreter::print_errs();
+        }
+        end_loop(l);
+    }
+
     static void trigger_while_loop(loop* l) {
         bool condition_result;
         if(l->is_do)
@@ -262,6 +400,9 @@ public:
         }
         else if(current_loop->type == FOR) {
             trigger_for_loop(current_loop);
+        }
+        else if(current_loop->type == FOREACH) {
+            trigger_foreach_loop(current_loop);
         }
     }
 

@@ -250,6 +250,12 @@ public:
 
     static std::string get_type_as_string(int t);
 
+    int get_arr_size() {
+        if(!is_array())
+            return -1;
+        return array_elements->size();
+    }
+
 
 };
 #endif //DATA_H

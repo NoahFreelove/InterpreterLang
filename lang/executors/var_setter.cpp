@@ -20,13 +20,13 @@ data * create_array_of_dim(const std::vector<std::vector<std::shared_ptr<token>>
             else if(group->type == DOUBLE) {
                 length = (int)std::any_cast<double>(group->value);
             }
-            if(length > 0) {
+            if(length >= 0) {
                 sizes.push(length);
             }
-            else if(length == 0) {
+            /*else if(length == 0) {
                 lang::interpreter::error("Attempted to use a zero size for array dimension!");
                 return nullptr;
-            }
+            }*/
             else {
                 lang::interpreter::error("Attempted to use a negative size for array dimension!");
                 return nullptr;

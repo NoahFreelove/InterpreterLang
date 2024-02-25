@@ -96,6 +96,7 @@
 #define DO_UNTIl 1028
 #define LOOP 1029
 #define MACRO 1030
+#define FOREACH 1031
 
 // TYPEWORDS
 #define INT_KEYW 1120
@@ -249,7 +250,7 @@ public:
         return name == IF || name == END_IF || name == ELSE || name == ELSE_IF;
     }
     bool is_loop() const {
-        return name == FOR || is_while_variation();
+        return name == FOR || name == FOREACH || is_while_variation();
     }
     bool is_while_variation() const {
         return name == WHILE || name == DO_WHILE
@@ -361,6 +362,35 @@ public:
                 return NOTHING_TYPE;
             case BOOL_KEYW:
                 return BOOL_KEYW;
+            default:
+                return 0;
+        }
+    }
+
+    static int typeword_to_type(int name) {
+        switch (name) {
+            case INT_KEYW:
+                return INT;
+            case FLOAT_KEYW:
+                return FLOAT;
+            case DOUBLE_KEYW:
+                return DOUBLE;
+            case LONG_KEYW:
+                return LONG;
+            case STRING_KEYW:
+                return STRING;
+            case ULONG64_KEYW:
+                return ULONG64;
+            case NOTHING_KEYW:
+                return NOTHING_TYPE;
+            case BOOL_KEYW:
+                return BOOL_KEYW;
+            case TRUE:
+                return BOOL_KEYW;
+            case FALSE:
+                return BOOL_KEYW;
+            case CHAR_KEYW:
+                return CHAR_KEYW;
             default:
                 return 0;
         }
