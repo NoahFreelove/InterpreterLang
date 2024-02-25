@@ -11,6 +11,8 @@
 #define GENERAL_INPUT 0
 #define PROC_INPUT 1
 #define LOOP_INPUT 2
+class macro;
+
 namespace lang {
     class scanner;
 
@@ -26,6 +28,7 @@ namespace lang {
         inline static int VERSION_MINOR = 3;
 
         inline static stack_frame* global_frame = new stack_frame();
+        inline static std::unordered_map<std::string, macro*>* macros = nullptr;
         inline static std::vector<stack_frame*>* stack = nullptr;
         inline static std::stack<std::string>* errors = nullptr;
 

@@ -25,6 +25,10 @@ public:
     token_group() {
         tokens = {};
     }
+    token_group(int type, const std::any &value) {
+        this->type = type;
+        this->value = value;
+    }
 
     void add(std::shared_ptr<token_element> item) {
         tokens.push_back(item);

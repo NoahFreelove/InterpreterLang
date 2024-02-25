@@ -48,6 +48,7 @@
 #define MOD 29
 
 #define FORWARD 30
+#define COLON 31
 // >>
 
 // TYPES / LITERALS
@@ -94,6 +95,7 @@
 #define UNTIL 1027
 #define DO_UNTIl 1028
 #define LOOP 1029
+#define MACRO 1030
 
 // TYPEWORDS
 #define INT_KEYW 1120
@@ -137,7 +139,7 @@ class token {
 
 public:
     token(token* t) : name(t->name), lexeme(t->lexeme), value(t->value), line(t->line) {}
-    token(int name, const char *lexeme, int line, std::any value = nullptr, bool array = false)
+    token(int name, const char *lexeme, int line = 0, std::any value = nullptr, bool array = false)
         : name(name),
           lexeme(lexeme),
           value(std::move(value)),

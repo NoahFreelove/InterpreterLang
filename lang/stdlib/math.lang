@@ -1,4 +1,4 @@
-double pi persistent = 3.1415926535
+double pi = 3.1415926535
 double e persistent = 2.7182818284
 double inf persistent = 500f^500f
 
@@ -14,6 +14,15 @@ proc float abs(float f)
         return -f
     else
         return f
+    endif
+endproc
+
+proc float invabs(float f)
+    if f < 0
+        return f
+    else
+        return -f
+    endif
 endproc
 
 proc float min(float a, float b)
@@ -48,7 +57,8 @@ proc float sin(float x)
     float term4 = -(x^7) / 5040f
     float term5 = (x^9)/ 362880f;
     float term6 = -(x^11)/ 39916800f
-    return term1 + term2 + term3 + term4 + term5 + term6
+    float total = term1 + term2 + term3 + term4 + term5 + term6
+    return total
 endproc
 
 proc float cos(float y)

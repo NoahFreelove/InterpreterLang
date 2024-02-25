@@ -32,6 +32,8 @@ std::string id_to_name(int id) {
             return "SLASH";
         case SEMICOLON:
             return "SEMICOLON";
+        case COLON:
+            return "COLON";
         case BANG:
             return "BANG";
         case EQUAL:
@@ -116,6 +118,8 @@ std::string id_to_name(int id) {
             return "CONTINUE";
         case PROC:
             return "PROC";
+        case MACRO:
+            return "MACRO";
         case PROC_KEYW:
             return "PROC";
         case END_PROC:

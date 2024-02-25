@@ -228,6 +228,7 @@ public:
             lang::interpreter::trigger_run();
 
             condition_result = is_condition_true(l);
+            lang::interpreter::print_errs();
         }
         end_loop(l);
     }
@@ -247,6 +248,7 @@ public:
             lang::interpreter::queue_lines(clone_loop(l), LOOP_INPUT);
             lang::interpreter::trigger_run();
             condition_result = is_condition_true(l);
+            lang::interpreter::print_errs();
         }
         end_loop(l);
     }

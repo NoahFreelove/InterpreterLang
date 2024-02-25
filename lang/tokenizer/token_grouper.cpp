@@ -1,6 +1,6 @@
 #include "token_grouper.h"
 #include "../evaluator/group_evaluator.h"
-
+#include "../memory/macro.h"
 std::shared_ptr<token_group> token_grouper::recursive_group(std::vector<std::shared_ptr<token>> &tokens)  {
         // brackets in the form of ( and ) are used to group tokens
         // so (1+2 + 3*(4+5)) would be grouped as
@@ -25,15 +25,15 @@ std::shared_ptr<token_group> token_grouper::recursive_group(std::vector<std::sha
             if(type == FORWARD) {
                 if(i == 0 && groups.size() == 1) {
                     lang::interpreter::error("Forward keyword must be used on a token in the same group as the succeeding procedure");
-                    return std::make_shared<token_group>();
+                    return std::make_shared<token_group>(ERROR, nullptr);
                 }
                 else if(i+2 >= tokens.size()) {
                     lang::interpreter::error("Forward keyword must have a valid procedure after it");
-                    return std::make_shared<token_group>();
+                    return std::make_shared<token_group>(ERROR, nullptr);
                 }
                 if(tokens[i+1]->get_name() != IDENTIFIER || tokens[i+2]->get_name() != LEFT_PAREN) {
                     lang::interpreter::error("Forward keyword must have a valid procedure after it");
-                    return std::make_shared<token_group>();
+                    return std::make_shared<token_group>(ERROR, nullptr);
                 }
 
                 if(tokens[i-1]->get_name() != RIGHT_PAREN) {
@@ -44,7 +44,7 @@ std::shared_ptr<token_group> token_grouper::recursive_group(std::vector<std::sha
                 else if(tokens[i-1]->get_name() == RIGHT_PAREN) {
                     if(!group_evaluator::is_group(*groups.back()->tokens.back())) {
                         lang::interpreter::error(" Right paren found but no group!");
-                        return std::make_shared<token_group>();
+                        return std::make_shared<token_group>(ERROR, nullptr);
                     }
 
                     auto prev = std::get<std::shared_ptr<token_group>>(*groups.back()->tokens.back());
@@ -52,7 +52,7 @@ std::shared_ptr<token_group> token_grouper::recursive_group(std::vector<std::sha
                     group_evaluator::eval_group(prev);
                     if(prev->type == UNDETERMINED || prev->type == ERROR) {
                         lang::interpreter::error("Forward group evaluation error. Type: " + id_to_name(prev->type));
-                        return std::make_shared<token_group>();
+                        return std::make_shared<token_group>(ERROR, nullptr);
                     }
                     //std::cout << "valid forward: is group" << std::endl;
                     auto new_tok = std::make_shared<token>(prev->type, id_to_name(prev->type).c_str(), 0, prev->value);
@@ -70,8 +70,14 @@ std::shared_ptr<token_group> token_grouper::recursive_group(std::vector<std::sha
             if(type == IDENTIFIER && i+1 < tokens.size()) {
                 if(tokens[i+1]->get_name() == LEFT_PAREN) {
                     auto* proc = resolve_proc(tk->get_lexeme());
+                    bool is_macro = false;
+                    if(proc == nullptr) {
+                        if(lang::interpreter::macros->find(tk->get_lexeme()) != lang::interpreter::macros->end()) {
+                            is_macro = true;
+                        }
+                    }
 
-                    if(proc) {
+                    if(proc || is_macro) {
                         std::vector<std::vector<std::shared_ptr<token>>> arguments;
                         auto curr_arg = std::vector<std::shared_ptr<token>>();
                         int j = i+2;
@@ -86,7 +92,7 @@ std::shared_ptr<token_group> token_grouper::recursive_group(std::vector<std::sha
                             }
                             if(j >= tokens.size()) {
                                 lang::interpreter::error("Expected ')' in procedure call");
-                                return std::make_shared<token_group>();
+                                return std::make_shared<token_group>(ERROR, nullptr);
                             }
                             if(tokens[j]->get_name() == COMMA && num_left_paren == 1) {
                                 // copy value of vector to arguments, so we can clear it
@@ -106,7 +112,7 @@ std::shared_ptr<token_group> token_grouper::recursive_group(std::vector<std::sha
                             j++;
                             if(j >= tokens.size()) {
                                 lang::interpreter::error("Expected ')' in procedure call");
-                                return std::make_shared<token_group>();
+                                return std::make_shared<token_group>(ERROR, nullptr);
                             }
                         }
                         if(!curr_arg.empty()) {
@@ -137,6 +143,16 @@ std::shared_ptr<token_group> token_grouper::recursive_group(std::vector<std::sha
                         }
 
                         //std::cout << "PROC NAME: " << tk->get_lexeme() << std::endl;
+
+                        std::string name = std::string(tk->get_lexeme());
+                        // check if it exists in lang::interpreter::macros
+                        if(is_macro) {
+                            auto mac = (*lang::interpreter::macros)[name];
+                            auto g = mac->convert_input_to_macro(grouped_args);
+                            groups.back()->tokens.push_back(std::make_shared<token_group::token_element>(g));
+                            continue;
+                        }
+
                         auto proc_ptr = std::make_shared<token>(PROC, tk->get_lexeme(), 0, grouped_args);
                         tokens[i] = proc_ptr;
                         auto wrapper = std::make_shared<token_group>();
@@ -149,7 +165,7 @@ std::shared_ptr<token_group> token_grouper::recursive_group(std::vector<std::sha
                     }
                     else {
                         lang::interpreter::error("Expected procedure call, no procedure with name '" + std::string(tk->get_lexeme()) + "' was found.");
-                        return std::make_shared<token_group>();
+                        return std::make_shared<token_group>(ERROR, nullptr);
                     }
                 }
             }
@@ -166,7 +182,7 @@ std::shared_ptr<token_group> token_grouper::recursive_group(std::vector<std::sha
                 groups.pop_back(); // Pop without adding, it's already added when LEFT_PAREN was encountered
                 if (groups.empty()) {
                     // Error handling: encountered a closing parenthesis without a matching opening one
-                    return std::make_shared<token_group>(); // Return an empty group or handle error
+                    return std::make_shared<token_group>(ERROR, nullptr); // Return an empty group or handle error
                 }
             }
             else {
@@ -178,7 +194,7 @@ std::shared_ptr<token_group> token_grouper::recursive_group(std::vector<std::sha
 
         if (groups.size() != 1) {
             // Error handling: not all groups were properly closed
-            return std::make_shared<token_group>(); // Return an empty group or handle error
+            return std::make_shared<token_group>(ERROR, nullptr); // Return an empty group or handle error
         }
 
         // At this point, `root_group` contains all tokens properly grouped

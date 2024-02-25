@@ -17,7 +17,7 @@
 #include "executors/control_flow_runner.h"
 #include "executors/var_setter.h"
 #include "executors/loop_executor.h"
-
+#include "memory/macro.h"
 bool lang::interpreter::is_defined(const char *c) {
     for (const char* name : *defined) {
         if(strcmp(name, c) == 0) {
@@ -38,6 +38,7 @@ void lang::interpreter::init() {
         scan = new scanner();
     }
     stack = new std::vector<stack_frame*>();
+    macros = new std::unordered_map<std::string, macro*>();
     push_stackframe();
     global_frame = stack->front();
     std::filesystem::__cxx11::path cwd = std::filesystem::current_path();
@@ -223,10 +224,6 @@ std::vector<std::shared_ptr<token>> lang::interpreter::clone_tokens(const std::v
 }
 
 void lang::interpreter::process(std::vector<std::shared_ptr<token>>& tokens) {
-    /*for (const std::shared_ptr<token> t : tokens) {
-        std::cout << *t << std::endl;
-    }
-    return;*/
     std::shared_ptr<token_group> group = token_grouper::gen_group(tokens);
 
     std::vector<std::shared_ptr<token>> output;
@@ -479,6 +476,24 @@ void lang::interpreter::run() {
                 continue;
             }
 
+            if(copy.size() >= 3) {
+                if(copy[0]->get_name() == MACRO) {
+                    auto* result = macro::gen_macro(copy);
+                    if(result) {
+                        if(macros->find(std::string(copy[1]->get_lexeme())) != macros->end()) {
+                            error("Attempted redefinition of macro '" + std::string(copy[1]->get_lexeme()) + "'");
+                            delete result;
+                        }
+                        else
+                            macros->insert({std::string(copy[1]->get_lexeme()), result});
+                    }
+                    else {
+                        error("Error defining macro");
+                    }
+                    continue;
+                }
+            }
+
             if(copy.size() >=2) {
                 if(copy[0]->get_name() == IDENTIFIER) {
                     if(copy.size() >= 3) {
@@ -507,7 +522,6 @@ void lang::interpreter::run() {
                         }
                     }
                 }
-
             }
             process(copy);
             check_pop_stack(copy);
@@ -542,6 +556,9 @@ void lang::interpreter::error(const std::string& err) {
 }
 
 void lang::interpreter::print_errs() {
+    if(errors->empty()) {
+        return;
+    }
     bool sizeis1 = errors->size() == 1;
     std::cerr << "Error";
     if(errors->size() == 1) {

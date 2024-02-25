@@ -167,6 +167,9 @@ std::shared_ptr<token> lang::scanner::get_identifier(char c) {
     if(str == "endproc" || str == "enddef" || str == "endfunc" || str == "endfunction" || str == "endprocedure" || str == "endmethod") {
         return std::make_shared<token>(END_PROC, cstr, line);
     }
+    if(str == "macro") {
+        return std::make_shared<token>(MACRO, cstr, line);
+    }
     if(str == "endloop") {
         return std::make_shared<token>(END_LOOP, cstr, line);
     }
@@ -429,6 +432,9 @@ std::shared_ptr<token> lang::scanner::parse_token() {
                         return std::make_shared<token>(SLASHI, "/i", line, nullptr);
                     }
                     return std::make_shared<token>(SLASH, "/", line, nullptr);
+                }
+                case ':': {
+                    return std::make_shared<token>(COLON, "&&", line, nullptr);
                 }
                 case '&': {
                     if(peek() == '&') {
