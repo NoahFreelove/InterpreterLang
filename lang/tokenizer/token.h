@@ -93,6 +93,7 @@
 #define DO_WHILE 1026
 #define UNTIL 1027
 #define DO_UNTIl 1028
+#define LOOP 1029
 
 // TYPEWORDS
 #define INT_KEYW 1120
@@ -250,7 +251,7 @@ public:
     }
     bool is_while_variation() const {
         return name == WHILE || name == DO_WHILE
-        || name == DO_UNTIl || name == UNTIL;
+        || name == DO_UNTIl || name == UNTIL || name == LOOP;
     }
 
     static const std::string type_tostr(int i) {

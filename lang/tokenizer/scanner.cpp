@@ -194,6 +194,8 @@ std::shared_ptr<token> lang::scanner::get_identifier(char c) {
         return std::make_shared<token>(UNTIL, cstr, line);
     if (str == "dountil")
         return std::make_shared<token>(DO_UNTIl, cstr, line);
+    if (str == "loop")
+        return std::make_shared<token>(LOOP, cstr, line);
 
     if(str == "and") {
         return std::make_shared<token>(AND, cstr, line);

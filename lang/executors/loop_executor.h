@@ -13,6 +13,8 @@ struct loop{
 
     bool is_until = false;
 
+    bool is_generic_loop = false;
+
     loop_data* loop_lines = nullptr;
 
     // while and for
@@ -48,11 +50,13 @@ public:
         if(tokens[0]->get_name() == DO_UNTIl || tokens[0]->get_name() == UNTIL) {
             l->is_until = true;
         }
+        if(tokens[0]->get_name() == LOOP)
+            l->is_generic_loop = true;
         auto vec_cpy = lang::interpreter::clone_tokens(tokens);
         vec_cpy.erase(vec_cpy.begin());
 
         auto group = token_grouper::gen_group(vec_cpy);
-        if(group->tokens.size() != 1) {
+        if(group->tokens.size() != 1 && tokens[0]->get_name() != LOOP) {
             lang::interpreter::error("Invalid loop condition, must be one group");
             return false;
         }
@@ -178,6 +182,8 @@ public:
     }
 
     static bool is_condition_true(loop* l) {
+        if(l->is_generic_loop)
+            return true;
         auto group = token_grouper::recursive_clone_group(l->condition_test);
         group_evaluator::eval_group(group);
         int type = group->type;

@@ -50,7 +50,7 @@ data *data::create_default_from_type(int type, std::vector<data*>& allocated)  {
 data * data::create_recursive_dimensional_array(std::queue<int> sizes, int type) {
     int length = sizes.front();
     sizes.pop();
-    std::cout << "Length: " << length << std::endl;
+    //std::cout << "Length: " << length << std::endl;
     std::string typestr = get_type_as_string(type);
     if(sizes.empty()) {
         return create_default_from_type(typestr, true, length);

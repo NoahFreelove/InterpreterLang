@@ -88,7 +88,7 @@ std::shared_ptr<token_group> token_grouper::recursive_group(std::vector<std::sha
                                 lang::interpreter::error("Expected ')' in procedure call");
                                 return std::make_shared<token_group>();
                             }
-                            if(tokens[j]->get_name() == COMMA) {
+                            if(tokens[j]->get_name() == COMMA && num_left_paren == 1) {
                                 // copy value of vector to arguments, so we can clear it
                                 if(!curr_arg.empty()) {
                                     arguments.emplace_back(curr_arg);
