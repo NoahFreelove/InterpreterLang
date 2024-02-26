@@ -148,8 +148,6 @@ std::string id_to_name(int id) {
             return "XOR";
         case PRINT:
             return "PRINT";
-        case DUMP:
-            return "DUMP";
         case INPUT:
             return "INPUT";
         case RAWINPUT:

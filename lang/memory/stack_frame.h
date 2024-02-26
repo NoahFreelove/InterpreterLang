@@ -32,9 +32,9 @@ public:
 
     data* get_data(const std::string& identifier);
 
-    void insert_proc(const std::string &name, int type, proc_tokens* p, proc_type_vec* v);
+    void insert_proc(const std::string &name, int type, proc_tokens* p, proc_type_vec* v, bool is_native=false);
 
-    proc_dat* resolve_proc(const std::string& name, proc_type_vec& vec);
+    proc resolve_proc(const std::string& name, proc_type_vec& vec);
 
     bool proc_exists(const std::string & name);
 

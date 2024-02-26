@@ -43,11 +43,11 @@ data * stack_frame::get_data(const std::string& identifier) {
     return result;
 }
 
-void stack_frame::insert_proc(const std::string &name, int type, proc_tokens* p, proc_type_vec* v) {
-    procs->insert_proc(name,type,p,v);
+void stack_frame::insert_proc(const std::string &name, int type, proc_tokens* p, proc_type_vec* v, bool is_native) {
+    procs->insert_proc(name,type,p,v, is_native);
 }
 
-proc_dat* stack_frame::resolve_proc(const std::string& name, proc_type_vec& vec) {
+proc stack_frame::resolve_proc(const std::string& name, proc_type_vec& vec) {
     return procs->resolve_proc_name(name, vec);
 }
 

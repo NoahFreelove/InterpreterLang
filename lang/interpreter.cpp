@@ -56,7 +56,7 @@ void lang::interpreter::init() {
     defined->push_back("PROC_REDEFINITION");
     errors = new std::stack<std::string>();
     read_from_file("about.lang");
-    read_from_file("stdlib/math.lang");
+    read_from_file("stdlib.lang");
 
     type_registry::add_type(INT, "int");
     type_registry::add_type(FLOAT, "float");

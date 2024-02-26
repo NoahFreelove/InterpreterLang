@@ -47,8 +47,8 @@ public:
 
     bool same_types(proc_type_vec& a, proc_type_vec& b);
 
-    proc_dat* resolve_proc_name(const std::string& name, proc_type_vec& types);
-    void insert_proc(const std::string& name, int type, proc_tokens* p, proc_type_vec* v);
+    proc resolve_proc_name(const std::string& name, proc_type_vec& types);
+    void insert_proc(const std::string& name, int type, proc_tokens* p, proc_type_vec* v, bool is_native = false);
 
     bool exists(const std::string & name);
 
@@ -64,6 +64,6 @@ public:
 
     static void process_return(const std::vector<std::shared_ptr<token>> &tokens, int offset);
     static void process_proc_declaration(std::vector<std::shared_ptr<token>> &tokens);
-    static void end_proc_declaration();
+    static void end_proc_declaration(bool is_native = false);
 };
 #endif //PROC_MANAGER_H

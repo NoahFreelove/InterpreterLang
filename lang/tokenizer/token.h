@@ -114,7 +114,6 @@
 
 // builtin funcs
 #define PRINT 10001
-#define DUMP 10002
 #define INPUT 10003
 #define TYPEOF 10004
 #define SIZEOF 10005

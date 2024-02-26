@@ -5,18 +5,18 @@
 #include "../tokenizer/token_grouper.h"
 #include "../executors/control_flow_runner.h"
 #include "../executors/var_setter.h"
-
-proc_dat * proc_manager::resolve_proc_name(const std::string &name, proc_type_vec& vec) {
+#include "../executors/built_in_runner.h"
+proc proc_manager::resolve_proc_name(const std::string &name, proc_type_vec& vec) {
     // return nullptr if not in procs
     if(procs->find(name) == procs->end()) {
-        return nullptr;
+        return proc();
     }
     for(auto& v: (*procs)[name]) {
         if(same_types(*v.dat->first->second,vec)) {
-            return v.dat;
+            return v;
         }
     }
-    return nullptr;
+    return proc();
 }
 
 bool proc_manager::same_types(proc_type_vec &a, proc_type_vec &b) {
@@ -35,12 +35,16 @@ bool proc_manager::same_types(proc_type_vec &a, proc_type_vec &b) {
     return all_same;
 }
 
-void proc_manager::insert_proc(const std::string &name, int type, proc_tokens *p, proc_type_vec *v) {
+void proc_manager::insert_proc(const std::string &name, int type, proc_tokens *p, proc_type_vec *v, bool is_native) {
     if(procs->find(name) != procs->end()) {
         bool identical_exists = false;
         int identical_index = -1;
         int i = 0;
         for (auto& dat: (*procs)[name]) {
+            if(dat.is_native) {
+                lang::interpreter::error("Cannot override or redefine native procedure.");
+                return;
+            }
             if(dat.dat->second != type) {
                 lang::interpreter::error("Attempted of overload of procedure " + name + " with wrong type. Expected: " + id_to_name(dat.dat->second));
                 return;
@@ -63,17 +67,18 @@ void proc_manager::insert_proc(const std::string &name, int type, proc_tokens *p
             auto* new_pair = new std::pair<proc_tokens*, proc_type_vec*>(p,v);
 
             // get hashmap @ name, get the element from the vector at the identical index
-            ((*procs)[name])[identical_index].dat = new std::pair<std::pair<proc_tokens*, proc_type_vec*>*,int>(new_pair,type);
+            delete ((*procs)[name])[identical_index].dat;
+            ((*procs)[name])[identical_index].dat = new std::pair(new_pair,type);
             return;
         }
         if(!lang::interpreter::is_defined("PROC_OVERLOAD")) {
             lang::interpreter::error("Overloading is not enabled, cannot define procedure with same name");
             return;
         }
-        ((*procs)[name]).push_back(proc(new std::pair(new std::pair(p,v),type)));
+        ((*procs)[name]).push_back(proc(new std::pair(new std::pair(p,v),type), is_native));
     }
     std::vector<proc> lst;
-    lst.push_back(proc(new std::pair(new std::pair(p,v),type)));
+    lst.push_back(proc(new std::pair(new std::pair(p,v),type), is_native));
     procs->insert(std::make_pair(name, lst));
 }
 
@@ -302,7 +307,8 @@ void proc_manager::execute_proc(std::shared_ptr<token_group> &g) {
     proc_type_vec extracted = extract_args(b);
     //std::any_cast<std::vector<std::shared_ptr<token_group>>>(tok.get_value())[0]->print_group();
 
-    proc_dat* p = resolve_proc(tok.get_lexeme(), extracted);
+    proc found = resolve_proc(tok.get_lexeme(), extracted);
+    auto p = found.dat;
     if(!p) {
         lang::interpreter::error("Could not find procedure with given argument types. Use 'cast <varname> <type>' to change the types.");
         return;
@@ -385,8 +391,14 @@ void proc_manager::execute_proc(std::shared_ptr<token_group> &g) {
     proc_toks.push({std::make_shared<token>(RETURN, "return",0)});
     lang::interpreter::proc_num_ifs->push(0);
     lang::interpreter::num_procs_active++;
-    lang::interpreter::queue_lines(proc_toks, PROC_INPUT);
-    lang::interpreter::trigger_run();
+    if(found.is_native) {
+        execute_internal_method(std::string(tok.get_lexeme()), types);
+    }
+    else {
+        lang::interpreter::queue_lines(proc_toks, PROC_INPUT);
+        lang::interpreter::trigger_run();
+    }
+
 
     // After code was run, check for return value
     if(dat) {
@@ -435,7 +447,7 @@ void proc_manager::execute_proc(std::shared_ptr<token_group> &g) {
         }
     }
     else {
-        std::cout <<"Invalid return data" << std::endl;
+        std::cerr <<"Invalid return data" << std::endl;
     }
     /*for(stack_frame* frame : *lang::interpreter::stack) {
         frame->dump_memory();
@@ -611,7 +623,13 @@ void proc_manager::process_proc_declaration(std::vector<std::shared_ptr<token>> 
     types = new proc_type_vec();
     for(int i = 4; i < tokens.size(); i++) {
         if(tokens[i]->get_name() == RIGHT_PAREN) {
+            if(i == tokens.size()-2) {
+                if(tokens[tokens.size()-1]->get_name() == NATIVE) {
+                    break;
+                }
+            }
             if(i != tokens.size()-1) {
+
                 lang::interpreter::error("Right parenthesis closed with tokens still remaining");
                 return;
             }
@@ -649,10 +667,13 @@ void proc_manager::process_proc_declaration(std::vector<std::shared_ptr<token>> 
     proc_stack_id = lang::interpreter::stack->back()->get_id();
     proc_name = tokens[2]->get_lexeme();
     proc_type = tokens[1]->typeword_to_type();
-    //std::cout << "start proc" << std::endl;
+
+    if(tokens[tokens.size()-1]->get_name() == NATIVE) {
+        end_proc_declaration(true);
+    }
 }
 
-void proc_manager::end_proc_declaration() {
+void proc_manager::end_proc_declaration(bool is_native) {
     if(lang::interpreter::top_stack()->get_id() != proc_stack_id) {
         delete new_proc_tokens;
         delete types;
@@ -665,7 +686,7 @@ void proc_manager::end_proc_declaration() {
 
     std::string copy = proc_name;
 
-    lang::interpreter::top_stack()->insert_proc(copy, proc_type, new_proc_tokens, types);
+    lang::interpreter::top_stack()->insert_proc(copy, proc_type, new_proc_tokens, types, is_native);
     new_proc_tokens = nullptr;
     types = nullptr;
     proc_name = "";

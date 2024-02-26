@@ -14,15 +14,14 @@ static data* resolve_variable(const char* identifier){
     return nullptr;
 }
 
-static proc_dat* resolve_proc(const std::string &name, proc_type_vec& vec) {
-    proc_dat* found = nullptr;
+static proc resolve_proc(const std::string &name, proc_type_vec& vec) {
     for (stack_frame* frame : *lang::interpreter::stack) {
         auto result = frame->resolve_proc(name,vec);
-        if(result) {
-            found = result;
+        if(result.dat) {
+            return result;
         }
     }
-    return found;
+    return {};
 }
 
 static bool does_proc_exist(const std::string& name) {
