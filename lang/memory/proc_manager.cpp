@@ -40,10 +40,10 @@ void proc_manager::insert_proc(const std::string &name, int type, proc_tokens *p
         bool identical_exists = false;
         int identical_index = -1;
         int i = 0;
+        bool original_is_native = false;
         for (auto& dat: (*procs)[name]) {
             if(dat.is_native) {
-                lang::interpreter::error("Cannot override or redefine native procedure.");
-                return;
+                original_is_native = true;
             }
             if(dat.dat->second != type) {
                 lang::interpreter::error("Attempted of overload of procedure " + name + " with wrong type. Expected: " + id_to_name(dat.dat->second));
@@ -64,6 +64,10 @@ void proc_manager::insert_proc(const std::string &name, int type, proc_tokens *p
             return;
         }
         if(identical_exists) {
+            if(original_is_native) {
+                lang::interpreter::error("Cannot redefine native procedure.");
+                return;
+            }
             auto* new_pair = new std::pair<proc_tokens*, proc_type_vec*>(p,v);
 
             // get hashmap @ name, get the element from the vector at the identical index
@@ -657,8 +661,13 @@ void proc_manager::process_proc_declaration(std::vector<std::shared_ptr<token>> 
             }
         }
         else {
-            lang::interpreter::error("Unexpected end of procedure declaration.");
-            return;
+            if(tokens[tokens.size()-1]->get_name() == NATIVE) {
+                break;
+            }
+            else {
+                lang::interpreter::error("Unexpected end of procedure declaration.");
+                return;
+            }
         }
     }
 

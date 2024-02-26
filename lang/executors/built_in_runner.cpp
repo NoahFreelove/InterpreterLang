@@ -134,15 +134,40 @@ void assert(std::vector<std::shared_ptr<token>> tokens) {
     }
 }
 
+
+void execute_typeof(proc_type_vec& args) {
+    data* var = resolve_variable(args[0].second->get_lexeme());
+    if(!var) {
+        lang::interpreter::error("Native method typeof input variable is non existent");
+        return;
+    }
+
+    data* return_var = resolve_variable("return");
+    if(!return_var) {
+        lang::interpreter::error("Native method typeof could not access return variable");
+        return;
+    }
+
+    if(return_var->get_type_int() != STRING) {
+        lang::interpreter::error("Native method typeof return type is not string");
+    }
+
+    return_var->set_value_string(var->get_type_string());
+
+}
 void execute_internal_method(std::string proc_name, proc_type_vec args) {
-    std::cout << "Native proc name: " << proc_name << std::endl;
+    /*std::cout << "Native proc name: " << proc_name << std::endl;
     std::cout << "Native proc types: "<< std::endl;
     for (auto& vec : args) {
         std::cout << vec.second->get_lexeme() << std::endl;
+    }*/
+
+    if(proc_name == "dump" && args.empty()) {
+        dump();
     }
 
-    if(proc_name == "dump" && args.size() == 0) {
-        dump();
+    if(proc_name == "typeof" && args.size() == 1) {
+        execute_typeof(args);
     }
 }
 
@@ -182,18 +207,6 @@ void run_builtins(const std::vector<std::shared_ptr<token>> &tokens) {
         }
         case EXIT: {
             lang::interpreter::exit();
-            break;
-        }
-        case TYPEOF: {
-            if(tokens.size() > 1) {
-                auto copy = std::vector<std::shared_ptr<token>>();
-                for (int i = 1; i<tokens.size(); i++) {
-                    copy.push_back(std::make_shared<token>(tokens[i].get()));
-                }
-                auto g = token_grouper::gen_group(copy);
-                group_evaluator::eval_group(g);
-                std::cout << id_to_name(g->type) << std::endl;
-            }
             break;
         }
         default: {

@@ -1,6 +1,6 @@
 print "What's your favorite number?"
 int x
-x = input
+x = rawinput
 
 print "Your favorite number is " + x + "?"
 if x!=5

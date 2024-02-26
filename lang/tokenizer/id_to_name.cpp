@@ -154,8 +154,6 @@ std::string id_to_name(int id) {
             return "RAWINPUT";
         case EXIT:
             return "EXIT";
-        case TYPEOF:
-            return "TYPEOF";
         case SIZEOF:
             return "SIZEOF";
         case DELETE:

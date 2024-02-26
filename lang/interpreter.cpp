@@ -83,7 +83,6 @@ template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
 template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
 
 data * lang::interpreter::recursive_array_simplification(std::shared_ptr<token_group>& group) {
-
     group_evaluator::recursive_replace(group, false);
     if(group->tokens.size() == 1) {
         if(!group_evaluator::is_group(*group->tokens[0])) {
@@ -95,7 +94,8 @@ data * lang::interpreter::recursive_array_simplification(std::shared_ptr<token_g
         else {
             error("Array simplification did not evaluate properly");
         }
-    }else {
+    }
+    else {
         //group->print_group();
         recursive_array_simplification(group);
 
@@ -214,6 +214,7 @@ int lang::interpreter::get_equal_index(const std::vector<std::shared_ptr<token>>
     }
     return -1;
 }
+
 std::vector<std::shared_ptr<token>> lang::interpreter::clone_tokens(const std::vector<std::shared_ptr<token>> &tokens) {
     std::vector<std::shared_ptr<token>> cloned = std::vector<std::shared_ptr<token>>();
     cloned.reserve(tokens.size());
@@ -267,7 +268,7 @@ void lang::interpreter::process(std::vector<std::shared_ptr<token>> tokens) {
 
 void lang::interpreter::check_pop_stack(std::vector<std::shared_ptr<token>> &tokens) {
     if(tokens.empty()) {
-        lang::interpreter::error("tokens empty cant check pop stack");
+        //error("tokens empty cant check pop stack");
         return;
     }
     if(tokens[tokens.size()-1]->get_name() == RIGHT_BRACE) {

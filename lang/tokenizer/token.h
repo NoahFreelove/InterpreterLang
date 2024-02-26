@@ -115,7 +115,6 @@
 // builtin funcs
 #define PRINT 10001
 #define INPUT 10003
-#define TYPEOF 10004
 #define SIZEOF 10005
 #define DELETE 10006
 #define DEFINE 10007
@@ -137,6 +136,7 @@ class token {
     const char* lexeme;
     std::any value;
     int line;
+    bool represents_array = false;
 
 public:
     token(token* t) : name(t->name), lexeme(t->lexeme), value(t->value), line(t->line) {}
@@ -144,7 +144,7 @@ public:
         : name(name),
           lexeme(lexeme),
           value(std::move(value)),
-          line(line) {
+          line(line), represents_array(array) {
     }
 
     [[nodiscard]] int get_name() const {

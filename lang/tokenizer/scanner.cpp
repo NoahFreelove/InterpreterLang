@@ -228,9 +228,6 @@ std::shared_ptr<token> lang::scanner::get_identifier(char c) {
     if(str == "rawinput") {
         return std::make_shared<token>(RAWINPUT, cstr, line);
     }
-    if(str == "typeof") {
-        return std::make_shared<token>(TYPEOF, cstr, line);
-    }
     if(str == "sizeof") {
         return std::make_shared<token>(SIZEOF, cstr, line);
     }
