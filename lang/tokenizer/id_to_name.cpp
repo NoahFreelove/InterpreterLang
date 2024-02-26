@@ -130,6 +130,8 @@ std::string id_to_name(int id) {
             return "END_LOOP";
         case FINAL:
             return "FINAL";
+        case NATIVE:
+            return "NATIVE";
         case BYVAL:
             return "BYVAL";
         case DISCARD:

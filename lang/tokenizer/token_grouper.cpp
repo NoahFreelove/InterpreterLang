@@ -69,15 +69,15 @@ std::shared_ptr<token_group> token_grouper::recursive_group(std::vector<std::sha
             }
             if(type == IDENTIFIER && i+1 < tokens.size()) {
                 if(tokens[i+1]->get_name() == LEFT_PAREN) {
-                    auto* proc = resolve_proc(tk->get_lexeme());
+                    bool proc_exists = does_proc_exist(tk->get_lexeme());
                     bool is_macro = false;
-                    if(proc == nullptr) {
+                    if(!proc_exists) {
                         if(lang::interpreter::macros->find(tk->get_lexeme()) != lang::interpreter::macros->end()) {
                             is_macro = true;
                         }
                     }
 
-                    if(proc || is_macro) {
+                    if(proc_exists || is_macro) {
                         std::vector<std::vector<std::shared_ptr<token>>> arguments;
                         auto curr_arg = std::vector<std::shared_ptr<token>>();
                         int j = i+2;

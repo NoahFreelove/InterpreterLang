@@ -3,6 +3,7 @@
 #include <fstream>
 #include <stack>
 #include <cstring>
+#include <utility>
 #include <bits/fs_fwd.h>
 #include <bits/fs_path.h>
 
@@ -223,8 +224,8 @@ std::vector<std::shared_ptr<token>> lang::interpreter::clone_tokens(const std::v
     return cloned;
 }
 
-void lang::interpreter::process(std::vector<std::shared_ptr<token>>& tokens) {
-    std::shared_ptr<token_group> group = token_grouper::gen_group(tokens);
+void lang::interpreter::process(std::vector<std::shared_ptr<token>> tokens) {
+    std::shared_ptr<token_group> group = token_grouper::gen_group(std::move(tokens));
 
     std::vector<std::shared_ptr<token>> output;
     group_evaluator::flatten(output, group);
@@ -265,6 +266,10 @@ void lang::interpreter::process(std::vector<std::shared_ptr<token>>& tokens) {
 }
 
 void lang::interpreter::check_pop_stack(std::vector<std::shared_ptr<token>> &tokens) {
+    if(tokens.empty()) {
+        lang::interpreter::error("tokens empty cant check pop stack");
+        return;
+    }
     if(tokens[tokens.size()-1]->get_name() == RIGHT_BRACE) {
         pop_stackframe();
         tokens.pop_back();

@@ -176,18 +176,14 @@ static void run_builtins(const std::vector<std::shared_ptr<token>>& tokens) {
             break;
         }
         case TYPEOF: {
-            if(tokens.size() == 2) {
-                if(tokens[1]->get_name() == IDENTIFIER) {
-                    auto* dat = resolve_variable(tokens[1]->get_lexeme());
-                    if(dat) {
-                        std::cout << type_registry::get_typename(dat->get_type_int()) << std::endl;
-                    }
-                    else {
-                        lang::interpreter::error("Cannot resolve type, variable not found.");
-                    }
-                }else {
-                    std::cout << type_registry::get_typename(tokens[1]->get_name()) << std::endl;
+            if(tokens.size() > 1) {
+                auto copy = std::vector<std::shared_ptr<token>>();
+                for (int i = 1; i<tokens.size(); i++) {
+                    copy.push_back(std::make_shared<token>(tokens[i].get()));
                 }
+                auto g = token_grouper::gen_group(copy);
+                group_evaluator::eval_group(g);
+                std::cout << id_to_name(g->type) << std::endl;
             }
             break;
         }

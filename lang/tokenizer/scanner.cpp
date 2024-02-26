@@ -176,6 +176,9 @@ std::shared_ptr<token> lang::scanner::get_identifier(char c) {
     if(str == "final") {
         return std::make_shared<token>(FINAL, cstr, line);
     }
+    if(str == "native") {
+        return std::make_shared<token>(NATIVE, cstr, line);
+    }
     if(str == "byval") {
         return std::make_shared<token>(BYVAL, cstr, line);
     }

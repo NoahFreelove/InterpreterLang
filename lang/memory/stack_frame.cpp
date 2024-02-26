@@ -47,9 +47,14 @@ void stack_frame::insert_proc(const std::string &name, int type, proc_tokens* p,
     procs->insert_proc(name,type,p,v);
 }
 
-proc_dat* stack_frame::resolve_proc(const std::string& name) {
-    return procs->resolve_proc_name(name);
+proc_dat* stack_frame::resolve_proc(const std::string& name, proc_type_vec& vec) {
+    return procs->resolve_proc_name(name, vec);
 }
+
+bool stack_frame::proc_exists(const std::string &name) {
+    return procs->exists(name);
+}
+
 
 void stack_frame::eval_proc(std::shared_ptr<token_group> &g) {
     proc_manager::execute_proc(g);

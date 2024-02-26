@@ -104,6 +104,7 @@ void group_evaluator::eval_group(std::shared_ptr<token_group> g, int depth)  {
                     artificial_group->tokens.push_back(g->tokens[0]);*/
                     stack_frame::eval_proc(g);
 
+                    tk->set_name(NOTHING);
                     //std::cout << "AFTER PROC EVAL:" << tk->get_lexeme() << " : " << id_to_name(g->type) << std::endl;
                     //g->tokens[0] = std::make_shared<token_element>(artificial_group);
 

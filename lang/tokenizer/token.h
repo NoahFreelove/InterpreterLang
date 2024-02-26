@@ -97,6 +97,7 @@
 #define LOOP 1029
 #define MACRO 1030
 #define FOREACH 1031
+#define NATIVE 1032
 
 // TYPEWORDS
 #define INT_KEYW 1120
@@ -257,6 +258,10 @@ public:
         || name == DO_UNTIl || name == UNTIL || name == LOOP;
     }
 
+    void set_name(int i) {
+        this->name = i;
+    }
+
     static const std::string type_tostr(int i) {
         switch (i) {
             case DOUBLE: {
@@ -363,7 +368,7 @@ public:
             case BOOL_KEYW:
                 return BOOL_KEYW;
             default:
-                return 0;
+                return name;
         }
     }
 

@@ -5,47 +5,83 @@
 #include "../tokenizer/token_grouper.h"
 #include "../executors/control_flow_runner.h"
 #include "../executors/var_setter.h"
-//#include "../executors/built_in_runner.h"
-proc_dat * proc_manager::resolve_proc_name(const std::string &name) {
+
+proc_dat * proc_manager::resolve_proc_name(const std::string &name, proc_type_vec& vec) {
     // return nullptr if not in procs
     if(procs->find(name) == procs->end()) {
         return nullptr;
     }
-    return (*procs)[name];
+    for(auto& v: (*procs)[name]) {
+        if(same_types(*v.dat->first->second,vec)) {
+            return v.dat;
+        }
+    }
+    return nullptr;
+}
+
+bool proc_manager::same_types(proc_type_vec &a, proc_type_vec &b) {
+    bool all_same = true;
+    if(a.size() == b.size()) {
+        for (int i = 0; i < b.size(); i++) {
+            //std::cout << "TYPE A: " << id_to_name(a[i].first->typeword_to_type()) << " TYPE B: " << id_to_name(b[i].first->typeword_to_type()) << std::endl;
+            if(b[i].first->typeword_to_type() != a[i].first->typeword_to_type()) {
+                all_same = false;
+                break;
+            }
+        }
+    }
+    else
+        return false;
+    return all_same;
 }
 
 void proc_manager::insert_proc(const std::string &name, int type, proc_tokens *p, proc_type_vec *v) {
     if(procs->find(name) != procs->end()) {
+        bool identical_exists = false;
+        int identical_index = -1;
+        int i = 0;
+        for (auto& dat: (*procs)[name]) {
+            if(dat.dat->second != type) {
+                lang::interpreter::error("Attempted of overload of procedure " + name + " with wrong type. Expected: " + id_to_name(dat.dat->second));
+                return;
+            }
+            proc_type_vec* other_types = dat.dat->first->second;
+
+            if(same_types(*v, *other_types)) {
+                identical_exists = true;
+                identical_index = i;
+            }
+            i++;
+        }
+
+
+        if(!lang::interpreter::is_defined("PROC_REDEFINITION") && identical_exists) {
+            lang::interpreter::error("Redefinition of procedure " + name + " is not enabled");
+            return;
+        }
+        if(identical_exists) {
+            auto* new_pair = new std::pair<proc_tokens*, proc_type_vec*>(p,v);
+
+            // get hashmap @ name, get the element from the vector at the identical index
+            ((*procs)[name])[identical_index].dat = new std::pair<std::pair<proc_tokens*, proc_type_vec*>*,int>(new_pair,type);
+            return;
+        }
         if(!lang::interpreter::is_defined("PROC_OVERLOAD")) {
             lang::interpreter::error("Overloading is not enabled, cannot define procedure with same name");
             return;
         }
-        bool is_identical = true;
-        proc_type_vec* other_types = (*procs)[name]->first->second;
-        if(other_types->size() != v->size()) {
-            is_identical = false;
-        }
-        else {
-            for (int i = 0; i < v->size(); i++) {
-                if((*v)[i].first->get_name() != (*other_types)[i].first->get_name()) {
-                    is_identical = false;
-                    break;
-                }
-            }
-        }
-
-        if(!lang::interpreter::is_defined("PROC_REDEFINITION") && is_identical) {
-            lang::interpreter::error("Redefinition of procedure " + name + " is not enabled");
-            return;
-        }
-        // replace the old proc
-        // Change this logic later to handle overloading because it just replaces the old proc
-        // TODO: This
-        auto* new_pair = new std::pair<proc_tokens*, proc_type_vec*>(p,v);
-        (*procs)[name] = new std::pair<std::pair<proc_tokens*, proc_type_vec*>*,int>(new_pair,type);
-        return;
+        ((*procs)[name]).push_back(proc(new std::pair(new std::pair(p,v),type)));
     }
-    procs->insert(std::make_pair(name, new std::pair(new std::pair(p,v),type)));
+    std::vector<proc> lst;
+    lst.push_back(proc(new std::pair(new std::pair(p,v),type)));
+    procs->insert(std::make_pair(name, lst));
+}
+
+bool proc_manager::exists(const std::string &name) {
+    if (procs->find(name) != procs->end()) {
+        return true;
+    }
+    return false;
 }
 
 void push_to_stack_frame(std::shared_ptr<token_group>& evaled_group, stack_frame* frame, const char* name, const char* proc_type) {
@@ -227,6 +263,25 @@ data* push_return_variable(stack_frame* frame, int type) {
     return return_var;
 }
 
+typedef std::pair<std::shared_ptr<token>,std::shared_ptr<token>> proc_type;
+typedef std::vector<proc_type> proc_type_vec;
+
+proc_type_vec extract_args(const std::vector<std::shared_ptr<token_group>>& g) {
+    proc_type_vec types = proc_type_vec();
+
+    for (const auto& f: g) {
+        std::vector<std::shared_ptr<token>> out;
+        group_evaluator::flatten(out, f);
+        auto group = token_grouper::gen_group(out);
+        group_evaluator::eval_group(group);
+        types.push_back(std::make_pair<std::shared_ptr<token>, std::shared_ptr<token>>(
+            std::make_shared<token>(group->type, "type", 0, group->value),
+            std::make_shared<token>(NOTHING, "nothing")));
+    }
+
+    return types;
+}
+
 void proc_manager::execute_proc(std::shared_ptr<token_group> &g) {
     //std::vector<std::shared_ptr<token_group>> args = g.
     auto* new_frame = new stack_frame();
@@ -242,7 +297,16 @@ void proc_manager::execute_proc(std::shared_ptr<token_group> &g) {
     }
     auto tok = (*std::get<std::shared_ptr<token>>(*g->tokens[0]));
     //std::cout << "EXECUTING: " << tok.get_lexeme() << std::endl;
-    proc_dat* p = resolve_proc(tok.get_lexeme());
+    //std::any_cast<std::vector<std::shared_ptr<token_group>>>(tok.get_value())[0]->print_group();
+    auto b = std::any_cast<std::vector<std::shared_ptr<token_group>>>(tok.get_value());
+    proc_type_vec extracted = extract_args(b);
+    //std::any_cast<std::vector<std::shared_ptr<token_group>>>(tok.get_value())[0]->print_group();
+
+    proc_dat* p = resolve_proc(tok.get_lexeme(), extracted);
+    if(!p) {
+        lang::interpreter::error("Could not find procedure with given argument types. Use 'cast <varname> <type>' to change the types.");
+        return;
+    }
     int PROC_TYPE = p->second;
 
     auto* dat = push_return_variable(new_frame, PROC_TYPE);
@@ -387,14 +451,16 @@ void proc_manager::print_procs() {
     for (const auto& elm : *procs) {
         std::cout << elm.first << "(";
         int i = 0;
-        for (const auto& t : (*elm.second->first->second)) {
-            std::cout << id_to_name(t.first->get_name()) << " " << t.second->get_lexeme();
-            i++;
-            if(i < elm.second->first->second->size()) {
-                std::cout << ", ";
-            }
-            else {
-                std::cout << ')' << std::endl;
+        for(auto& e : elm.second) {
+            for (const auto& t : (*e.dat->first->second)) {
+                std::cout << id_to_name(t.first->get_name()) << " " << t.second->get_lexeme();
+                i++;
+                if(i < e.dat->first->second->size()) {
+                    std::cout << ", ";
+                }
+                else {
+                    std::cout << ')' << std::endl;
+                }
             }
         }
     }
