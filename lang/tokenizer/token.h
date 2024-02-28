@@ -116,10 +116,8 @@
 #define PRINT 10001
 #define INPUT 10003
 #define SIZEOF 10005
-#define DELETE 10006
 #define DEFINE 10007
 #define UNDEFINE 10008
-#define ISDEFINED 10009
 #define IMPORT 10010
 #define ID 10011
 #define ASSERT 10012

@@ -156,14 +156,10 @@ std::string id_to_name(int id) {
             return "EXIT";
         case SIZEOF:
             return "SIZEOF";
-        case DELETE:
-            return "DELETE";
         case DEFINE:
             return "DEFINE";
         case UNDEFINE:
             return "UNDEFINE";
-        case ISDEFINED:
-            return "ISDEFINED";
         case IMPORT:
             return "IMPORT";
         case ID:

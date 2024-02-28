@@ -58,11 +58,11 @@ void proc_manager::insert_proc(const std::string &name, int type, proc_tokens *p
             i++;
         }
 
-
         if(!lang::interpreter::is_defined("PROC_REDEFINITION") && identical_exists) {
             lang::interpreter::error("Redefinition of procedure " + name + " is not enabled");
             return;
         }
+
         if(identical_exists) {
             if(original_is_native) {
                 lang::interpreter::error("Cannot redefine native procedure.");

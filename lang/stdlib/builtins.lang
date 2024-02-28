@@ -1,0 +1,15 @@
+proc void dump() native
+
+proc string typeof(int i) native
+proc string typeof(float i) native
+proc string typeof(double i) native
+proc string typeof(long i) native
+proc string typeof(string i) native
+
+proc bool is_defined(string s) native
+
+proc void delete(int i) native
+proc void delete(float i) native
+proc void delete(double i) native
+proc void delete(long i) native
+proc void delete(string i) native

@@ -231,17 +231,11 @@ std::shared_ptr<token> lang::scanner::get_identifier(char c) {
     if(str == "sizeof") {
         return std::make_shared<token>(SIZEOF, cstr, line);
     }
-    if(str == "delete") {
-        return std::make_shared<token>(DELETE, cstr, line);
-    }
     if(str == "define") {
         return std::make_shared<token>(DEFINE, cstr, line);
     }
     if(str == "undefine") {
         return std::make_shared<token>(UNDEFINE, cstr, line);
-    }
-    if(str == "isdefined") {
-        return std::make_shared<token>(ISDEFINED, cstr, line);
     }
     if(str == "import") {
         return std::make_shared<token>(IMPORT, cstr, line);

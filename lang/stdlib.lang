@@ -1,4 +1,3 @@
 import "stdlib/math.lang"
 import "stdlib/cast.lang"
-
-proc void dump() native
+import "stdlib/builtins.lang"

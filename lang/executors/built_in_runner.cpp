@@ -27,25 +27,51 @@ void undefine(const std::vector<std::shared_ptr<token>> &tokens) {
     }
 }
 
-void is_defined(const std::vector<std::shared_ptr<token>> &tokens) {
-    if (tokens.size() == 2) {
-        const char* name = tokens[1]->get_lexeme();
-        for (int i = 0; i < lang::interpreter::defined->size(); i++) {
-            if (strcmp(lang::interpreter::defined->at(i), name) == 0) {
-                std::cout << tokens[1]->get_lexeme() << " is defined" << std::endl;
-                return;
-            }
-        }
-        std::cout << tokens[1]->get_lexeme() << " is not defined" << std::endl;
+void is_defined(proc_type_vec& args) {
+    data* var = resolve_variable(args[0].second->get_lexeme());
+    if(!var) {
+        lang::interpreter::error("Native method is_defined input variable is non existent");
+        return;
     }
+
+    if(var->get_type_int() != STRING) {
+        lang::interpreter::error("Native method is_defined argument type is not string");
+        return;
+    }
+
+    data* return_var = resolve_variable("return");
+    if(!return_var) {
+        lang::interpreter::error("Native method is_defined could not access return variable");
+        return;
+    }
+
+    if(return_var->get_type_int() != BOOL_KEYW) {
+        lang::interpreter::error("Native method is_defined return type is not string");
+    }
+    return_var->set_value_bool(lang::interpreter::is_defined(var->to_string().c_str()));
+    return;
 }
 
-void delete_var(const std::vector<std::shared_ptr<token>> &tokens) {
-    if(tokens.size() == 2) {
-        if(tokens[0]->get_name() == DELETE && tokens[1]->get_name() == IDENTIFIER) {
-            delete_variable(tokens[1]->get_lexeme());
-        }
+void delete_var(proc_type_vec& args) {
+    data* var = resolve_variable(args[0].second->get_lexeme());
+    if(!var) {
+        lang::interpreter::error("Native method delete input variable is non existent");
+        return;
     }
+
+
+
+    data* return_var = resolve_variable("return");
+    if(!return_var) {
+        lang::interpreter::error("Native method delete could not access return variable");
+        return;
+    }
+
+    if(return_var->get_type_int() != NOTHING) {
+        lang::interpreter::error("Native method delete return type is not void");
+    }
+
+    delete_variable(args[0].second->get_lexeme(), false);
 }
 
 void print(const std::vector<std::shared_ptr<token>> &tokens, int offset) {
@@ -155,7 +181,9 @@ void execute_typeof(proc_type_vec& args) {
     return_var->set_value_string(var->get_type_string());
 
 }
-void execute_internal_method(std::string proc_name, proc_type_vec args) {
+
+
+void execute_internal_method(const std::string& proc_name, proc_type_vec args) {
     /*std::cout << "Native proc name: " << proc_name << std::endl;
     std::cout << "Native proc types: "<< std::endl;
     for (auto& vec : args) {
@@ -168,6 +196,12 @@ void execute_internal_method(std::string proc_name, proc_type_vec args) {
 
     if(proc_name == "typeof" && args.size() == 1) {
         execute_typeof(args);
+    }
+    if(proc_name == "is_defined" && args.size() == 1) {
+        is_defined(args);
+    }
+    if(proc_name == "delete" && args.size() == 1) {
+        delete_var(args);
     }
 }
 
@@ -183,14 +217,6 @@ void run_builtins(const std::vector<std::shared_ptr<token>> &tokens) {
         }
         case UNDEFINE: {
             undefine(tokens);
-            break;
-        }
-        case ISDEFINED: {
-            is_defined(tokens);
-            break;
-        }
-        case DELETE: {
-            delete_var(tokens);
             break;
         }
         case IMPORT: {
