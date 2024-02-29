@@ -8,6 +8,7 @@ class stack_frame {
     long id;
     stack_memory* memory;
     proc_manager* procs;
+
 public:
     stack_frame() {
         id = offset++;

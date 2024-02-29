@@ -20,6 +20,7 @@ class truthy_evaluator {
     static std::shared_ptr<token_element> convert(int name, const char* lexeme, int line, std::any value) {
         return std::make_shared<token_element>(std::make_shared<token>(name, lexeme, 0, value));
     }
+
     inline static std::shared_ptr<token> invalid_ant = std::make_shared<token>(INT, "INT", 0, 0);
 
     static int get_highest_level_op(std::shared_ptr<token_group> g) {
@@ -222,6 +223,12 @@ class truthy_evaluator {
                 if(op->is_first_order_logic()) {
                     bool a = (ant->get_name() == TRUE);
                     bool b = (cons->get_name() == TRUE);
+                    if(ant->is_numeric()) {
+                        a = (get_double_value(ant->get_name(), ant->get_value()) != 0);
+                    }
+                    if(cons->is_numeric()) {
+                        b = (get_double_value(cons->get_name(), cons->get_value()) != 0);
+                    }
                     if(op->get_name() == XOR) {
                         result = a^b;
                     }

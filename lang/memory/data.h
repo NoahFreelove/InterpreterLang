@@ -25,6 +25,7 @@ public:
     static data * create_default_from_type(int type, std::vector<data *> &allocated);
 
     static data* create_recursive_dimensional_array(std::queue<int> sizes, int type);
+
     data(void* value, const std::string& type, const std::vector<data*>& pre_allocated);
 
     data(void* value, const std::string& type, bool is_ptr = false, bool is_final = false, bool is_array = false, int initial_size = 0);

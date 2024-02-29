@@ -1,7 +1,6 @@
 #include "data.h"
 #include "../interpreter.h"
 #include "../tokenizer/token.h"
-#include "stack_frame.h"
 
 data *data::create_default_from_type(const std::string &type, bool is_array, int size) {
     if(type == "int")

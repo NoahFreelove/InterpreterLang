@@ -2,7 +2,6 @@
 #include "../tokenizer/token.h"
 #include "../interpreter.h"
 #include "../memory/stack_manager.h"
-#include "../memory/type_registry.h"
 #include "../evaluator/group_evaluator.h"
 #include <cstring>
 
@@ -58,8 +57,6 @@ void delete_var(proc_type_vec& args) {
         lang::interpreter::error("Native method delete input variable is non existent");
         return;
     }
-
-
 
     data* return_var = resolve_variable("return");
     if(!return_var) {
@@ -179,7 +176,6 @@ void execute_typeof(proc_type_vec& args) {
     }
 
     return_var->set_value_string(var->get_type_string());
-
 }
 
 
